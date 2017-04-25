@@ -1,5 +1,5 @@
-#ifndef __ARRAY1D_DOUBLE64_H_INCLUDED
-#define __ARRAY1D_DOUBLE64_H_INCLUDED
+#ifndef __ARRAY1D_DOUBLE64_HPP_INCLUDED
+#define __ARRAY1D_DOUBLE64_HPP_INCLUDED
 #include "mkl.h"
 #include <vector>
 #include <string>
