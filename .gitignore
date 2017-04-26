@@ -33,7 +33,7 @@
 data/*
 data1/*
 
-build/*
+build*/*
 
 #CMake
 advices.txt

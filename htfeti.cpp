@@ -7,7 +7,7 @@ int main(){
 
     Options options;
     int n_subdomOnCluster = 2;
-    std::string path2data = "data";
+    std::string path2data = "../data";
     options.set_values(n_subdomOnCluster, path2data);
 
     Cluster cluster(options);

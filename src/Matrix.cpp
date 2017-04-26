@@ -396,7 +396,7 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
                                                         bool _printCooOrDense)
 {
     const int _format = this->format;
-    string path2matrix = "data/dump_" + nameOfMat + "_" +
+    string path2matrix = "../data/dump_" + nameOfMat + "_" +
                                                      to_string(indOfMat)+".txt";
     FILE *fp = NULL;
     fp = fopen(path2matrix.c_str(), "w");
@@ -639,6 +639,7 @@ void Matrix::CsrElementByElement(){
 
 
 void Matrix::InitializeSolve(){
+#ifdef USE_PARDISO
     mtype = -2;              /* Real symmetric matrix */
     nrhs = 1;               /* Number of right hand sides. */
     MKL_INT i;
@@ -709,10 +710,12 @@ void Matrix::InitializeSolve(){
     //	PARDISO (id->pt, &(id->maxfct), &(id->mnum), &(id->mtype), &phase,
     //	&(id->n), id->a, id->i_ptr, id->j_col, &(id->idum), &(id->nrhs),
     //	id->iparm, &(id->msglvl),  &(id->ddum),  &(id->ddum), &(id->error));
+#endif
 }
 
 
 void Matrix::solve(Matrix& B, Matrix& X){
+#ifdef USE_PARDISO
     /* -------------------------------------------------------------------- */
     /* .. Back substitution and iterative refinement. */
     /* -------------------------------------------------------------------- */
@@ -735,9 +738,12 @@ void Matrix::solve(Matrix& B, Matrix& X){
         exit (3);
     }
     printf ("\nSolve completed ... ");
+#endif
 }
 
-void Matrix::FinalizeSolve(int _i){
+void Matrix::FinalizeSolve(int _i)
+{
+#ifdef USE_PARDISO
 
     double ddum;          /* Double dummy */
     MKL_INT idum;         /* Integer dummy. */
@@ -753,9 +759,11 @@ void Matrix::FinalizeSolve(int _i){
             }
         }
     }
+#endif
 }
 
 void Matrix::testPardiso(){
+#ifdef USE_PARDISO
 /*------------------------------ TEST ------------------------------*/
     Matrix A;
     int n = 21;
@@ -814,6 +822,7 @@ void Matrix::testPardiso(){
     B.printToFile("B",1000,false);
     A.FinalizeSolve(0);
 /*------------------------------ TEST ------------------------------*/
+#endif
 }
 
 //void Matrix::dcsradd(Matrix& A, Matrix& B, Matrix& C){
