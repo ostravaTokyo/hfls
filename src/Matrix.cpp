@@ -16,7 +16,7 @@ Matrix::Matrix(){
     this->isCSR = false;
     this->isDNS = false;
     this->DNS_reducedZeroRows = false;
-//    this->DNS_transposed = false;
+    this->DNS_transposed = false;
 }
 
 void Matrix::readCooFromFile(string path2matrix, int symmetric, int _format,
@@ -198,7 +198,9 @@ void Matrix::COO2CSR(){
 #if 0
 /* test - print 'i_ptr' to cmd                                                */
     for (int i = 0 ; i < this->n_row_cmprs + 1; i++){
-        cout << " i_ptr: " <<  this->i_ptr[i] << "\n";
+        cout << " i_ptr["<< i<<"]="
+             <<  this->i_ptr[i] << ":  "
+             << this->n_row_cmprs + 1 <<"\n";
     }
 #endif
 }
@@ -323,7 +325,6 @@ void Matrix::DNS2COO(){
     if (this->format == 0){
         return;
     }
-
     int _n_row;
     if (this->DNS_reducedZeroRows){
         _n_row = this->n_row_cmprs;
@@ -331,25 +332,17 @@ void Matrix::DNS2COO(){
     else{
         _n_row = this->n_row;
     }
-
     this->nnz = 0;
     for (int i = 0; i < _n_row * this->n_col;i++) {
        if (this->dense[i] != 0){
            this->nnz++;
        }
     }
-
-
-
     this->i_coo_cmpr.resize(this->nnz);
     this->j_col.resize(this->nnz);
     this->val.resize(this->nnz);
-
-
     double _val;
-    int _i;
     int cnt = 0;
-
     cout << "_n_row " << _n_row << "\n";
     for (int i = 0; i < _n_row; i++) {
         for (int j = 0; j < this->n_col; j++) {
@@ -360,21 +353,17 @@ void Matrix::DNS2COO(){
                 _val = this->dense[i + j * _n_row];
             }
             if (_val != 0){
-                if (this->DNS_reducedZeroRows){
-                    _i = i;
-                }
-                else{
-                    _i = cnt;
-                }
-                this->i_coo_cmpr[cnt] = _i;
+                this->i_coo_cmpr[cnt] = i;
                 this->j_col[cnt] = j;
                 this->val[cnt] = _val;
+                cnt++;
             }
         }
     }
     this->dense.clear();
     this->dense.shrink_to_fit();
     this->format = 0;
+    this->n_row_cmprs = this->nnz;
 }
 
 //void Matrix::RemoveLower(){
@@ -413,14 +402,15 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
         fprintf(fp, "%d\t%d\t%d\n", this->n_row, this->n_col, this->nnz);
         if (this->format == 0){
             for (int i = 0; i < this->nnz; i++) {
+                cout << "----" <<this->i_coo_cmpr[i] << "  " << this->l2g_i_coo[this->i_coo_cmpr[i]] << endl;
                 I = this->l2g_i_coo[this->i_coo_cmpr[i]];
                 J = this->j_col[i];
                 V = this->val[i];
-                if (this->DNS_transposed){
-                    Itmp = I;
-                    J = I;
-                    I = Itmp;
-                }
+//                if (this->DNS_transposed){
+//                    Itmp = I;
+//                    I = J;
+//                    J = Itmp;
+//                }
                 fprintf(fp, "%d\t%d\t%.16e\n", I,J,V);
             }
         }
