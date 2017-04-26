@@ -1,4 +1,4 @@
-#include "Cluster.hpp"
+#include "../include/Cluster.hpp"
 
 using namespace std;
 
@@ -24,7 +24,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
     A.printToFile("modif2",0,printCooOrDense);
     printCooOrDense = true;
     A.printToFile("modif3",0,printCooOrDense);
+
     return
+
 #endif
 //    Matrix B;
 //    B = B.CreateCopyFrom(A);
@@ -49,6 +51,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
 /*                         READING DATA (TXT)                              */
 /*                 matrices in coo format are one-based                    */
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 
     for (int i = 0 ; i < options.n_subdomOnCluster ; i++){
 //        std::cout << "\t\t\t====(" << i+1 << "/" <<

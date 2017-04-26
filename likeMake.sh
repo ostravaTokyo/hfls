@@ -1,7 +1,7 @@
 #/bin/bash
 
 #compiler=icpc
-filecpp="src/Options.cpp src/Array1d_double64.cpp src/Cluster.cpp src/Matrix.cpp   src/htfeti.cpp"
+filecpp="src/Options.cpp src/Array1d_double64.cpp src/Cluster.cpp src/Matrix.cpp   htfeti.cpp"
 compiler=g++
 $compiler -std=gnu++11 -fPIC -g -O3 $filecpp -o htfeti.so \
     -L/opt/intel/compilers_and_libraries_2017/linux/mkl/lib/intel64 \
