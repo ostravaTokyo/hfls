@@ -85,9 +85,14 @@ bool reduceZeroRows, transpose, printCooOrDense;
         this->Bc[i].readCooFromFile(path2matrix,symmetric,format,offset);
 
 
+
+
+        path2matrix = options.path2data+"/B0"+to_string(i)+".txt";
+        symmetric = 0; format = 1; offset = 1;
+//        this->Bct[i].readCooFromFile(path2matrix,symmetric,format,offset);
+        this->Bct[i] = this->Bc[i];
         reduceZeroRows = true;
         transpose = true;
-        this->Bct[i] = this->Bc[i];
         this->Bct[i].CSRorCOO2DNS(reduceZeroRows,transpose);
 
 //
@@ -132,6 +137,21 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //
 //                /* dumping matrices */
 
+//for (int i = 0 ; i < this->K.size(); i ++ ){
+//    cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+//    cout << "this->Bct[0].i_ptr[k].size() = " << this->Bct[i].n_row_cmprs << endl;
+//    cout << "this->Bct[0].j_col[k].size() = " << this->Bct[i].n_col  << endl;
+//    cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+//    cout <<"\n";
+//
+//
+//    for (int k = 0; k < this->Bct[i].dense.size(); k++){
+//        if (this->Bct[i].dense[k] != 0)
+//            cout << this->Bct[i].dense[k] << "/"<< endl;
+//    }
+//}
+
+
 
 
 #if 0
@@ -146,9 +166,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
         printf("%f %f \n", X[i], Y[i]);
     }
 #else
-    Matrix Y = this->Bct[0];
-    printCooOrDense = true;
-    Y.printToFile("K_Bct",0,printCooOrDense);
+//    Matrix Y = this->Bct[0];
+//    printCooOrDense = true;
+//    Y.printToFile("K_Bct",0,printCooOrDense);
 
 
 
@@ -156,13 +176,15 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 
     for (int i = 0; i < options.n_subdomOnCluster ; i++ ){
-        printCooOrDense = true;
-        this->K[i].printToFile("K",i,printCooOrDense);
-        printCooOrDense = true;
-        this->R[i].printToFile("R",i,printCooOrDense);
-//
+//        printCooOrDense = true;
+//        this->K[i].printToFile("K",i,printCooOrDense);
+//        printCooOrDense = true;
+//        this->R[i].printToFile("R",i,printCooOrDense);
 //        printCooOrDense = true;
 //        this->Bc[i].printToFile("Bc",i,printCooOrDense);
+        printCooOrDense = true;
+        this->Bct[i].printToFile("Bct",i,printCooOrDense);
+        cout << "        "<< this->Bct[i].l2g_i_coo.size() << "\n";
 //        printCooOrDense = true;
 //        this->Bf[i].printToFile("Bf",i,printCooOrDense);
 //        printCooOrDense = true;
