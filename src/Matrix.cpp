@@ -555,8 +555,13 @@ Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
 //    }
 //}
 
-void Matrix::mv_csr(double x[], double Ax[], bool NorT, int n_rhs){
+void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
 //
+
+
+
+
+
     for (int i = 0; i < this->n_row_cmprs; i++) {
         for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
             if (this->symmetric > 0 ){

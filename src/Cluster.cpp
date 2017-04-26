@@ -28,14 +28,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
     return
 
 #endif
-//    Matrix B;
-//    B = B.CreateCopyFrom(A);
-//    B.COO2CSR();
-//    B.printToFile("modif3",0,printCooOrDense);
-//    bool reduceZeroRows = true;
-//    bool transpose = true;
-//    B.CSRorCOO2DNS(reduceZeroRows, transpose);
-    //
     K.resize(options.n_subdomOnCluster);
 //    RegMat.resize(options.n_subdomOnCluster);
     R.resize(options.n_subdomOnCluster);
@@ -154,17 +146,52 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 
 
-#if 0
-    double *X = new double[this->K[0].n_row_cmprs];
-    double *Y = new double[this->K[0].n_row_cmprs];
-    for (int i = 0 ; i < this->K[0].n_row_cmprs; i++){
-       X[i] = 1;
+#if 1
+    int i_sub = 3;
+
+    for (int i_sub = 0; i_sub < options.n_subdomOnCluster; i_sub++){
+    double *Y = new double[this->K[i_sub].n_row_cmprs * this->R[i_sub].n_col];
+    for (int i = 0 ; i < this->K[i_sub].n_row_cmprs; i++){
        Y[i] = 0;
     }
-    this->K[0].mv_csr(X,Y,true,1);
-    for (int i = 0 ; i < this->K[0].n_row_cmprs; i++){
-        printf("%f %f \n", X[i], Y[i]);
+//    int nn = this->K[0].n_row_cmprs;
+//    this->K[0].mv_csr(&(this->Bct[0].dense[0]),Y,true,1);
+    this->K[i_sub].mv_csr(&(this->R[i_sub].dense[0]),Y,true,6);
+//    for (int i = 0 ; i < this->K[0].n_row_cmprs; i++){
+//        printf("%d: %f \n",i,Y[i]);
+//    }
+
+
+
+    double normK = 0;
+    for (int i = 0 ; i < this->K[i_sub].nnz; i++){
+       normK += this->K[i_sub].val[i];
     }
+    normK /= this->K[0].nnz;
+
+    double normKR = 0;
+    for (int i = 0 ; i < this->K[i_sub].n_row_cmprs; i++){
+        for (int j = 0; j < this->R[i_sub].n_col; j++){
+            if (i_sub == 0){
+                if (j==0){
+                    printf("%d: ",i);
+                }
+                printf(" %f\t", Y[i +  j * this->K[i_sub].n_row_cmprs]);
+            }
+            normKR += Y[i +  j * this->K[i_sub].n_row_cmprs] *
+                        Y[i +  j * this->K[i_sub].n_row_cmprs];
+        }
+        if (i_sub == 0){
+            printf("\n");
+        }
+    }
+
+    printf("||  K  ||            = %.16e \t", normK);
+    printf("||K * R||            = %.16e \t", sqrt(normKR));
+    printf("||K * R|| / || K ||  = %.16e \n", sqrt(normKR) / normK);
+    }
+
+
 #else
 //    Matrix Y = this->Bct[0];
 //    printCooOrDense = true;
@@ -186,8 +213,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
         this->Bct[i].printToFile("Bct",i,printCooOrDense);
         printCooOrDense = true;
         this->Bf[i].printToFile("Bf",i,printCooOrDense);
-        printCooOrDense = true;
-        this->Bf[i].printToFile("Bct",i,printCooOrDense);
 
 //       this->K_regularized[i].printToFile("K_regularized",i);
 //        this->RegMat[i].printToFile("RegMat",i);

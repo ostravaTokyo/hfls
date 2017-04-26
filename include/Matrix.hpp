@@ -55,7 +55,7 @@ public:
     bool isCOO;
     bool isCSR;
     bool isDNS;
-    void mv_csr(double[], double[], bool, int);
+    void mv_csr(const double[], double [] , bool, int);
 //    void mv_csr(Matrix, Matrix, bool, bool);
     void CsrElementByElement();
     void COO2CSR();
@@ -67,7 +67,6 @@ public:
 //    void RemoveLower();
     void compresRows();
     Matrix CreateCopyFrom(const Matrix&);
-//    static void dcsradd(Matrix&, Matrix&, Matrix&);
     static void Acsr_mult_Bdns_is_Cdns(Matrix&, Matrix&, Matrix&);
     void readCooFromFile(string, int,int,int);
     void printToFile(string,int,bool);
@@ -80,7 +79,6 @@ public:
     MKL_INT n;
     void *pt[64];
     MKL_INT maxfct, mnum, phase, error, msglvl;
-    //        void printASCII(string, int);
     static void testPardiso();
 
 };
