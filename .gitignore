@@ -28,11 +28,15 @@
 *.out
 *.app
 
-*.swp
+*.sw*
 
 data/*
 data1/*
 
 build/*
 
+#CMake
 advices.txt
+*.txt.user
+
+

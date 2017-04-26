@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string> 
-#include "Options.hpp"
-#include "Cluster.hpp"
+#include "include/Options.hpp"
+#include "include/Cluster.hpp"
 //#include "Driver/DissectionSolver.hpp"
 int main(){ 
 
