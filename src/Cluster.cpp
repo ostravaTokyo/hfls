@@ -58,7 +58,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //                   options.n_subdomOnCluster <<")====\n";
 
         /* K - stiffness matrix */
-        std::string path2matrix = options.path2data+"/K"+to_string(i)+".txt";
+        string path2matrix = options.path2data+"/K"+to_string(i)+".txt";
         symmetric = 2; format = 1; offset = 1;
         this->K[i].readCooFromFile(path2matrix,symmetric,format,offset);
 
