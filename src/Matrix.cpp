@@ -402,15 +402,9 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
         fprintf(fp, "%d\t%d\t%d\n", this->n_row, this->n_col, this->nnz);
         if (this->format == 0){
             for (int i = 0; i < this->nnz; i++) {
-                cout << "----" <<this->i_coo_cmpr[i] << "  " << this->l2g_i_coo[this->i_coo_cmpr[i]] << endl;
                 I = this->l2g_i_coo[this->i_coo_cmpr[i]];
                 J = this->j_col[i];
                 V = this->val[i];
-//                if (this->DNS_transposed){
-//                    Itmp = I;
-//                    I = J;
-//                    J = Itmp;
-//                }
                 fprintf(fp, "%d\t%d\t%.16e\n", I,J,V);
             }
         }

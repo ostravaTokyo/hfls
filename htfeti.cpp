@@ -8,7 +8,7 @@ int main(int argc, char *argv[]){
 
     std::cout << argv[0] << std::endl;
     Options options;
-    int n_subdomOnCluster = 2;
+    int n_subdomOnCluster = 8;
     std::string path2data = "../data";
     options.set_values(n_subdomOnCluster, path2data);
 

@@ -176,19 +176,18 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 
     for (int i = 0; i < options.n_subdomOnCluster ; i++ ){
-//        printCooOrDense = true;
-//        this->K[i].printToFile("K",i,printCooOrDense);
-//        printCooOrDense = true;
-//        this->R[i].printToFile("R",i,printCooOrDense);
-//        printCooOrDense = true;
-//        this->Bc[i].printToFile("Bc",i,printCooOrDense);
+        printCooOrDense = true;
+        this->K[i].printToFile("K",i,printCooOrDense);
+        printCooOrDense = true;
+        this->R[i].printToFile("R",i,printCooOrDense);
+        printCooOrDense = true;
+        this->Bc[i].printToFile("Bc",i,printCooOrDense);
         printCooOrDense = true;
         this->Bct[i].printToFile("Bct",i,printCooOrDense);
-        cout << "        "<< this->Bct[i].l2g_i_coo.size() << "\n";
-//        printCooOrDense = true;
-//        this->Bf[i].printToFile("Bf",i,printCooOrDense);
-//        printCooOrDense = true;
-//        this->Bf[i].printToFile("Bct",i,printCooOrDense);
+        printCooOrDense = true;
+        this->Bf[i].printToFile("Bf",i,printCooOrDense);
+        printCooOrDense = true;
+        this->Bf[i].printToFile("Bct",i,printCooOrDense);
 
 //       this->K_regularized[i].printToFile("K_regularized",i);
 //        this->RegMat[i].printToFile("RegMat",i);
