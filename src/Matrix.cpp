@@ -6,7 +6,6 @@ using namespace std;
 bool cmp_int_int_I(int_int_dbl a,int_int_dbl b) { return (a.I < b.I); }
 bool cmp_int_int_J(int_int_dbl a,int_int_dbl b) { return (a.J < b.J); }
 
-
 Matrix::Matrix(){
     this->nnz = 0;
     this->n_row = 0;
@@ -343,7 +342,7 @@ void Matrix::DNS2COO(){
     this->val.resize(this->nnz);
     double _val;
     int cnt = 0;
-    cout << "_n_row " << _n_row << "\n";
+//    cout << "_n_row " << _n_row << "\n";
     for (int i = 0; i < _n_row; i++) {
         for (int j = 0; j < this->n_col; j++) {
             if (this->DNS_transposed){
@@ -366,20 +365,6 @@ void Matrix::DNS2COO(){
     this->n_row_cmprs = this->nnz;
 }
 
-//void Matrix::RemoveLower(){
-// //
-// //    this->CSR2COO();
-// //    int i = this->i_coo_cmpr.size() - 1;
-// //    for (i = this->i_coo_cmpr.size() - 1; i>=1 ; i--){
-// //        if (this->i_coo_cmpr[i] > this->j_col[i]){
-// //            this->i_coo_cmpr.erase(this->i_coo_cmpr.begin() + i);
-// //            this->j_col.erase(this->j_col.begin() + i);
-// //            this->val.erase(this->val.begin() + i);
-// //            this->nnz -= 1;
-// //        }
-// //    }
-// //    this->COO2CSR();
-//}
 
 void Matrix::printToFile(string nameOfMat, int indOfMat,
                                                         bool _printCooOrDense)
@@ -437,7 +422,7 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
         if (_format == 2){
             this->CSRorCOO2DNS(this->DNS_reducedZeroRows,this->DNS_transposed);
         }
-        cout << " this->format=" << this->format << "_format =" << _format << "\n";
+//        cout << " this->format=" << this->format << "_format =" << _format << "\n";
     }
     else{
         cout << " not implemented yet " << endl;
@@ -486,82 +471,13 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
 }
 
 
-
-/*
-void Matrix::compresRows(){
-    vector < int_int_dbl > tmpVec;
-
-    tmpVec.resize(this->i_coo_cmpr.size());
-    l2g_i_coo.resize(this->i_coo_cmpr.size());
-
-    for (int i = 0; i < this->i_coo_cmpr.size();i++){
-        tmpVec[i].I = this->i_coo_cmpr[i];
-        tmpVec[i].J = this->j_col[i];
-        tmpVec[i].V = this->val[i];
-    }
-    sort(tmpVec.begin(),tmpVec.end(),cmp_int_int_I);
-
-    int prevInd = -1;
-    int counter = 0;
-    for (int i = 0 ; i < this->i_coo_cmpr.size(); i ++){
-        if (prevInd != tmpVec[i].I){
-            this->l2g_i_coo[counter] = tmpVec[i].I;
-            counter++;
-        }
-        prevInd = tmpVec[i].I;
-        this->i_coo_cmpr[i] = counter - 1;      // OK if one-based numbering, otherwise = (counter - 1)
-        this->j_col[i] = tmpVec[i].J;
-        this->val[i] = tmpVec[i].V;
-    }
-    tmpVec.clear();
-}*/
-
 Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
     Matrix Aout = AtoBeCopied;
     return Aout;
 }
 
-
-//void Matrix::mv_csr(Matrix X, Matrix &AX, bool matA_NorT, bool matX_NorT){
-////
-//    int n_rhs = 1;
-//    bool NorT = false;
-//    for (int i = 0; i < this->n_row_cmprs; i++) {
-//        for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
-//            if (this->symmetric > 0 ){
-//                for (int k = 0; k < n_rhs; k++){
-//                    AX.dense[i + k * n_row_cmprs] +=
-//                            this->val[j] * X.dense[this->j_col[j] + k * n_row_cmprs];
-//                    if (this->j_col[j] != i){
-//                        AX.dense[this->j_col[j] + k * n_row_cmprs] +=
-//                                      this->val[j] * X.dense[i + k * n_row_cmprs];
-//                    }
-//                }
-//            }
-//            else {
-//                for (int k = 0; k < n_rhs; k++){
-//                    if (NorT){
-//                        AX.dense[i + k * n_row_cmprs] +=
-//                                this->val[j] * X.dense[this->j_col[j] + k * n_row_cmprs];
-//                    }
-//                    else {
-//                        AX.dense[this->j_col[j] + k * n_row_cmprs] +=
-//                                      this->val[j] *
-//                                X.dense[i + k * n_row_cmprs];
-//                   }
-//                }
-//            }
-//        }
-//    }
-//}
-
 void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
 //
-
-
-
-
-
     for (int i = 0; i < this->n_row_cmprs; i++) {
         for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
             if (this->symmetric > 0 ){
@@ -590,40 +506,34 @@ void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
         }
     }
 }
-
-
-
-
-
-
-
-
 void Matrix::CsrElementByElement(){
-//
-//    bool symMatrix=true;
-//    int *indK;
-//    vector < vector < int > > forCSRformat;
-//    forCSRformat.resize(fem->domain->neqSub,vector<int>(0));
-//    int elemDOFs = 24;
-//    for (int i=0;i<fem->domain->n_elementsSub;i++){
-//      indK = stif_glob_number[i].ieq;
-//      for (int j=0;j<elemDOFs;j++){
-//        for (int k=0;k<elemDOFs;k++){
-//          if (symMatrix && (indK[k]>=indK[j]) || !symMatrix){
-//            forCSRformat[indK[j]].push_back(indK[k]);
-//          }
-//        }
-//      }
-//    }
-//    nnz_K = 0;
-//    for (int i = 0;i<forCSRformat.size();i++){
-//      sort(forCSRformat[i].begin(),forCSRformat[i].end());
-//      itv = unique (forCSRformat[i].begin(), forCSRformat[i].end());
-//      forCSRformat[i].resize( distance(forCSRformat[i].begin(),itv) );
-//      nnz_K+=forCSRformat[i].size();
-//    }
+#ifdef buildCSR_elemByElem
+
+    bool symMatrix=true;
+    int *indK;
+    vector < vector < int > > forCSRformat;
+    forCSRformat.resize(fem->domain->neqSub,vector<int>(0));
+    int elemDOFs = 24;
+    for (int i=0;i<fem->domain->n_elementsSub;i++){
+      indK = stif_glob_number[i].ieq;
+      for (int j=0;j<elemDOFs;j++){
+        for (int k=0;k<elemDOFs;k++){
+          if (symMatrix && (indK[k]>=indK[j]) || !symMatrix){
+            forCSRformat[indK[j]].push_back(indK[k]);
+          }
+        }
+      }
+    }
+    nnz_K = 0;
+    for (int i = 0;i<forCSRformat.size();i++){
+      sort(forCSRformat[i].begin(),forCSRformat[i].end());
+      itv = unique (forCSRformat[i].begin(), forCSRformat[i].end());
+      forCSRformat[i].resize( distance(forCSRformat[i].begin(),itv) );
+      nnz_K+=forCSRformat[i].size();
+    }
 
 }
+#endif
 
 
 
@@ -813,70 +723,3 @@ void Matrix::testPardiso(){
 /*------------------------------ TEST ------------------------------*/
 #endif
 }
-
-//void Matrix::dcsradd(Matrix& A, Matrix& B, Matrix& C){
-//
-//    char  trans = 'N';
-//    MKL_INT request = 1;
-//    MKL_INT sort    = 0;
-//    MKL_INT mA = A.n_row;
-//    MKL_INT nA = A.n_col;
-//    double beta = 1;
-//    MKL_INT nzmax;
-//    MKL_INT info;
-//
-//    C.i_ptr.resize(mA + 1);
-//
-//
-//
-//    mkl_dcsradd (&trans, &request , &sort , &mA , &nA ,
-//                 &A.a[0] , &A.j_col[0], &A.i_ptr[0],
-//            &beta,
-//            &B.a[0] , &B.j_col[0], &B.i_ptr[0],
-//            &C.a[0] , &C.j_col[0], &C.i_ptr[0],
-//            &nzmax , &info );
-//
-//    MKL_INT dimOf_a_and_ja = C.i_ptr[mA] - 1;
-//    cout << " dimOf_a_and_ja = "<< dimOf_a_and_ja <<" \n ";
-//    C.a.resize(dimOf_a_and_ja);
-//    C.j_col.resize(dimOf_a_and_ja);
-//    request = 2;
-//
-//    mkl_dcsradd (&trans, &request , &sort , &mA , &nA ,
-//                 &A.a[0] , &A.j_col[0], &A.i_ptr[0],
-//            &beta,
-//            &B.a[0] , &B.j_col[0], &B.i_ptr[0],
-//            &C.a[0] , &C.j_col[0], &C.i_ptr[0],
-//            &nzmax , &info );
-//    if (info != 0){
-//        cout << " PROBLEM: CONVERSION WAS NOT SUCCESSFULL! " <<
-//                     info << " ++++++++++++++++++++ \n";
-//    }
-//    C.nnz = dimOf_a_and_ja;
-//    C.n_row = A.n_row;
-//    C.n_col = A.n_col;
-//    cout << " A --------------" << A.j_col.size() << "\n";
-//    cout << " B --------------" << B.j_col.size() << "\n";
-//    cout << " C --------------" << C.j_col.size() << "\n";
-//
-//}
-
-//void Matrix::Acsr_mult_Bdns_is_Cdns(Matrix& A, Matrix& B, Matrix& C){
-//    char transa = 'N';
-//    MKL_INT m = A.n_row;
-//    MKL_INT n = B.n_col;
-//    MKL_INT k = A.n_col;
-//    double alpha = 1;
-//    char matdescra[6] = {'G',' ',' ','C'};
-//    MKL_INT ldb = B.n_row;
-//    double beta = 0;
-//    C.dense.resize(m * n);
-//    MKL_INT ldc = A.n_row;
-//    mkl_dcsrmm (&transa , &m , &n , &k , &alpha , matdescra , &A.a[0], &A.j_col[0] ,
-//            &A.i_ptr[0] , &A.i_ptr[1] , &B.dense[0] , &ldb , &beta , &C.dense[0], &ldc );
-//    C.n_row = m;
-//    C.n_col = n;
-//    C.isCOO = false;
-//    C.isCSR = false;
-//    C.isDNS = true;
-//}

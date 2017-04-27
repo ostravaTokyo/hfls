@@ -56,7 +56,6 @@ public:
     bool isCSR;
     bool isDNS;
     void mv_csr(const double[], double [] , bool, int);
-//    void mv_csr(Matrix, Matrix, bool, bool);
     void CsrElementByElement();
     void COO2CSR();
     void CSR2COO();
@@ -64,7 +63,6 @@ public:
     void dummyFunction(int,int, int, double);
     void DNS2CSR();
     void DNS2COO();
-//    void RemoveLower();
     void compresRows();
     Matrix CreateCopyFrom(const Matrix&);
     static void Acsr_mult_Bdns_is_Cdns(Matrix&, Matrix&, Matrix&);

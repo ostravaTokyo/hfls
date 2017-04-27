@@ -28,16 +28,17 @@ bool reduceZeroRows, transpose, printCooOrDense;
     return
 
 #endif
-    K.resize(options.n_subdomOnCluster);
-//    RegMat.resize(options.n_subdomOnCluster);
-    R.resize(options.n_subdomOnCluster);
-    rhs.resize(options.n_subdomOnCluster);
-    Bc.resize(options.n_subdomOnCluster);
-    Bf.resize(options.n_subdomOnCluster);
-    Bct.resize(options.n_subdomOnCluster);
-//  K_regularized.resize(options.n_subdomOnCluster);
-//    Fc_sub.resize(options.n_subdomOnCluster);
-//    Gc.resize(options.n_subdomOnCluster);
+    const int nS = options.n_subdomOnCluster;
+    K.resize(nS);
+//    RegMat.resize(nS);
+    R.resize(nS);
+    rhs.resize(nS);
+    Bc.resize(nS);
+    Bf.resize(nS);
+    Bct.resize(nS);
+//  K_regularized.resize(nS);
+//    Fc_sub.resize(nS);
+//    Gc.resize(nS);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /*                         READING DATA (TXT)                              */
@@ -45,9 +46,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 
-    for (int i = 0 ; i < options.n_subdomOnCluster ; i++){
+    for (int i = 0 ; i < nS ; i++){
 //        std::cout << "\t\t\t====(" << i+1 << "/" <<
-//                   options.n_subdomOnCluster <<")====\n";
+//                   nS <<")====\n";
 
         /* K - stiffness matrix */
         string path2matrix = options.path2data+"/K"+to_string(i)+".txt";
@@ -100,7 +101,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
 // //      Matrix::testPardiso();
 //
 //      int  isUpperLowerOrBoth = 2;
-// //      for (int i = 0 ; i < options.n_subdomOnCluster ; i++){
+// //      for (int i = 0 ; i < nS ; i++){
 // //          Matrix KplusBct;
 // //          this->Bct[i].COO2CSR();
 // //          this->Bct[i].printToFile("Bct_beforPardiso",i);
@@ -149,7 +150,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
 #if 1
     int i_sub = 3;
 
-    for (int i_sub = 0; i_sub < options.n_subdomOnCluster; i_sub++){
+    for (int i_sub = 0; i_sub < nS; i_sub++){
     double *Y = new double[this->K[i_sub].n_row_cmprs * this->R[i_sub].n_col];
     for (int i = 0 ; i < this->K[i_sub].n_row_cmprs; i++){
        Y[i] = 0;
@@ -165,14 +166,18 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
     double normK = 0;
     for (int i = 0 ; i < this->K[i_sub].nnz; i++){
-       normK += this->K[i_sub].val[i];
+       normK += this->K[i_sub].val[i] * this->K[i_sub].val[i];
     }
-    normK /= this->K[0].nnz;
+//    normK /= this->K[0].nnz;
+    double normR = 0;
+    for (int i = 0 ; i < this->R[i_sub].dense.size(); i++){
+       normR += this->R[i_sub].dense[i] * this->R[i_sub].dense[i];
+    }
 
     double normKR = 0;
     for (int i = 0 ; i < this->K[i_sub].n_row_cmprs; i++){
         for (int j = 0; j < this->R[i_sub].n_col; j++){
-            if (i_sub == 0){
+            if (i_sub == -1){
                 if (j==0){
                     printf("%d: ",i);
                 }
@@ -181,14 +186,14 @@ bool reduceZeroRows, transpose, printCooOrDense;
             normKR += Y[i +  j * this->K[i_sub].n_row_cmprs] *
                         Y[i +  j * this->K[i_sub].n_row_cmprs];
         }
-        if (i_sub == 0){
+        if (i_sub == -1){
             printf("\n");
         }
     }
 
-    printf("||  K  ||            = %.16e \t", normK);
-    printf("||K * R||            = %.16e \t", sqrt(normKR));
-    printf("||K * R|| / || K ||  = %.16e \n", sqrt(normKR) / normK);
+    printf("||K||                 = %.16e ", sqrt(normK));
+    printf("||K||                 = %.16e ", sqrt(normR));
+    printf("||KR|| /(||K|| ||R||) = %.16e \n", sqrt(normKR) / (sqrt(normK*normR)));
     }
 
 
@@ -202,7 +207,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
 #endif
 
 
-    for (int i = 0; i < options.n_subdomOnCluster ; i++ ){
+    for (int i = 0; i < nS ; i++ ){
         printCooOrDense = true;
         this->K[i].printToFile("K",i,printCooOrDense);
         printCooOrDense = true;
@@ -220,7 +225,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //
 //
 //
-//          //    for (int i = 0 ; i < options.n_subdomOnCluster ; i++){
+//          //    for (int i = 0 ; i < nS ; i++){
 //          //        this->K_regularized[i].FinalizeSolve(i);
 //          //    }
 //
