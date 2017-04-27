@@ -39,4 +39,5 @@ build*/*
 advices.txt
 *.txt.user
 
-
+trash
+trash/*
