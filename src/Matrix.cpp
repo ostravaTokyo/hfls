@@ -18,6 +18,28 @@ Matrix::Matrix(){
     this->DNS_transposed = false;
 }
 
+
+
+void Matrix::zero_dense(int _n_row,int _n_col){
+    this->nnz  = _n_row * _n_col;
+    this->numel = _n_row * _n_col;
+    this->n_row = _n_row;
+    this->n_col = _n_col;
+    this->n_row_cmprs = _n_row;
+    this->DNS_reducedZeroRows = false;
+    this->DNS_transposed = false;
+    this->format = 2;
+    this->l2g_i_coo.resize(this->n_row_cmprs);
+    for (int i = 0; i < this->n_row_cmprs; i++){
+        this->l2g_i_coo[i] = i;
+    }
+    this->dense.resize(this->numel);
+    for (int i = 0 ; i < this->numel; i++){
+        this->dense[i] = 0;
+    }
+}
+
+
 void Matrix::readCooFromFile(string path2matrix, int symmetric, int _format,
                                                                      int offset)
 {
@@ -477,7 +499,6 @@ Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
 }
 
 void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
-//
     for (int i = 0; i < this->n_row_cmprs; i++) {
         for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
             if (this->symmetric > 0 ){
@@ -498,14 +519,14 @@ void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
                     }
                     else {
                         Ax[this->j_col[j] + k * n_row_cmprs] +=
-                                      this->val[j] *
-                                x[i + k * n_row_cmprs];
+                                      this->val[j] * x[i + k * n_row_cmprs];
                    }
                 }
             }
         }
     }
 }
+
 void Matrix::CsrElementByElement(){
 #ifdef buildCSR_elemByElem
 
@@ -532,12 +553,15 @@ void Matrix::CsrElementByElement(){
       nnz_K+=forCSRformat[i].size();
     }
 
-}
 #endif
+}
 
 
 
-void Matrix::InitializeSolve(){
+void Matrix::InitializeSolve()
+{
+
+int c = 1;
 #ifdef USE_PARDISO
     mtype = -2;              /* Real symmetric matrix */
     nrhs = 1;               /* Number of right hand sides. */
@@ -610,6 +634,7 @@ void Matrix::InitializeSolve(){
     //	&(id->n), id->a, id->i_ptr, id->j_col, &(id->idum), &(id->nrhs),
     //	id->iparm, &(id->msglvl),  &(id->ddum),  &(id->ddum), &(id->error));
 #endif
+
 }
 
 
@@ -723,3 +748,4 @@ void Matrix::testPardiso(){
 /*------------------------------ TEST ------------------------------*/
 #endif
 }
+

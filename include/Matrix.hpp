@@ -31,7 +31,8 @@ bool myfunction (int i,int j);
 class Matrix{
 public:
     Matrix();
-    Matrix(string path2matrix);
+    Matrix(string );
+    void zero_dense(int,int);
     vector < double >  val;
     vector < int >     i_ptr; // new MKL_INT[crs->m+1];
     vector < int >     j_col; // new MKL_INT[crs->nnz];
@@ -43,6 +44,7 @@ public:
     int n_row;
     int n_row_cmprs;
     int n_col;
+    int numel;
     bool DNS_reducedZeroRows;
     bool DNS_transposed;
 //    bool printCooOrDense;
