@@ -54,9 +54,6 @@ public:
     //csr
     //dns
     vector < double > dense; // ()
-    bool isCOO;
-    bool isCSR;
-    bool isDNS;
     void mv_csr(const double[], double [] , bool, int);
     void CsrElementByElement();
     void COO2CSR();

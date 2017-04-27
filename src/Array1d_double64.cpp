@@ -15,12 +15,12 @@ void Array1d_double64::readCooFromFile( std::string path2matrix,int n_val)
     std::cout << path2matrix.c_str() <<"\n";
     std::cout << "n_val = " << n_val<< "\n";
 
-    this->val.resize(n_val);
+    val.resize(n_val);
     double double1;
     for (int i = 0; i < n_val; i++) {
         input >> double1;
-        this->val[i] = double1;
+        val[i] = double1;
     }
-    std::cout << "f.size() = " << this->val.size() << "\n";
+    std::cout << "f.size() = " << val.size() << "\n";
 
 }

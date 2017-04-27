@@ -7,40 +7,38 @@ bool cmp_int_int_I(int_int_dbl a,int_int_dbl b) { return (a.I < b.I); }
 bool cmp_int_int_J(int_int_dbl a,int_int_dbl b) { return (a.J < b.J); }
 
 Matrix::Matrix(){
-    this->nnz = 0;
-    this->n_row = 0;
-    this->n_col = 0;
-    this->n_row_cmprs= 0;
-    this->isCOO = false;
-    this->isCSR = false;
-    this->isDNS = false;
-    this->DNS_reducedZeroRows = false;
-    this->DNS_transposed = false;
+    nnz = 0;
+    n_row = 0;
+    n_col = 0;
+    n_row_cmprs= 0;
+    DNS_reducedZeroRows = false;
+    DNS_transposed = false;
 }
 
 
 
 void Matrix::zero_dense(int _n_row,int _n_col){
-    this->nnz  = _n_row * _n_col;
-    this->numel = _n_row * _n_col;
-    this->n_row = _n_row;
-    this->n_col = _n_col;
-    this->n_row_cmprs = _n_row;
-    this->DNS_reducedZeroRows = false;
-    this->DNS_transposed = false;
-    this->format = 2;
-    this->l2g_i_coo.resize(this->n_row_cmprs);
-    for (int i = 0; i < this->n_row_cmprs; i++){
-        this->l2g_i_coo[i] = i;
+    nnz  = _n_row * _n_col;
+    numel = _n_row * _n_col;
+    n_row = _n_row;
+    n_col = _n_col;
+    n_row_cmprs = _n_row;
+    DNS_reducedZeroRows = false;
+    DNS_transposed = false;
+    symmetric = 0;
+    format = 2;
+    l2g_i_coo.resize(n_row_cmprs);
+    for (int i = 0; i < n_row_cmprs; i++){
+        l2g_i_coo[i] = i;
     }
-    this->dense.resize(this->numel);
-    for (int i = 0 ; i < this->numel; i++){
-        this->dense[i] = 0;
+    dense.resize(numel);
+    for (int i = 0 ; i < numel; i++){
+        dense[i] = 0;
     }
 }
 
 
-void Matrix::readCooFromFile(string path2matrix, int symmetric, int _format,
+void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
                                                                      int offset)
 {
 /* MATRIX MARKET FORMAT                                                       */
@@ -57,37 +55,37 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric, int _format,
 
     ifstream input(path2matrix.c_str());
     cout << path2matrix.c_str() <<"\n";
-    input >> this->n_row;
-    input >> this->n_col;
-    input >> this->nnz;
-    cout<< "n_row "<< this->n_row << endl;
-    cout<< "n_col "<< this->n_col << endl;
-    cout<< "nnz   "<< this->nnz   << endl;
-    this->symmetric = symmetric;
+    input >> n_row;
+    input >> n_col;
+    input >> nnz;
+    cout<< "n_row "<< n_row << endl;
+    cout<< "n_col "<< n_col << endl;
+    cout<< "nnz   "<< nnz   << endl;
+    symmetric = _symmetric;
 
     if (_format == 2)    /*DNS*/
     {
-        this->dense.resize(this->n_row * this->n_col);
-        this->n_row_cmprs = this->n_row;
-        this->DNS_reducedZeroRows = false;
-        this->DNS_transposed = false;
-        this->l2g_i_coo.resize(this->n_row_cmprs);
-        for (int i = 0 ; i <this->n_row_cmprs; i++){
-            this->l2g_i_coo[i] = i;
+        dense.resize(n_row * n_col);
+        n_row_cmprs = n_row;
+        DNS_reducedZeroRows = false;
+        DNS_transposed = false;
+        l2g_i_coo.resize(n_row_cmprs);
+        for (int i = 0 ; i <n_row_cmprs; i++){
+            l2g_i_coo[i] = i;
         }
     }
     else                /*COO or CSR*/
     {
-        this->i_coo_cmpr.resize(this->nnz);
-        this->j_col.resize(this->nnz);
-        this->val.resize(this->nnz);
+        i_coo_cmpr.resize(nnz);
+        j_col.resize(nnz);
+        val.resize(nnz);
     }
 /* Reading I, J, V ----------------------------------------------------------*/
     int I,J;
     int cnt = 0;
     double V;
-    double _nnz = this->nnz; /* new nnz */
-    for (int i = 0; i < this->nnz; i++) {
+    double _nnz = nnz; /* new nnz */
+    for (int i = 0; i < nnz; i++) {
         input >> I;
         input >> J;
         input >> V;
@@ -97,7 +95,7 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric, int _format,
 
         if (_format == 2) /* dense */
         {
-            this->dense[I + J * this->n_row] = V;
+            dense[I + J * n_row] = V;
         }
         else             /* COO or CSR */
         {
@@ -109,49 +107,49 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric, int _format,
             }
             else
             {
-                this->i_coo_cmpr[cnt] = I;
-                this->j_col[cnt] = J;
-                this->val[cnt] = V;
+                i_coo_cmpr[cnt] = I;
+                j_col[cnt] = J;
+                val[cnt] = V;
                 cnt++;
             }
         }
     }
 /* Update of 'nnz' if lower/upper triang. stored only ------------------------*/
 /* and update size of vectors (i_coo_cmpr, j_col, ....)-----------------------*/
-    this->nnz = _nnz;
+    nnz = _nnz;
 /*                                                                            */
-    this->format = _format;
+    format = _format;
     if (_format != 2){
-        if (this->i_coo_cmpr.size() > this->nnz){
-            this->i_coo_cmpr.resize(this->nnz);
-            this->i_coo_cmpr.shrink_to_fit();
+        if (i_coo_cmpr.size() > nnz){
+            i_coo_cmpr.resize(nnz);
+            i_coo_cmpr.shrink_to_fit();
 
-            this->j_col.resize(this->nnz);
-            this->j_col.shrink_to_fit();
+            j_col.resize(nnz);
+            j_col.shrink_to_fit();
 
-            this->val.resize(this->nnz);
-            this->val.shrink_to_fit();
+            val.resize(nnz);
+            val.shrink_to_fit();
         }
 /* Sorting [I, J, V]  --------------------------------------------------------*/
         if (_format != 2){
             vector < int_int_dbl > tmpVec;
-            tmpVec.resize(this->i_coo_cmpr.size());
-            for (int i = 0; i < this->i_coo_cmpr.size();i++){
-                tmpVec[i].I = this->i_coo_cmpr[i];
-                tmpVec[i].J = this->j_col[i];
-                tmpVec[i].V = this->val[i];
+            tmpVec.resize(i_coo_cmpr.size());
+            for (int i = 0; i < i_coo_cmpr.size();i++){
+                tmpVec[i].I = i_coo_cmpr[i];
+                tmpVec[i].J = j_col[i];
+                tmpVec[i].V = val[i];
             }
 /* sort according to index I -------------------------------------------------*/
             sort(tmpVec.begin(),tmpVec.end(),cmp_int_int_I);
 /* partial sorting according to index J (per sets with same I)----------------*/
             int startInd = 0, endInd = 1;
             int tmpVecIprev = tmpVec[0].I;
-            for (int i = 1 ; i < this->i_coo_cmpr.size(); i ++){
+            for (int i = 1 ; i < i_coo_cmpr.size(); i ++){
                 if (tmpVec[i].I == tmpVecIprev){
                     endInd++;
                 }
                 if (tmpVec[i].I != tmpVecIprev || (tmpVec[i].I == tmpVecIprev &&
-                         i == this->i_coo_cmpr.size() - 1))
+                         i == i_coo_cmpr.size() - 1))
                 {
                     sort(tmpVec.begin() + startInd,
                                       tmpVec.begin() + (endInd  ),cmp_int_int_J);
@@ -165,102 +163,102 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric, int _format,
             int prevInd_J = -1;
             int counter = 0;
             int cnt_j = -1;
-            l2g_i_coo.resize(this->i_coo_cmpr.size());
-            for (int i = 0 ; i < this->i_coo_cmpr.size(); i ++){
+            l2g_i_coo.resize(i_coo_cmpr.size());
+            for (int i = 0 ; i < i_coo_cmpr.size(); i ++){
                 if (prevInd_I != tmpVec[i].I){
-                    this->l2g_i_coo[counter] = tmpVec[i].I;
+                    l2g_i_coo[counter] = tmpVec[i].I;
                     counter++;
                 }
                 if (prevInd_I == tmpVec[i].I && prevInd_J == tmpVec[i].J){
-                    this->val[cnt_j] += tmpVec[i].V;
-                    this->nnz--;
+                    val[cnt_j] += tmpVec[i].V;
+                    nnz--;
                 }
                 else {
                     cnt_j++;
-                    this->i_coo_cmpr[cnt_j] = counter - 1;
-                    this->j_col[cnt_j] = tmpVec[i].J;
-                    this->val[cnt_j] = tmpVec[i].V;
+                    i_coo_cmpr[cnt_j] = counter - 1;
+                    j_col[cnt_j] = tmpVec[i].J;
+                    val[cnt_j] = tmpVec[i].V;
                 }
                 prevInd_I = tmpVec[i].I;
                 prevInd_J = tmpVec[i].J;
             }
-            this->l2g_i_coo.resize(counter );
-            this->l2g_i_coo.shrink_to_fit();
-            this->n_row_cmprs = counter;
+            l2g_i_coo.resize(counter );
+            l2g_i_coo.shrink_to_fit();
+            n_row_cmprs = counter;
             tmpVec.clear();
             tmpVec.shrink_to_fit();
 
         }
         if (_format == 1){
-            this->COO2CSR();
+            COO2CSR();
         }
     }
 }
 
 void Matrix::COO2CSR(){
-    if (this->format == 0){
+    if (format == 0){
         return;
     }
     int pi = -1;
     int cnt = 0;
-    this->i_ptr.resize(this->n_row_cmprs + 1);
-    for (int i = 0; i < this->nnz; i++){
-        if (this->i_coo_cmpr[i] != pi){
-            this->i_ptr[cnt] = i;
+    i_ptr.resize(n_row_cmprs + 1);
+    for (int i = 0; i < nnz; i++){
+        if (i_coo_cmpr[i] != pi){
+            i_ptr[cnt] = i;
             cnt++;
         }
-        pi = this->i_coo_cmpr[i];
+        pi = i_coo_cmpr[i];
     }
 
-    this->i_ptr[this->n_row_cmprs] = this->nnz;
-    this->i_coo_cmpr.clear();
-    this->i_coo_cmpr.shrink_to_fit();
-    this->format = 1;
+    i_ptr[n_row_cmprs] = nnz;
+    i_coo_cmpr.clear();
+    i_coo_cmpr.shrink_to_fit();
+    format = 1;
 #if 0
 /* test - print 'i_ptr' to cmd                                                */
-    for (int i = 0 ; i < this->n_row_cmprs + 1; i++){
+    for (int i = 0 ; i < n_row_cmprs + 1; i++){
         cout << " i_ptr["<< i<<"]="
-             <<  this->i_ptr[i] << ":  "
-             << this->n_row_cmprs + 1 <<"\n";
+             <<  i_ptr[i] << ":  "
+             << n_row_cmprs + 1 <<"\n";
     }
 #endif
 }
 void Matrix::CSR2COO(){
-    if (this->format == 0){
+    if (format == 0){
         return;
     }
 /* matrix does not contain zero rows                                          */
-    this->i_coo_cmpr.resize(this->nnz);
+    i_coo_cmpr.resize(nnz);
 //
-    for (int i = 0; i < this->n_row_cmprs; i++) {
-        for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
-            this->i_coo_cmpr[j] = i;
+    for (int i = 0; i < n_row_cmprs; i++) {
+        for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
+            i_coo_cmpr[j] = i;
         }
     }
-    this->i_ptr.clear();
-    this->i_ptr.shrink_to_fit();
-    this->format = 0;
+    i_ptr.clear();
+    i_ptr.shrink_to_fit();
+    format = 0;
 }
 
 
 
 void Matrix::dummyFunction(int _n_row, int I, int J, double V)
 {
-    if (!this->DNS_reducedZeroRows){
-        I = this->l2g_i_coo[I];
+    if (!DNS_reducedZeroRows){
+        I = l2g_i_coo[I];
     }
-    if (!this->symmetric){
-        if (this->DNS_transposed){
-            this->dense[I * this->n_col + J] = V;
+    if (!symmetric){
+        if (DNS_transposed){
+            dense[I * n_col + J] = V;
         }
         else{
-            this->dense[ I + J * _n_row] = V;
+            dense[ I + J * _n_row] = V;
         }
     }
     else{
-        this->dense[ I + J * _n_row] = V;
+        dense[ I + J * _n_row] = V;
         if (I != J){
-            this->dense[ J + I * _n_row] = V;
+            dense[ J + I * _n_row] = V;
         }
     }
 }
@@ -269,43 +267,43 @@ void Matrix::dummyFunction(int _n_row, int I, int J, double V)
 
 void Matrix::CSRorCOO2DNS(bool _reduceZeroRows, bool _transpose){
 /*                                                                            */
-    if (this->format == 2){
+    if (format == 2){
         /* matrix is in required format, nothing to do                        */
         return;
     }
 /*----------------------------------------------------------------------------*/
-    int _format = this->format;
+    int _format = format;
     int I, J;
     double V;
-    this->DNS_reducedZeroRows = _reduceZeroRows;
-    this->DNS_transposed = _transpose;
+    DNS_reducedZeroRows = _reduceZeroRows;
+    DNS_transposed = _transpose;
     int _n_row;
-    if (this->DNS_reducedZeroRows ){
-        _n_row = this->n_row_cmprs;
+    if (DNS_reducedZeroRows ){
+        _n_row = n_row_cmprs;
     }
     else{
-        _n_row = this->n_row;
+        _n_row = n_row;
     }
 
-    this->dense.resize(n_row * this->n_col);
-    for (int i = 0; i < _n_row * this->n_col;i++){
-        this->dense[i] = 0;
+    dense.resize(n_row * n_col);
+    for (int i = 0; i < _n_row * n_col;i++){
+        dense[i] = 0;
     }
 
-    if (this->format == 0){
-        for (int i = 0; i < this->nnz; i++) {
-            I = this->i_coo_cmpr[i];
-            J = this->j_col[i];
-            V = this->val[i];
+    if (format == 0){
+        for (int i = 0; i < nnz; i++) {
+            I = i_coo_cmpr[i];
+            J = j_col[i];
+            V = val[i];
             dummyFunction(_n_row,I,J,V);
         }
     }
-    else if (this->format == 1){
-        for (int i = 0; i < this->n_row_cmprs; i++) {
-            for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
+    else if (format == 1){
+        for (int i = 0; i < n_row_cmprs; i++) {
+            for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
                 I = i;
-                J = this->j_col[j];
-                V = this->val[j];
+                J = j_col[j];
+                V = val[j];
                 dummyFunction(_n_row,I,J,V);
             }
         }
@@ -316,82 +314,82 @@ void Matrix::CSRorCOO2DNS(bool _reduceZeroRows, bool _transpose){
     }
 
     if(_format == 0){
-        this->i_coo_cmpr.clear();
-        this->i_coo_cmpr.shrink_to_fit();
+        i_coo_cmpr.clear();
+        i_coo_cmpr.shrink_to_fit();
     }
     else if (_format == 1){
-        this->i_ptr.clear();
-        this->i_ptr.shrink_to_fit();
+        i_ptr.clear();
+        i_ptr.shrink_to_fit();
     }
 
-    this->j_col.clear();
-    this->j_col.shrink_to_fit();
+    j_col.clear();
+    j_col.shrink_to_fit();
 
-    this->val.clear();
-    this->val.shrink_to_fit();
+    val.clear();
+    val.shrink_to_fit();
 
-    this->format = 2;
+    format = 2;
 }
 
 void Matrix::DNS2CSR(){
-    if (this->format == 1){
+    if (format == 1){
 /* matrix is in required format, nothing to do                                */
         return;
     }
-    this->DNS2COO();
-    this->COO2CSR();
+    DNS2COO();
+    COO2CSR();
 }
 
 void Matrix::DNS2COO(){
-    if (this->format == 0){
+    if (format == 0){
         return;
     }
     int _n_row;
-    if (this->DNS_reducedZeroRows){
-        _n_row = this->n_row_cmprs;
+    if (DNS_reducedZeroRows){
+        _n_row = n_row_cmprs;
     }
     else{
-        _n_row = this->n_row;
+        _n_row = n_row;
     }
-    this->nnz = 0;
-    for (int i = 0; i < _n_row * this->n_col;i++) {
-       if (this->dense[i] != 0){
-           this->nnz++;
+    nnz = 0;
+    for (int i = 0; i < _n_row * n_col;i++) {
+       if (dense[i] != 0){
+           nnz++;
        }
     }
-    this->i_coo_cmpr.resize(this->nnz);
-    this->j_col.resize(this->nnz);
-    this->val.resize(this->nnz);
+    i_coo_cmpr.resize(nnz);
+    j_col.resize(nnz);
+    val.resize(nnz);
     double _val;
     int cnt = 0;
 //    cout << "_n_row " << _n_row << "\n";
     for (int i = 0; i < _n_row; i++) {
-        for (int j = 0; j < this->n_col; j++) {
-            if (this->DNS_transposed){
-                _val = this->dense[i * this->n_col + j];
+        for (int j = 0; j < n_col; j++) {
+            if (DNS_transposed){
+                _val = dense[i * n_col + j];
             }
             else{
-                _val = this->dense[i + j * _n_row];
+                _val = dense[i + j * _n_row];
             }
             if (_val != 0){
-                this->i_coo_cmpr[cnt] = i;
-                this->j_col[cnt] = j;
-                this->val[cnt] = _val;
+                i_coo_cmpr[cnt] = i;
+                j_col[cnt] = j;
+                val[cnt] = _val;
                 cnt++;
             }
         }
     }
-    this->dense.clear();
-    this->dense.shrink_to_fit();
-    this->format = 0;
-    this->n_row_cmprs = this->nnz;
+    dense.clear();
+    dense.shrink_to_fit();
+    format = 0;
+    n_row_cmprs = nnz;
 }
 
 
 void Matrix::printToFile(string nameOfMat, int indOfMat,
                                                         bool _printCooOrDense)
 {
-    const int _format = this->format;
+    const int _format = format;
     string path2matrix = "../data/dump_" + nameOfMat + "_" +
                                                      to_string(indOfMat)+".txt";
     FILE *fp = NULL;
@@ -402,26 +400,26 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
 
     double V;
     if (_printCooOrDense){
-        if (this->format == 2){
-            this->DNS2COO();
+        if (format == 2){
+            DNS2COO();
         }
         int I, J,Itmp;
-        fprintf(fp, "%d\t%d\t%d\n", this->n_row, this->n_col, this->nnz);
-        if (this->format == 0){
-            for (int i = 0; i < this->nnz; i++) {
-                I = this->l2g_i_coo[this->i_coo_cmpr[i]];
-                J = this->j_col[i];
-                V = this->val[i];
+        fprintf(fp, "%d\t%d\t%d\n", n_row, n_col, nnz);
+        if (format == 0){
+            for (int i = 0; i < nnz; i++) {
+                I = l2g_i_coo[i_coo_cmpr[i]];
+                J = j_col[i];
+                V = val[i];
                 fprintf(fp, "%d\t%d\t%.16e\n", I,J,V);
             }
         }
-        else if (this->format == 1){
-            for (int i = 0; i < this->n_row_cmprs; i++) {
-                for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
-                    I = this->l2g_i_coo[i];
-                    J = this->j_col[j];
-                    V = this->val[j];
-                    if (this->DNS_transposed){
+        else if (format == 1){
+            for (int i = 0; i < n_row_cmprs; i++) {
+                for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
+                    I = l2g_i_coo[i];
+                    J = j_col[j];
+                    V = val[j];
+                    if (DNS_transposed){
                         Itmp = I;
                         J = I;
                         I = Itmp;
@@ -433,47 +431,47 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
         else {
             cerr << "Unexpected format of matrix to be printed !!!" << "\n";
         }
-        if (this->format == 0 && _format == 1){
-            this->COO2CSR();
+        if (format == 0 && _format == 1){
+            COO2CSR();
             cout << " AAAAAAAAAAAAAAA \n";
         }
-        if (this->format == 1 && _format == 0){
-            this->CSR2COO();
+        if (format == 1 && _format == 0){
+            CSR2COO();
             cout << " BBBBBBBBBBBBBBB \n";
         }
         if (_format == 2){
-            this->CSRorCOO2DNS(this->DNS_reducedZeroRows,this->DNS_transposed);
+            CSRorCOO2DNS(DNS_reducedZeroRows,DNS_transposed);
         }
-//        cout << " this->format=" << this->format << "_format =" << _format << "\n";
+//        cout << " format=" << format << "_format =" << _format << "\n";
     }
     else{
         cout << " not implemented yet " << endl;
-//        if (this->format < 2) {
-//            this->CSRorCOO2DNS(true,true);
+//        if (format < 2) {
+//            CSRorCOO2DNS(true,true);
 //        }
-//        cout << "=====this->format======" << this->format << "\n";
+//        cout << "=====format======" << format << "\n";
 //
 //        int _n_row, _ni, _nj, _nm;
-//        if (this->DNS_reducedZeroRows) {
-//            _n_row = this->n_row_cmprs;
+//        if (DNS_reducedZeroRows) {
+//            _n_row = n_row_cmprs;
 //        }
 //        else{
-//            _n_row = this->n_row;
+//            _n_row = n_row;
 //        }
-//        if (this->DNS_transposed){
-//            _ni = this->n_col;
+//        if (DNS_transposed){
+//            _ni = n_col;
 //            _nj = _n_row;
-//            _nm = this->n_col;
+//            _nm = n_col;
 //        }
 //        else{
 //            _ni = _n_row;
-//            _nj = this->n_col;
+//            _nj = n_col;
 //            _nm = _n_row;
 //        }
 //
 //        for (int i = 0; i < _ni; i++) {
 //            for (int j = 0; j < _nj; j++){
-//                V = this->dense[i + j * _nm];
+//                V = dense[i + j * _nm];
 //                fprintf(fp, "%.16f\t", V);
 //            }
 //            fprintf(fp, "\n");
@@ -481,10 +479,10 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
 //
 //        if (_format != 2){
 //            if (_format == 0) {
-//                this->DNS2COO();
+//                DNS2COO();
 //            }
 //            else if (_format == 1){
-//                this->DNS2CSR();
+//                DNS2CSR();
 //            }
 //        }
     }
@@ -499,15 +497,15 @@ Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
 }
 
 void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
-    for (int i = 0; i < this->n_row_cmprs; i++) {
-        for (int j = this->i_ptr[i]; j < this->i_ptr[i + 1]; j++) {
-            if (this->symmetric > 0 ){
+    for (int i = 0; i < n_row_cmprs; i++) {
+        for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
+            if (symmetric > 0 ){
                 for (int k = 0; k < n_rhs; k++){
                     Ax[i + k * n_row_cmprs] +=
-                            this->val[j] * x[this->j_col[j] + k * n_row_cmprs];
-                    if (this->j_col[j] != i){
-                        Ax[this->j_col[j] + k * n_row_cmprs] +=
-                                      this->val[j] * x[i + k * n_row_cmprs];
+                            val[j] * x[j_col[j] + k * n_row_cmprs];
+                    if (j_col[j] != i){
+                        Ax[j_col[j] + k * n_row_cmprs] +=
+                                      val[j] * x[i + k * n_row_cmprs];
                     }
                 }
             }
@@ -515,11 +513,11 @@ void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
                 for (int k = 0; k < n_rhs; k++){
                     if (NorT){
                         Ax[i + k * n_row_cmprs] +=
-                                this->val[j] * x[this->j_col[j] + k * n_row_cmprs];
+                                val[j] * x[j_col[j] + k * n_row_cmprs];
                     }
                     else {
-                        Ax[this->j_col[j] + k * n_row_cmprs] +=
-                                      this->val[j] * x[i + k * n_row_cmprs];
+                        Ax[j_col[j] + k * n_row_cmprs] +=
+                                      val[j] * x[i + k * n_row_cmprs];
                    }
                 }
             }
@@ -612,11 +610,11 @@ int c = 1;
     /* .. Reordering and Symbolic Factorization. This step also allocates */
     /* all memory that is necessary for the factorization. */
     /* -------------------------------------------------------------------- */
-    n = this->n_row;
-    MKL_INT n1 = this->n_row;
+    n = n_row;
+    MKL_INT n1 = n_row;
     phase = 11;
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
-             &n1, &this->val[0], &this->i_ptr[0], &this->j_col[0],
+             &n1, &val[0], &i_ptr[0], &j_col[0],
             &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
     if ( error != 0 )
     {
@@ -627,7 +625,7 @@ int c = 1;
     phase = 22;
 
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
-             &n1, &this->val[0], &this->i_ptr[0], &this->j_col[0],
+             &n1, &val[0], &i_ptr[0], &j_col[0],
             &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
 
     //	PARDISO (id->pt, &(id->maxfct), &(id->mnum), &(id->mtype), &phase,
@@ -653,7 +651,7 @@ void Matrix::solve(Matrix& B, Matrix& X){
     X.nnz = B.nnz;
 
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
-             &n, &this->val[0], &this->i_ptr[0], &this->j_col[0], &idum, &nrhs, iparm, &msglvl,
+             &n, &val[0], &i_ptr[0], &j_col[0], &idum, &nrhs, iparm, &msglvl,
             &B.dense[0], &X.dense[0], &error);
 
     if ( error != 0 )
@@ -673,7 +671,7 @@ void Matrix::FinalizeSolve(int _i)
     MKL_INT idum;         /* Integer dummy. */
     phase = -1;           /* Release internal memory. */
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
-             &n, &ddum, &this->i_ptr[0], &this->j_col[0], &idum, &nrhs,
+             &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
             iparm, &msglvl, &ddum, &ddum, &error);
 
     if (_i == 0 ) {

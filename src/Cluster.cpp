@@ -30,7 +30,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
 #endif
     const int nS = options.n_subdomOnCluster;
     K.resize(nS);
-//    RegMat.resize(nS);
     R.resize(nS);
     rhs.resize(nS);
     Bc.resize(nS);
@@ -50,32 +49,32 @@ bool reduceZeroRows, transpose, printCooOrDense;
         /* K - stiffness matrix */
         string path2matrix = options.path2data+"/K"+to_string(i)+".txt";
         symmetric = 2; format = 1; offset = 1;
-        this->K[i].readCooFromFile(path2matrix,symmetric,format,offset);
+        K[i].readCooFromFile(path2matrix,symmetric,format,offset);
 
         /* R - kernel matrix */
         path2matrix = options.path2data+"/R1"+to_string(i)+".txt";
         symmetric = 0; format = 2; offset = 1;
-        this->R[i].readCooFromFile(path2matrix,symmetric,format,offset);
+        R[i].readCooFromFile(path2matrix,symmetric,format,offset);
 
         /* rhs - right-hand-side vector */
         path2matrix = options.path2data+"/f"+to_string(i)+".txt";
-        this->rhs[i].readCooFromFile(path2matrix,this->K[i].n_row);
+        rhs[i].readCooFromFile(path2matrix,K[i].n_row);
 //
         /* Bf - constraints matrix */
         path2matrix = options.path2data+"/B1"+to_string(i)+".txt";
         symmetric = 0; format = 1; offset = 1;
-        this->Bf[i].readCooFromFile(path2matrix,symmetric,format,offset);
+        Bf[i].readCooFromFile(path2matrix,symmetric,format,offset);
 //
         /* Bc - constraints matrix */
         path2matrix = options.path2data+"/B0"+to_string(i)+".txt";
         symmetric = 0; format = 1; offset = 1;
-        this->Bc[i].readCooFromFile(path2matrix,symmetric,format,offset);
+        Bc[i].readCooFromFile(path2matrix,symmetric,format,offset);
 
-//        this->Bct[i].readCooFromFile(path2matrix,symmetric,format,offset);
-        this->Bct[i] = this->Bc[i];
+//        Bct[i].readCooFromFile(path2matrix,symmetric,format,offset);
+        Bct[i] = Bc[i];
         reduceZeroRows = true;
         transpose = true;
-        this->Bct[i].CSRorCOO2DNS(reduceZeroRows,transpose);
+        Bct[i].CSRorCOO2DNS(reduceZeroRows,transpose);
 
   }
 
@@ -86,35 +85,35 @@ bool reduceZeroRows, transpose, printCooOrDense;
     int i_sub = 3;
 
     for (int i_sub = 0; i_sub < nS; i_sub++){
-    double *Y = new double[this->K[i_sub].n_row_cmprs * this->R[i_sub].n_col];
-    for (int i = 0 ; i < this->K[i_sub].n_row_cmprs; i++){
+    double *Y = new double[K[i_sub].n_row_cmprs * R[i_sub].n_col];
+    for (int i = 0 ; i < K[i_sub].n_row_cmprs; i++){
        Y[i] = 0;
     }
-    this->K[i_sub].mv_csr(&(this->R[i_sub].dense[0]),Y,true,6);
+    K[i_sub].mv_csr(&(R[i_sub].dense[0]),Y,true,6);
 
 
 
     double normK = 0;
-    for (int i = 0 ; i < this->K[i_sub].nnz; i++){
-       normK += this->K[i_sub].val[i] * this->K[i_sub].val[i];
+    for (int i = 0 ; i < K[i_sub].nnz; i++){
+       normK += K[i_sub].val[i] * K[i_sub].val[i];
     }
-//    normK /= this->K[0].nnz;
+//    normK /= K[0].nnz;
     double normR = 0;
-    for (int i = 0 ; i < this->R[i_sub].dense.size(); i++){
-       normR += this->R[i_sub].dense[i] * this->R[i_sub].dense[i];
+    for (int i = 0 ; i < R[i_sub].dense.size(); i++){
+       normR += R[i_sub].dense[i] * R[i_sub].dense[i];
     }
 
     double normKR = 0;
-    for (int i = 0 ; i < this->K[i_sub].n_row_cmprs; i++){
-        for (int j = 0; j < this->R[i_sub].n_col; j++){
+    for (int i = 0 ; i < K[i_sub].n_row_cmprs; i++){
+        for (int j = 0; j < R[i_sub].n_col; j++){
             if (i_sub == -1){
                 if (j==0){
                     printf("%d: ",i);
                 }
-                printf(" %f\t", Y[i +  j * this->K[i_sub].n_row_cmprs]);
+                printf(" %f\t", Y[i +  j * K[i_sub].n_row_cmprs]);
             }
-            normKR += Y[i +  j * this->K[i_sub].n_row_cmprs] *
-                        Y[i +  j * this->K[i_sub].n_row_cmprs];
+            normKR += Y[i +  j * K[i_sub].n_row_cmprs] *
+                        Y[i +  j * K[i_sub].n_row_cmprs];
         }
         if (i_sub == -1){
             printf("\n");
@@ -129,9 +128,10 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
     i_sub = 0;
     Matrix Gc;
-    Gc.zero_dense(Bc[i_sub].n_row_cmprs , this->R[i_sub].n_col);
-//    int nel = Gc.numel;
-    this->Bc[i_sub].mv_csr(&(this->R[i_sub].dense[0]),&(Gc.dense)[0],true ,this->R[i_sub].n_col);
+    int n_rowGc = Bc[i_sub].n_row_cmprs;
+    int n_colGc = R[i_sub].n_col;
+    Gc.zero_dense(n_rowGc, n_colGc );
+    Bc[i_sub].mv_csr(&(R[i_sub].dense[0]),&(Gc.dense)[0],true ,R[i_sub].n_col);
 //
     printCooOrDense = true;
     Gc.printToFile("Gc",0,printCooOrDense);
@@ -142,9 +142,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
     for (int i = 0; i < nS ; i++ ){
         printCooOrDense = true;
-        this->K[i].printToFile("K",i,printCooOrDense);
+        K[i].printToFile("K",i,printCooOrDense);
         printCooOrDense = true;
-        this->R[i].printToFile("R",i,printCooOrDense);
+        R[i].printToFile("R",i,printCooOrDense);
         printCooOrDense = true;
         this->Bc[i].printToFile("Bc",i,printCooOrDense);
         printCooOrDense = true;
