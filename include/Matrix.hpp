@@ -38,6 +38,7 @@ public:
     vector < int >     j_col; // new MKL_INT[crs->nnz];
     vector < int >     i_coo_cmpr;
     vector < int >     l2g_i_coo;
+    vector < double >  dense;
     int format;               /* COO, CSR, DNS */
     int symmetric;            /* 0-no, 1-lower triang., 2-upper triang. */
     int nnz;
@@ -53,7 +54,6 @@ public:
 
     //csr
     //dns
-    vector < double > dense; // ()
     void mv_csr(const double[], double [] , bool, int);
     void CsrElementByElement();
     void COO2CSR();
