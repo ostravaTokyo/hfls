@@ -36,7 +36,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
     Bf.resize(nS);
     Bct.resize(nS);
 //    Fc_sub.resize(nS);
-//    Gc.resize(nS);
+    Gc.resize(nS);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /*                         READING DATA (TXT)                              */
@@ -73,12 +73,22 @@ bool reduceZeroRows, transpose, printCooOrDense;
         transpose = true;
         Bct[i].CSRorCOO2DNS(reduceZeroRows,transpose);
 
+
+
+
+        int n_rowGc = Bc[i].n_row_cmprs;
+        int n_colGc = R[i].n_col;
+        Gc[i].zero_dense(n_rowGc, n_colGc );
+
+        Bc[i].mv_csr(&(R[i].dense[0]),&(Gc[i].dense)[0],true ,R[i].n_col);
+//
+
   }
 
 // //      Matrix::testPardiso();
 
 
-#if 1
+#if 0
     int i_sub = 3;
 
     double *Y = new double[K[i_sub].n_row_cmprs * R[i_sub].n_col];
@@ -123,30 +133,13 @@ bool reduceZeroRows, transpose, printCooOrDense;
     delete [] Y;
 #endif
 
-
-    i_sub = 0;
-    Matrix Gc;
-    int n_rowGc = Bc[i_sub].n_row_cmprs;
-    int n_colGc = R[i_sub].n_col;
-    Gc.zero_dense(n_rowGc, n_colGc );
-
-    Bc[i_sub].mv_csr(&(R[i_sub].dense[0]),&(Gc.dense)[0],true ,R[i_sub].n_col);
-//
     printCooOrDense = true;
-
-    Gc.printToFile("Gc",0,printCooOrDense);
-
-
     for (int i = 0; i < nS ; i++ ){
-        printCooOrDense = true;
         K[i].printToFile("K",i,printCooOrDense);
-        printCooOrDense = true;
         R[i].printToFile("R",i,printCooOrDense);
-        printCooOrDense = true;
         Bc[i].printToFile("Bc",i,printCooOrDense);
-        printCooOrDense = true;
         Bct[i].printToFile("Bct",i,printCooOrDense);
-        printCooOrDense = true;
         Bf[i].printToFile("Bf",i,printCooOrDense);
+        Gc[i].printToFile("Gc",i,printCooOrDense);
      }
 }
