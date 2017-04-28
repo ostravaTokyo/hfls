@@ -88,8 +88,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
         }
         K[i_sub].mv_csr(&(R[i_sub].dense[0]),Y,true,6);
 
-
-
         double normK = 0;
         for (int i = 0 ; i < K[i_sub].nnz; i++){
            normK += K[i_sub].val[i] * K[i_sub].val[i];
@@ -135,8 +133,8 @@ bool reduceZeroRows, transpose, printCooOrDense;
     Bc[i_sub].mv_csr(&(R[i_sub].dense[0]),&(Gc.dense)[0],true ,R[i_sub].n_col);
 //
     printCooOrDense = true;
-    Gc.printToFile("Gc",0,printCooOrDense);
 
+    Gc.printToFile("Gc",0,printCooOrDense);
 
 
     for (int i = 0; i < nS ; i++ ){
