@@ -193,6 +193,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
             COO2CSR();
         }
     }
+    numel = n_row_cmprs * n_col;
 }
 
 void Matrix::COO2CSR(){
@@ -327,6 +328,7 @@ void Matrix::CSRorCOO2DNS(bool _reduceZeroRows, bool _transpose){
 
     val.clear();
     val.shrink_to_fit();
+    numel = n_row_cmprs * n_col;
 
     format = 2;
 }
@@ -502,10 +504,10 @@ void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
             if (symmetric > 0 ){
                 for (int k = 0; k < n_rhs; k++){
                     Ax[i + k * n_row_cmprs] +=
-                            val[j] * x[j_col[j] + k * n_row_cmprs];
+                            val[j] * x[j_col[j] + k * n_col];
                     if (j_col[j] != i){
                         Ax[j_col[j] + k * n_row_cmprs] +=
-                                      val[j] * x[i + k * n_row_cmprs];
+                                      val[j] * x[i + k * n_col];
                     }
                 }
             }
@@ -513,11 +515,11 @@ void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
                 for (int k = 0; k < n_rhs; k++){
                     if (NorT){
                         Ax[i + k * n_row_cmprs] +=
-                                val[j] * x[j_col[j] + k * n_row_cmprs];
+                                val[j] * x[j_col[j] + k * n_col];
                     }
                     else {
                         Ax[j_col[j] + k * n_row_cmprs] +=
-                                      val[j] * x[i + k * n_row_cmprs];
+                                      val[j] * x[i + k * n_col];
                    }
                 }
             }
