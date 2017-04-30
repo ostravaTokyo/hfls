@@ -1,5 +1,5 @@
-CXX	= icpc -std=c++11
-#CXX	= g++ -std=c++11
+#CXX	= icpc -std=c++11
+CXX	= g++ -std=c++11
 CCFLAGS   = -g0 -DUSE_PARDISO=1
 LD      = $(CXX)
 
