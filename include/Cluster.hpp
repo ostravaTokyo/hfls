@@ -16,16 +16,18 @@ public:
     Cluster(Options options);
     /* standard data */
     std::vector< Matrix> K;
+    std::vector< Matrix> K_reg;
+    std::vector< Matrix> Fc;
+    std::vector< Matrix> Lumped;
     std::vector< Array1d_double64 > rhs;
 
     /* FETI (first ...) */
     std::vector< Matrix> R;
     std::vector< Matrix> Bc;
-    std::vector< Matrix> Bct;
+    std::vector< Matrix> Bc_dense;
     std::vector< Matrix> Bf;
     /* FETI  (second ...)*/
     std::vector< Matrix> Gc;
-    std::vector< Matrix > Fc_sub;
 
 
 };
