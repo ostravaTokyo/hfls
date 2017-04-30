@@ -29,13 +29,16 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 #endif
     const int nS = options.n_subdomOnCluster;
+
     K.resize(nS);
+    K_reg.resize(nS);
+    Lumped.resize(nS);
     R.resize(nS);
     rhs.resize(nS);
     Bc.resize(nS);
     Bf.resize(nS);
-    Bct.resize(nS);
-//    Fc_sub.resize(nS);
+    Bc_dense.resize(nS);
+    Fc.resize(nS);
     Gc.resize(nS);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -68,78 +71,88 @@ bool reduceZeroRows, transpose, printCooOrDense;
         symmetric = 0; format = 1; offset = 1;
         Bc[i].readCooFromFile(path2matrix,symmetric,format,offset);
 
-        Bct[i] = Bc[i];
+//
+        /* Bc_dense - constraints matrix */
+        Bc_dense[i] = Bc[i];
         reduceZeroRows = true;
         transpose = true;
-        Bct[i].CSRorCOO2DNS(reduceZeroRows,transpose);
+        Bc_dense[i].CSRorCOO2DNS(reduceZeroRows,transpose);
 
 
-
-
-        int n_rowGc = Bc[i].n_row_cmprs;
-        int n_colGc = R[i].n_col;
-        Gc[i].zero_dense(n_rowGc, n_colGc );
-
-        Bc[i].mv_csr(&(R[i].dense[0]),&(Gc[i].dense)[0],true ,R[i].n_col);
+//
 //
 
   }
 
-// //      Matrix::testPardiso();
-
 
 #if 0
-    int i_sub = 3;
-
-    double *Y = new double[K[i_sub].n_row_cmprs * R[i_sub].n_col];
     for (int i_sub = 0; i_sub < nS; i_sub++){
-        for (int i = 0 ; i < K[i_sub].n_row_cmprs; i++){
-           Y[i] = 0;
-        }
-        K[i_sub].mv_csr(&(R[i_sub].dense[0]),Y,true,6);
+        Matrix Y;
+        Y.zero_dense(K[i_sub].n_row_cmprs , R[i_sub].n_col);
+        K[i_sub].mult(R[i_sub],Y,true);
 
-        double normK = 0;
-        for (int i = 0 ; i < K[i_sub].nnz; i++){
-           normK += K[i_sub].val[i] * K[i_sub].val[i];
-        }
-    //    normK /= K[0].nnz;
-        double normR = 0;
-        for (unsigned int i = 0 ; i < R[i_sub].dense.size(); i++){
-           normR += R[i_sub].dense[i] * R[i_sub].dense[i];
-        }
+        double normK = K[i_sub].norm2();
+        double normR = R[i_sub].norm2();
+        double normKR = Y.norm2();
 
-        double normKR = 0;
-        for (int i = 0 ; i < K[i_sub].n_row_cmprs; i++){
-            for (int j = 0; j < R[i_sub].n_col; j++){
-                if (i_sub == -1){
-                    if (j==0){
-                        printf("%d: ",i);
-                    }
-                    printf(" %f\t", Y[i +  j * K[i_sub].n_row_cmprs]);
-                }
-                normKR += Y[i +  j * K[i_sub].n_row_cmprs] *
-                            Y[i +  j * K[i_sub].n_row_cmprs];
-            }
-            if (i_sub == -1){
-                printf("\n");
-            }
-        }
-
-        printf("||K|| = %.6e, ", sqrt(normK));
-        printf("||R|| = %.6e, ", sqrt(normR));
-        printf("||KR|| = %.6e, ",sqrt(normKR) );
-        printf("||KR|| /(||K|| ||R||) = %.6e \n", sqrt(normKR) / (sqrt(normK*normR)));
+        printf("|K| = %.6e, ", normK);
+        printf("|R| = %.6e, ", normR);
+        printf("|KR|/(|K|*|R|) = %.6e \n", normKR / (normK*normR));
     }
-    delete [] Y;
 #endif
 
     printCooOrDense = true;
     for (int i = 0; i < nS ; i++ ){
+        K_reg[i] = K[i];
+        K_reg[i].factorization();
+
+
+        Matrix BcK_dense;
+        BcK_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
+        BcK_dense.setZero();
+
+
+        K[i].mult(Bc_dense[i],BcK_dense,true);
+        BcK_dense.printToFile("BcK_dense",i,printCooOrDense);
+        Lumped[i].zero_dense(Bc[i].n_row_cmprs,  Bc[i].n_row_cmprs);
+        Bc[i].mult(BcK_dense,Lumped[i],true);
+        Lumped[i].printToFile("Lumped",i,printCooOrDense);
+
+        Matrix BcKplus_dense;
+        BcKplus_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
+        BcKplus_dense.setZero();
+
+        K_reg[i].solve(Bc_dense[i],BcKplus_dense);
+        BcKplus_dense.printToFile("BcKplus",i,printCooOrDense);
+        Fc[i].zero_dense(Bc[i].n_row_cmprs,  Bc[i].n_row_cmprs);
+        Bc[i].mult(BcKplus_dense,Fc[i],true);
+        Fc[i].printToFile("Fc",i,printCooOrDense);
+
+        /* Gc - constraints matrix */
+        int n_rowGc = Bc[i].n_row_cmprs;
+        int n_colGc = R[i].n_col;
+        Gc[i].zero_dense(n_rowGc, n_colGc );
+        Bc[i].mult(R[i],Gc[i],true);
+
+
+
+    }
+
+//    Matrix::testPardiso();
+
+
+    for (int i = 0; i < nS ; i++ ){
         K[i].printToFile("K",i,printCooOrDense);
+        K_reg[i].printToFile("K_reg",i,printCooOrDense);
         R[i].printToFile("R",i,printCooOrDense);
         Bc[i].printToFile("Bc",i,printCooOrDense);
-        Bct[i].printToFile("Bct",i,printCooOrDense);
+        Bc_dense[i].printToFile("Bc_dense",i,printCooOrDense);
         Bf[i].printToFile("Bf",i,printCooOrDense);
         Gc[i].printToFile("Gc",i,printCooOrDense);
      }
+
+
+    for (int i = 0 ; i < nS; i++){
+       K_reg[i].FinalizeSolve(i);
+    }
 }
