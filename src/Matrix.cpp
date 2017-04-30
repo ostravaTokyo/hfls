@@ -534,29 +534,29 @@ void Matrix::mult(const Matrix& X,  Matrix& AX, bool NorT){
 }
 
 
-void Matrix::mult(const double x[], double  Ax[], bool NorT, int n_rhs){
+void Matrix::mult(const double x_in[], double  x_out[], bool NorT, int n_rhs){
     for (int i = 0; i < n_row_cmprs; i++) {
         for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
             if (symmetric > 0 ){
                 for (int k = 0; k < n_rhs; k++){
-                    Ax[i + k * n_row_cmprs] +=
-                            val[j] * x[j_col[j] + k * n_col];
+                    x_out[i + k * n_row_cmprs] +=
+                            val[j] * x_in[j_col[j] + k * n_col];
                     if (j_col[j] != i){
-                        Ax[j_col[j] + k * n_row_cmprs] +=
-                                      val[j] * x[i + k * n_col];
+                        x_out[j_col[j] + k * n_row_cmprs] +=
+                                      val[j] * x_in[i + k * n_col];
                     }
                 }
             }
             else {
                 for (int k = 0; k < n_rhs; k++){
                     if (NorT){
-                        Ax[i + k * n_row_cmprs] +=
-                                val[j] * x[j_col[j] + k * n_col];
+                        x_out[i + k * n_row_cmprs] +=
+                                val[j] * x_in[j_col[j] + k * n_col];
                     }
                     else {
-                        Ax[j_col[j] + k * n_row_cmprs] +=
-                                      val[j] * x[i + k * n_col];
-                   }
+                        x_out[j_col[j] + k * n_row_cmprs] +=
+                                      val[j] * x_in[i + k * n_col];
+                    }
                 }
             }
         }
@@ -605,7 +605,6 @@ void Matrix::factorization(){
 
     InitializeSolve();
 #endif
-
 }
 
 
