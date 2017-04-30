@@ -32,7 +32,9 @@ class Matrix{
 public:
     Matrix();
     Matrix(string );
+    ~Matrix();
     void zero_dense(int,int);
+    void zero_dense(int,int,bool);
     vector < double >  val;
     vector < int >     i_ptr; // new MKL_INT[crs->m+1];
     vector < int >     j_col; // new MKL_INT[crs->nnz];
@@ -54,7 +56,10 @@ public:
 
     //csr
     //dns
-    void mv_csr(const double[], double [] , bool, int);
+
+
+    void mult(const Matrix &, Matrix &, bool);
+    void mult(const double[], double [] , bool, int);
     void CsrElementByElement();
     void COO2CSR();
     void CSR2COO();
@@ -63,13 +68,13 @@ public:
     void DNS2CSR();
     void DNS2COO();
     void compresRows();
-    Matrix CreateCopyFrom(const Matrix&);
-    static void Acsr_mult_Bdns_is_Cdns(Matrix&, Matrix&, Matrix&);
+    static Matrix CreateCopyFrom(const Matrix&);
     void readCooFromFile(string, int,int,int);
     void printToFile(string,int,bool);
     void InitializeSolve();
     void solve(Matrix&, Matrix&);
     void FinalizeSolve(int);
+    void setZero();
     MKL_INT iparm[64];
     MKL_INT mtype;
     MKL_INT nrhs;
@@ -77,6 +82,10 @@ public:
     void *pt[64];
     MKL_INT maxfct, mnum, phase, error, msglvl;
     static void testPardiso();
+    void factorization();
+
+
+    double norm2();
 
 };
 #endif
