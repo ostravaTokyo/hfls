@@ -142,7 +142,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
             val.shrink_to_fit();
         }
 /* Sorting [I, J, V]  --------------------------------------------------------*/
-        if (_format != 2){
+//        if (_format != 2){
             vector < int_int_dbl > tmpVec;
             tmpVec.resize(i_coo_cmpr.size());
             for (int i = 0; i < i_coo_cmpr.size();i++){
@@ -199,7 +199,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
             tmpVec.clear();
             tmpVec.shrink_to_fit();
 
-        }
+        //}
         if (_format == 1){
             COO2CSR();
         }
@@ -397,7 +397,6 @@ void Matrix::DNS2COO(){
     format = 0;
 }
 
-
 void Matrix::printToFile(string nameOfMat, int indOfMat,
                                                         bool _printCooOrDense)
 {
@@ -407,7 +406,6 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
             l2g_i_coo[i] = i;
         }
     }
-
 
     const int _format = format;
     string path2matrix = "../data/dump_" + nameOfMat + "_" +
@@ -529,8 +527,8 @@ Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
 }
 
 
-void Matrix::mult(const Matrix& X,  Matrix& AX, bool NorT){
-    mult(&(X.dense[0]),&(AX.dense[0]), NorT, X.n_col);
+void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
+    mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, X_in.n_col);
 }
 
 
@@ -567,7 +565,6 @@ void Matrix::mult(const double x_in[], double  x_out[], bool NorT, int n_rhs){
 double Matrix::norm2()
 {
     double _norm2 = 0;
-
     if (format == 2){
         for (unsigned int i = 0 ; i < dense.size(); i++){
             _norm2 += dense[i] * dense[i];
@@ -584,13 +581,16 @@ double Matrix::norm2()
 void Matrix::factorization(){
 
 #ifdef USE_PARDISO
-    int nullPivots[6];
-    nullPivots[0] = 3 * 0 + 0;
-    nullPivots[1] = 3 * 0 + 1;
-    nullPivots[2] = 3 * 0 + 2;
-    nullPivots[3] = 3 * 1 + 1;
-    nullPivots[4] = 3 * 1 + 2;
-    nullPivots[5] = 3 * 4 + 2;
+
+    // regularization:
+    // for cube 4x4x4 nodes
+    // adding penalty to specifi DOF
+    int nullPivots[6] = { 3 * 0 + 0,
+                          3 * 0 + 1,
+                          3 * 0 + 2,
+                          3 * 1 + 1,
+                          3 * 1 + 2,
+                          3 * 4 + 2};
 
     int j, cnt = 0;
     for (int i = 0; i < n_row_cmprs; i++) {
@@ -598,7 +598,6 @@ void Matrix::factorization(){
         if (i == nullPivots[cnt]){
             val[j] *= 2;
             cnt++;
-            cout << "\nj = " << j;
         }
     }
 
@@ -702,7 +701,7 @@ void Matrix::InitializeSolve()
     iparm[34] = 1;        /* One- or zero-based indexing of columns and rows.*/
     maxfct = 1;           /* Maximum number of numerical factorizations. */
     mnum = 1;             /* Which factorization to use. */
-    msglvl = 3;           /* Print statistical information in file */
+    msglvl = 0;           /* Print statistical information in file */
     error = 0;            /* Initialize error flag */
     /* -------------------------------------------------------------------- */
     /* .. Initialize the internal solver memory pointer. This is only */
@@ -768,7 +767,7 @@ void Matrix::solve(Matrix& B, Matrix& X){
         printf ("\nERROR during solution: %d", error);
         exit (3);
     }
-    printf ("\nSolve completed ... ");
+//    printf ("\nSolve completed ... ");
 #endif
 }
 

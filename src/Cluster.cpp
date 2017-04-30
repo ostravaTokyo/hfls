@@ -78,14 +78,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
         transpose = true;
         Bc_dense[i].CSRorCOO2DNS(reduceZeroRows,transpose);
 
-
-//
-//
-
   }
 
 
-#if 0
     for (int i_sub = 0; i_sub < nS; i_sub++){
         Matrix Y;
         Y.zero_dense(K[i_sub].n_row_cmprs , R[i_sub].n_col);
@@ -99,7 +94,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
         printf("|R| = %.6e, ", normR);
         printf("|KR|/(|K|*|R|) = %.6e \n", normKR / (normK*normR));
     }
-#endif
 
     printCooOrDense = true;
     for (int i = 0; i < nS ; i++ ){
@@ -134,14 +128,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Gc[i].zero_dense(n_rowGc, n_colGc );
         Bc[i].mult(R[i],Gc[i],true);
 
-
-
-    }
-
-//    Matrix::testPardiso();
-
-
-    for (int i = 0; i < nS ; i++ ){
         K[i].printToFile("K",i,printCooOrDense);
         K_reg[i].printToFile("K_reg",i,printCooOrDense);
         R[i].printToFile("R",i,printCooOrDense);
@@ -149,7 +135,12 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Bc_dense[i].printToFile("Bc_dense",i,printCooOrDense);
         Bf[i].printToFile("Bf",i,printCooOrDense);
         Gc[i].printToFile("Gc",i,printCooOrDense);
-     }
+
+
+    }
+
+//    Matrix::testPardiso();
+
 
 
     for (int i = 0 ; i < nS; i++){
