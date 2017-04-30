@@ -4,8 +4,6 @@
 #include "include/Cluster.hpp"
 //#include "Driver/DissectionSolver.hpp"
 int main(int argc, char *argv[]){
-
-
     std::cout << argv[0] << std::endl;
     Options options;
     int n_subdomOnCluster = 8;
