@@ -1,4 +1,5 @@
 #include "../include/Matrix.hpp"
+#include <math.h>
 
 
 using namespace std;
@@ -15,16 +16,26 @@ Matrix::Matrix(){
     DNS_transposed = false;
 }
 
+Matrix::~Matrix()
+{
+
+}
 
 
 void Matrix::zero_dense(int _n_row,int _n_col){
+    bool NorT = true;
+    zero_dense(_n_row, _n_col, NorT);
+}
+
+
+void Matrix::zero_dense(int _n_row,int _n_col, bool NorT){
     nnz  = _n_row * _n_col;
     numel = _n_row * _n_col;
     n_row = _n_row;
     n_col = _n_col;
     n_row_cmprs = _n_row;
     DNS_reducedZeroRows = false;
-    DNS_transposed = false;
+    DNS_transposed = !NorT;
     symmetric = 0;
     format = 2;
     l2g_i_coo.resize(n_row_cmprs);
@@ -197,9 +208,9 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
 }
 
 void Matrix::COO2CSR(){
-    if (format == 0){
-        return;
-    }
+//    if (format == 1){
+//        return;
+//    }
     int pi = -1;
     int cnt = 0;
     i_ptr.resize(n_row_cmprs + 1);
@@ -384,13 +395,20 @@ void Matrix::DNS2COO(){
     dense.clear();
     dense.shrink_to_fit();
     format = 0;
-    n_row_cmprs = nnz;
 }
 
 
 void Matrix::printToFile(string nameOfMat, int indOfMat,
                                                         bool _printCooOrDense)
 {
+    if (l2g_i_coo.size() == 0){
+        l2g_i_coo.resize(nnz);
+        for (int i = 0; i < n_row_cmprs; i++){
+            l2g_i_coo[i] = i;
+        }
+    }
+
+
     const int _format = format;
     string path2matrix = "../data/dump_" + nameOfMat + "_" +
                                                      to_string(indOfMat)+".txt";
@@ -492,13 +510,31 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
     fclose(fp);
 }
 
+void Matrix::setZero(){
+    if (format == 2){
+        for (int i = 0; i < numel; i++){
+            dense[i] = 0;
+        }
+    }
+    else{
+        for (int i = 0; i < nnz; i++){
+            val[i] = 0;
+        }
+    }
+}
 
 Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
     Matrix Aout = AtoBeCopied;
     return Aout;
 }
 
-void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
+
+void Matrix::mult(const Matrix& X,  Matrix& AX, bool NorT){
+    mult(&(X.dense[0]),&(AX.dense[0]), NorT, X.n_col);
+}
+
+
+void Matrix::mult(const double x[], double  Ax[], bool NorT, int n_rhs){
     for (int i = 0; i < n_row_cmprs; i++) {
         for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
             if (symmetric > 0 ){
@@ -526,6 +562,54 @@ void Matrix::mv_csr(const double x[], double  Ax[], bool NorT, int n_rhs){
         }
     }
 }
+
+
+double Matrix::norm2()
+{
+    double _norm2 = 0;
+
+    if (format == 2){
+        for (unsigned int i = 0 ; i < dense.size(); i++){
+            _norm2 += dense[i] * dense[i];
+        }
+    }
+    else{
+        for (unsigned int i = 0 ; i < nnz; i++){
+            _norm2 += val[i] * val[i];
+        }
+    }
+    return sqrt(_norm2);
+}
+
+void Matrix::factorization(){
+
+#ifdef USE_PARDISO
+    int nullPivots[6];
+    nullPivots[0] = 3 * 0 + 0;
+    nullPivots[1] = 3 * 0 + 1;
+    nullPivots[2] = 3 * 0 + 2;
+    nullPivots[3] = 3 * 1 + 1;
+    nullPivots[4] = 3 * 1 + 2;
+    nullPivots[5] = 3 * 4 + 2;
+
+    int j, cnt = 0;
+    for (int i = 0; i < n_row_cmprs; i++) {
+        j = i_ptr[i];
+        if (i == nullPivots[cnt]){
+            val[j] *= 2;
+            cnt++;
+            cout << "\nj = " << j;
+        }
+    }
+
+
+    InitializeSolve();
+#endif
+
+}
+
+
+
 
 void Matrix::CsrElementByElement(){
 #ifdef buildCSR_elemByElem
@@ -561,7 +645,6 @@ void Matrix::CsrElementByElement(){
 void Matrix::InitializeSolve()
 {
 
-int c = 1;
 #ifdef USE_PARDISO
     mtype = -2;              /* Real symmetric matrix */
     nrhs = 1;               /* Number of right hand sides. */
@@ -575,6 +658,28 @@ int c = 1;
     {
         iparm[i] = 0;
     }
+
+//    iparm[0] = 1;         /* No solver default */
+//    iparm[1] = 2;         /* Fill-in reordering from METIS */
+//    iparm[3] = 0;         /* No iterative-direct algorithm */
+//    iparm[4] = 0;         /* No user fill-in reducing permutation */
+//    iparm[5] = 0;         /* Write solution into x */
+//    iparm[7] = 2;         /* Max numbers of iterative refinement steps */
+//    iparm[9] = 13;        /* Perturb the pivot elements with 1E-13 */
+//    iparm[10] = 1;        /* Use nonsymmetric permutation and scaling MPS */
+//    iparm[12] = 0;        /* Maximum weighted matching algorithm is switched-off (default for symmetric). Try iparm[12] = 1 in case of inappropriate accuracy */
+//    iparm[13] = 0;        /* Output: Number of perturbed pivots */
+//    iparm[17] = -1;       /* Output: Number of nonzeros in the factor LU */
+//    iparm[18] = -1;       /* Output: Mflops for LU factorization */
+//    iparm[19] = 0;        /* Output: Numbers of CG Iterations */
+//    iparm[34] = 1;        /* PARDISO use C-style indexing for ia and ja arrays */
+//    maxfct = 1;           /* Maximum number of numerical factorizations. */
+//    mnum = 1;         /* Which factorization to use. */
+//    msglvl = 1;           /* Print statistical information in file */
+//    error = 0;            /* Initialize error flag */
+
+
+
     iparm[0] = 1;         /* No solver default */
     iparm[1] = 2;         /* Fill-in reordering from METIS */
     iparm[3] = 0;         /* No iterative-direct algorithm */
@@ -595,7 +700,7 @@ int c = 1;
     iparm[17] = -1;       /* Output: Number of nonzeros in the factor LU */
     iparm[18] = -1;       /* Output: Mflops for LU factorization */
     iparm[19] = 0;        /* Output: Numbers of CG Iterations */
-    iparm[34] = 0;
+    iparm[34] = 1;        /* One- or zero-based indexing of columns and rows.*/
     maxfct = 1;           /* Maximum number of numerical factorizations. */
     mnum = 1;             /* Which factorization to use. */
     msglvl = 3;           /* Print statistical information in file */
@@ -646,11 +751,14 @@ void Matrix::solve(Matrix& B, Matrix& X){
     phase = 33;
     iparm[7] = 2;         /* Max numbers of iterative refinement steps. */
     MKL_INT idum;         /* Integer dummy. */
-    nrhs = B.n_col;
-    X.dense.resize(B.dense.size());
-    X.n_row = B.n_row;
-    X.n_col = B.n_col;
-    X.nnz = B.nnz;
+    if (B.DNS_transposed){
+        nrhs = B.n_row_cmprs;
+    }
+    else{
+        nrhs = B.n_col;
+    }
+
+
 
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
              &n, &val[0], &i_ptr[0], &j_col[0], &idum, &nrhs, iparm, &msglvl,
@@ -690,17 +798,16 @@ void Matrix::testPardiso(){
 #ifdef USE_PARDISO
 /*------------------------------ TEST ------------------------------*/
     Matrix A;
-    int n = 21;
+    int n = 11;
     int cnt = 0;
     int nrhs = 5;
     A.nnz = 2 * n - 1;
     A.n_row = n;
+    A.n_row_cmprs = n;
     A.n_col = n;
+
     Matrix B;
-    B.n_row = n;
-    B.n_col = nrhs;
-    B.dense.resize(B.n_row * B.n_col);
-    B.nnz = B.n_row * B.n_col;
+    B.zero_dense(n , nrhs);
     double h = 1. / (n + 1);
 
     for (int i = 0; i < n; i ++){
@@ -709,21 +816,30 @@ void Matrix::testPardiso(){
         }
         for (int j = 0; j < n; j ++){
             if (i == j){
-                A.i_coo_cmpr.push_back(i + 1);
-                A.j_col.push_back(j + 1);
+                A.i_coo_cmpr.push_back(i);
+                A.j_col.push_back(j);
                 A.val.push_back(2);
                 cnt++;
             }
             else if ((j-i) == 1){
-                A.i_coo_cmpr.push_back(i + 1);
-                A.j_col.push_back(j + 1);
+                A.i_coo_cmpr.push_back(i);
+                A.j_col.push_back(j);
                 A.val.push_back(-1);
                 cnt++;
             }
         }
     }
+    A.format = 0;
+    A.symmetric = 2;
+
+//    A.printToFile("A",1000,true);
     A.COO2CSR();
-    A.printToFile("A",1000,false);
+
+    cout << "A_III  " << A.i_ptr.size() << endl;
+    cout << "A_III  " << A.val.size() << endl;
+    cout << "A_III  " << A.j_col.size() << endl;
+
+
     A.InitializeSolve();
     Matrix U;
     A.solve(B, U);
@@ -733,7 +849,9 @@ void Matrix::testPardiso(){
         u_current = 0.5 * x_current * (1. - x_current);
         delta += (u_current - U.dense[i]) * (u_current - U.dense[i]);
         if (n < 50){
-            cout << u_current << " " << U.dense[i] <<"\n";
+//            cout << u_current << " " << U.dense[i] <<"\n";
+            printf("%3.3e %3.3e    del = %1.16e \n",
+                   u_current, U.dense[i],fabs( u_current - U.dense[i] )  );
         }
         x_current += h;
 
@@ -741,9 +859,9 @@ void Matrix::testPardiso(){
     cout << "|| exact - numerical solution || = " << sqrt(delta) << "\n";
 
     U.DNS2CSR();
-    U.printToFile("X",1000,false);
+    U.printToFile("X",1000,true);
     B.DNS2CSR();
-    B.printToFile("B",1000,false);
+    B.printToFile("B",1000,true);
     A.FinalizeSolve(0);
 /*------------------------------ TEST ------------------------------*/
 #endif
