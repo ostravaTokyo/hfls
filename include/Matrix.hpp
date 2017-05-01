@@ -70,22 +70,28 @@ public:
     void compresRows();
     static Matrix CreateCopyFrom(const Matrix&);
     void readCooFromFile(string, int,int,int);
-    void printToFile(string,int,bool);
+    void printToFile(string,string,int,bool);
     void InitializeSolve();
     void solve(Matrix&, Matrix&);
     void FinalizeSolve(int);
     void setZero();
+    void getNullPivots(vector < int > & );
+
+
     MKL_INT iparm[64];
     MKL_INT mtype;
     MKL_INT nrhs;
     MKL_INT n;
     void *pt[64];
     MKL_INT maxfct, mnum, phase, error, msglvl;
-    static void testPardiso();
-    void factorization();
+    static void testPardiso(string);
+    void factorization(vector < int > &);
     double norm2();
 
     static bool cmp_int_int_I(int_int_dbl ,int_int_dbl );
     static bool cmp_int_int_J(int_int_dbl ,int_int_dbl );
+    static bool compareDouble(double, double);
+
+
 };
 #endif
