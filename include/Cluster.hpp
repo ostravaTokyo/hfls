@@ -10,6 +10,14 @@
 #include "Array1d_double64.hpp"
 
 
+//struct int_int_dbl
+//{
+//    int I;
+//    int J;
+//    double V;
+//};
+
+
 class Cluster 
 {
 public:
@@ -29,6 +37,10 @@ public:
     /* FETI  (second ...)*/
     std::vector< Matrix> Gc;
 
+
+    Matrix Fc_clust;
+
+    void createFc_clust();
 
 };
 
