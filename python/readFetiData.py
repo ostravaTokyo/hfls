@@ -34,7 +34,8 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
 #
     return tmp
 
-path0 = "../data"
+path0 = "../data4"
+nSub = 27
 
 
 Bc_List = []
@@ -53,7 +54,6 @@ Fc_List = []
 BcKplus_List = []
 
 
-nSub = 8
 
 
 
