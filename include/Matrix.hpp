@@ -83,14 +83,9 @@ public:
     MKL_INT maxfct, mnum, phase, error, msglvl;
     static void testPardiso();
     void factorization();
-
-
     double norm2();
 
+    static bool cmp_int_int_I(int_int_dbl ,int_int_dbl );
+    static bool cmp_int_int_J(int_int_dbl ,int_int_dbl );
 };
 #endif
-
-
-
-
-
