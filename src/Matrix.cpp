@@ -4,8 +4,6 @@
 
 using namespace std;
 
-bool cmp_int_int_I(int_int_dbl a,int_int_dbl b) { return (a.I < b.I); }
-bool cmp_int_int_J(int_int_dbl a,int_int_dbl b) { return (a.J < b.J); }
 
 Matrix::Matrix(){
     nnz = 0;
@@ -21,6 +19,10 @@ Matrix::~Matrix()
 
 }
 
+bool Matrix::cmp_int_int_I(int_int_dbl a,int_int_dbl b)
+{ return (a.I < b.I); }
+bool Matrix::cmp_int_int_J(int_int_dbl a,int_int_dbl b)
+{ return (a.J < b.J); }
 
 void Matrix::zero_dense(int _n_row,int _n_col){
     bool NorT = true;
@@ -151,7 +153,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
                 tmpVec[i].V = val[i];
             }
 /* sort according to index I -------------------------------------------------*/
-            sort(tmpVec.begin(),tmpVec.end(),cmp_int_int_I);
+            sort(tmpVec.begin(),tmpVec.end(),Matrix::cmp_int_int_I);
 /* partial sorting according to index J (per sets with same I)----------------*/
             int startInd = 0, endInd = 1;
             int tmpVecIprev = tmpVec[0].I;
@@ -163,7 +165,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
                          i == i_coo_cmpr.size() - 1))
                 {
                     sort(tmpVec.begin() + startInd,
-                                      tmpVec.begin() + (endInd  ),cmp_int_int_J);
+                                      tmpVec.begin() + (endInd  ),Matrix::cmp_int_int_J);
                     startInd = i;
                     endInd = i + 1;
                 }
@@ -577,6 +579,24 @@ double Matrix::norm2()
     }
     return sqrt(_norm2);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void Matrix::factorization(){
 
