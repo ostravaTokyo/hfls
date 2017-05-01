@@ -124,6 +124,14 @@ for i in range(nSub):
     indBc = np.abs(Bc).sum(axis=1)>0
     Bc_red = Bc[indBc,:]
     BcKplus = BcKplus_List[i]
+
+
+    Rc = R_newList[i].toarray()
+
+    if (i == 0):
+        Gc_clust_python = np.dot(Bc,Rc)
+    else:
+        Gc_clust_python = np.hstack((Gc_clust_python,np.dot(Bc,Rc)))
     indBcKplus = np.abs(BcKplus).sum(axis=1)>0
     BcKplus = BcKplus[indBcKplus,:] 
     BcKplus_python = np.linalg.solve(K_reg_List[i],Bc_red.T)
@@ -145,11 +153,15 @@ for ii in range(nSub):
 
 
 Fc_clust =  load_matrix(path0,"dump_Fc_clust_","",0,False,True,0)
+Gc_clust =  load_matrix(path0,"dump_Gc_clust_","",0,False,False,0)
 
 
 ddd0 = np.linalg.norm(Fc_clust - Fc_clust_python)
 ddd1 = np.linalg.norm(Fc_clust)
 print "|Fc_clust_python - Fc_clust_myAp|/|Fc_clust_python|",ddd0 / ddd1  
 
+ddd0 = np.linalg.norm(Gc_clust - Gc_clust_python)
+ddd1 = np.linalg.norm(Gc_clust)
+print "|Gc_clust_python - Gc_clust_myAp|/|Gc_clust_python|",ddd0 / ddd1  
 
 
