@@ -19,16 +19,17 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
     printCooOrDense = true;
     A.readCooFromFile(path2matrix,symmetric,format,offset);
-    A.printToFile("modif",0,printCooOrDense);
+    A.printToFile("modif",folder,0,printCooOrDense);
     A.CSR2COO();
-    A.printToFile("modif2",0,printCooOrDense);
+    A.printToFile("modif2",folder,0,printCooOrDense);
     printCooOrDense = true;
-    A.printToFile("modif3",0,printCooOrDense);
+    A.printToFile("modif3",folder,0,printCooOrDense);
 
     return
 
 #endif
     const int nS = options.n_subdomOnCluster;
+    string folder = options.path2data;
 
     K.resize(nS);
     K_reg.resize(nS);
@@ -81,6 +82,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
   }
 
 
+#if 0
     for (int i_sub = 0; i_sub < nS; i_sub++){
         Matrix Y;
         Y.zero_dense(K[i_sub].n_row_cmprs , R[i_sub].n_col);
@@ -94,32 +96,43 @@ bool reduceZeroRows, transpose, printCooOrDense;
         printf("|R| = %.6e, ", normR);
         printf("|KR|/(|K|*|R|) = %.6e \n", normKR / (normK*normR));
     }
-
+#endif
     printCooOrDense = true;
     for (int i = 0; i < nS ; i++ ){
+
+        vector <int > nullPivots;
+        R[i].getNullPivots(nullPivots);
+//        for (int i = 0 ; i < nullPivots.size(); i++){
+//            cout << nullPivots[i] << endl;
+//        }
+
         K_reg[i] = K[i];
-        K_reg[i].factorization();
+        K_reg[i].factorization(nullPivots);
+
+
 
         Matrix BcK_dense;
-        BcK_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
+        //BcK_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
+        BcK_dense = Bc_dense[i];
         BcK_dense.setZero();
 
 
         K[i].mult(Bc_dense[i],BcK_dense,true);
-        BcK_dense.printToFile("BcK_dense",i,printCooOrDense);
+        BcK_dense.printToFile("BcK_dense",folder,i,printCooOrDense);
         Lumped[i].zero_dense(Bc[i].n_row_cmprs,  Bc[i].n_row_cmprs);
         Bc[i].mult(BcK_dense,Lumped[i],true);
-        Lumped[i].printToFile("Lumped",i,printCooOrDense);
+        Lumped[i].printToFile("Lumped",folder,i,printCooOrDense);
 
         Matrix BcKplus_dense;
-        BcKplus_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
+//        BcKplus_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
+        BcKplus_dense = Bc_dense[i];
         BcKplus_dense.setZero();
 
         K_reg[i].solve(Bc_dense[i],BcKplus_dense);
-        BcKplus_dense.printToFile("BcKplus",i,printCooOrDense);
+        BcKplus_dense.printToFile("BcKplus",folder,i,printCooOrDense);
         Fc[i].zero_dense(Bc[i].n_row_cmprs,  Bc[i].n_row_cmprs);
         Bc[i].mult(BcKplus_dense,Fc[i],true);
-        Fc[i].printToFile("Fc",i,printCooOrDense);
+        Fc[i].printToFile("Fc",folder,i,printCooOrDense);
         Fc[i].l2g_i_coo = Bc[i].l2g_i_coo;
 
 
@@ -129,31 +142,29 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Gc[i].zero_dense(n_rowGc, n_colGc );
         Bc[i].mult(R[i],Gc[i],true);
 
-        K[i].printToFile("K",i,printCooOrDense);
-        K_reg[i].printToFile("K_reg",i,printCooOrDense);
-        R[i].printToFile("R",i,printCooOrDense);
-        Bc[i].printToFile("Bc",i,printCooOrDense);
-        Bc_dense[i].printToFile("Bc_dense",i,printCooOrDense);
-        Bf[i].printToFile("Bf",i,printCooOrDense);
-        Gc[i].printToFile("Gc",i,printCooOrDense);
+
+        /* print */
+        /* K, R, etc.*/
+        cout << "   ... printing matrices start  ...";
+        K[i].printToFile("K",folder,i,printCooOrDense);
+        K_reg[i].printToFile("K_reg",folder,i,printCooOrDense);
+        R[i].printToFile("R",folder,i,printCooOrDense);
+        Bc[i].printToFile("Bc",folder,i,printCooOrDense);
+        Bc_dense[i].printToFile("Bc_dense",folder,i,printCooOrDense);
+        Bf[i].printToFile("Bf",folder,i,printCooOrDense);
+        Gc[i].printToFile("Gc",folder,i,printCooOrDense);
         Gc[i].l2g_i_coo = Bc[i].l2g_i_coo;
-
-
+        cout << "  " << i <<"/" << nS <<"  ...\n";
     }
 
 //    Matrix::testPardiso();
 
-
-
     /* Fc_clust  */
-    createFc_clust();
-    Fc_clust.printToFile("Fc_clust",0,printCooOrDense);
+    create_Fc_clust();
+    Fc_clust.printToFile("Fc_clust",folder,0,printCooOrDense);
 
-    createGc_clust();
-    Gc_clust.printToFile("Gc_clust",0,printCooOrDense);
-
-
-
+    create_Gc_clust();
+    Gc_clust.printToFile("Gc_clust",folder,0,printCooOrDense);
 
 
     for (int i = 0 ; i < nS; i++){
@@ -161,29 +172,22 @@ bool reduceZeroRows, transpose, printCooOrDense;
     }
 }
 
-
-
-
-void Cluster::createFc_clust(){
+void Cluster::create_Fc_clust(){
 
     Matrix & A_clust = Fc_clust;
     vector <Matrix> & A_i = Fc;
     A_clust.symmetric = 2;
     bool remapCols = true;
     create_clust_object(A_clust, A_i, remapCols);
-
-
 }
 
-void Cluster::createGc_clust(){
+void Cluster::create_Gc_clust(){
 
     Matrix & A_clust = Gc_clust;
     vector <Matrix> & A_i = Gc;
     A_clust.symmetric = 0;
     bool remapCols = false;
     create_clust_object(A_clust, A_i, remapCols);
-
-
 }
 
 
