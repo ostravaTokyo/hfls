@@ -35,8 +35,8 @@ public:
     Matrix Gc_clust;
 
     void create_clust_object(Matrix &, vector <Matrix> & , bool);
-    void createFc_clust();
-    void createGc_clust();
+    void create_Fc_clust();
+    void create_Gc_clust();
 
 };
 
