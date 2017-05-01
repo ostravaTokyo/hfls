@@ -120,7 +120,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Fc[i].zero_dense(Bc[i].n_row_cmprs,  Bc[i].n_row_cmprs);
         Bc[i].mult(BcKplus_dense,Fc[i],true);
         Fc[i].printToFile("Fc",i,printCooOrDense);
-
         Fc[i].l2g_i_coo = Bc[i].l2g_i_coo;
 
 
@@ -137,14 +136,24 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Bc_dense[i].printToFile("Bc_dense",i,printCooOrDense);
         Bf[i].printToFile("Bf",i,printCooOrDense);
         Gc[i].printToFile("Gc",i,printCooOrDense);
+        Gc[i].l2g_i_coo = Bc[i].l2g_i_coo;
 
 
     }
 
 //    Matrix::testPardiso();
 
+
+
+    /* Fc_clust  */
     createFc_clust();
     Fc_clust.printToFile("Fc_clust",0,printCooOrDense);
+
+    createGc_clust();
+    Gc_clust.printToFile("Gc_clust",0,printCooOrDense);
+
+
+
 
 
     for (int i = 0 ; i < nS; i++){
@@ -157,37 +166,70 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 void Cluster::createFc_clust(){
 
+    Matrix & A_clust = Fc_clust;
+    vector <Matrix> & A_i = Fc;
+    A_clust.symmetric = 2;
+    bool remapCols = true;
+    create_clust_object(A_clust, A_i, remapCols);
 
 
-    const int nS = Fc.size();
+}
+
+void Cluster::createGc_clust(){
+
+    Matrix & A_clust = Gc_clust;
+    vector <Matrix> & A_i = Gc;
+    A_clust.symmetric = 0;
+    bool remapCols = false;
+    create_clust_object(A_clust, A_i, remapCols);
+
+
+}
+
+
+void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool remapCols){
+
+    const int nS = A_i.size();
     int init_nnz = 0;
     for (int i = 0; i < nS; i++){
-        init_nnz += Fc[i].nnz;
+        init_nnz += A_i[i].nnz;
     }
 
+    A_clust.format = 0;
 
     vector < int_int_dbl > tmpVec;
     tmpVec.resize(init_nnz);
+
+    A_clust.n_col = 0;
 
 
 /* Sorting [I, J, V]  --------------------------------------------------------*/
     int cnt = 0;
     int _i, _j;
     for (int d = 0; d < nS ; d++){
-        Fc[d].DNS2COO();
-        for (int i = 0; i < Fc[d].i_coo_cmpr.size();i++){
-            _i = Fc[d].l2g_i_coo[ Fc[d].i_coo_cmpr[i] ];
-            _j = Fc[d].l2g_i_coo[ Fc[d].j_col[i] ];
-            if (_i <= _j){
+        A_i[d].DNS2COO();
+        for (int i = 0; i < A_i[d].i_coo_cmpr.size();i++){
+            _i = A_i[d].l2g_i_coo[ A_i[d].i_coo_cmpr[i] ];
+            _j = A_i[d].j_col[i];
+            if (remapCols){
+                _j = A_i[d].l2g_i_coo[ _j ];
+            }
+            else{
+                _j += A_clust.n_col;
+            }
+            if (A_clust.symmetric == 0 ||
+                    (A_clust.symmetric == 1 && _j <= _i) ||
+                    (A_clust.symmetric == 2 && _i <= _j)    ){
                 tmpVec[cnt].I = _i;
                 tmpVec[cnt].J = _j;
-                tmpVec[cnt].V = Fc[d].val[i];
+                tmpVec[cnt].V = A_i[d].val[i];
                 cnt++;
             }
         }
+        A_clust.n_col += A_i[d].n_col;
     }
-    Fc_clust.nnz = cnt;
-    tmpVec.resize(Fc_clust.nnz);
+    A_clust.nnz = cnt;
+    tmpVec.resize(A_clust.nnz);
 
 
 /* sort according to index I -------------------------------------------------*/
@@ -215,68 +257,55 @@ void Cluster::createFc_clust(){
     int prevInd_J = -1;
     int counter = 0;
     int cnt_j = -1;
-    Fc_clust.l2g_i_coo.resize(tmpVec.size());
+    A_clust.l2g_i_coo.resize(tmpVec.size());
 
-    Fc_clust.i_coo_cmpr.resize(Fc_clust.nnz);
-    Fc_clust.j_col.resize(Fc_clust.nnz);
-    Fc_clust.val.resize(Fc_clust.nnz);
+    A_clust.i_coo_cmpr.resize(A_clust.nnz);
+    A_clust.j_col.resize(A_clust.nnz);
+    A_clust.val.resize(A_clust.nnz);
 
 
     for (int i = 0 ; i < tmpVec.size(); i++){
 
         if (prevInd_I != tmpVec[i].I){
-            Fc_clust.l2g_i_coo[counter] = tmpVec[i].I;
+            A_clust.l2g_i_coo[counter] = tmpVec[i].I;
             counter++;
         }
         if (prevInd_I == tmpVec[i].I && prevInd_J == tmpVec[i].J){
-            Fc_clust.val[cnt_j] += tmpVec[i].V;
-            Fc_clust.nnz--;
+            A_clust.val[cnt_j] += tmpVec[i].V;
+            A_clust.nnz--;
         }
         else {
             cnt_j++;
-            Fc_clust.i_coo_cmpr[cnt_j] = counter - 1;
-            Fc_clust.j_col[cnt_j] = tmpVec[i].J;
-            Fc_clust.val[cnt_j] = tmpVec[i].V;
+            A_clust.i_coo_cmpr[cnt_j] = counter - 1;
+            A_clust.j_col[cnt_j] = tmpVec[i].J;
+            A_clust.val[cnt_j] = tmpVec[i].V;
         }
         prevInd_I = tmpVec[i].I;
         prevInd_J = tmpVec[i].J;
     }
 
-    Fc_clust.format = 0;
-    Fc_clust.symmetric = 2;
-    Fc_clust.l2g_i_coo.resize(counter );
-    Fc_clust.l2g_i_coo.shrink_to_fit();
+    A_clust.l2g_i_coo.resize(counter );
+    A_clust.l2g_i_coo.shrink_to_fit();
 
-    Fc_clust.i_coo_cmpr.shrink_to_fit();
-    Fc_clust.j_col.shrink_to_fit();
-    Fc_clust.val.shrink_to_fit();
+    A_clust.i_coo_cmpr.resize(A_clust.nnz);
+    A_clust.i_coo_cmpr.shrink_to_fit();
 
-    Fc_clust.n_row_cmprs = counter;
-    Fc_clust.n_row = counter;
-    Fc_clust.n_col = counter;
+    A_clust.j_col.resize(A_clust.nnz);
+    A_clust.j_col.shrink_to_fit();
 
+    A_clust.val.resize(A_clust.nnz);
+    A_clust.val.shrink_to_fit();
 
-//    for (int i = 0; i < Fc_clust.nnz; i++){
-//        cout << Fc_clust.i_coo_cmpr[i] <<
-//          " "<< Fc_clust.l2g_i_coo[Fc_clust.i_coo_cmpr[i]] <<
-//          " "<< Fc_clust.j_col[i]      <<
-//         " " << Fc_clust.val[i] << endl;
-//    }
-
-//    for (int i = 0; i < Fc_clust.l2g_i_coo.size(); i++){
-//        cout << " l2g[" << i << "] = "<<Fc_clust.l2g_i_coo[i] << endl;
-//    }
+    A_clust.n_row_cmprs = counter;
+    A_clust.n_row = counter;
 
 
+    if (A_clust.symmetric > 0){
+        A_clust.n_col = A_clust.n_row_cmprs;
+    }
 
-//    cout <<"Fc_clust.nnz: " << Fc_clust.nnz << endl;
-//    cout <<"counter     : " << counter << endl;
+    A_clust.COO2CSR();
 
     tmpVec.clear();
     tmpVec.shrink_to_fit();
-    //Fc_clust.COO2CSR();
-
-#if 0
-        //}
-#endif
 }
