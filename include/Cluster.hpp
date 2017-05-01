@@ -10,13 +10,6 @@
 #include "Array1d_double64.hpp"
 
 
-//struct int_int_dbl
-//{
-//    int I;
-//    int J;
-//    double V;
-//};
-
 
 class Cluster 
 {
@@ -39,8 +32,11 @@ public:
 
 
     Matrix Fc_clust;
+    Matrix Gc_clust;
 
+    void create_clust_object(Matrix &, vector <Matrix> & , bool);
     void createFc_clust();
+    void createGc_clust();
 
 };
 
