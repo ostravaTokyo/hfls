@@ -17,7 +17,7 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
         J = tmp[1::,1]-offset;
         V = tmp[1::,2]
 #    
-        print(str0,i,j)
+        print str0,i,j
         if (makeSymmetric):
             logInd = J>I; 
             I = np.concatenate((I,J[logInd]))
@@ -117,24 +117,39 @@ for i in range(nSub):
 #R = load_matrix(path0+'1',"dump_Kreg_","",str(i),True,True) 
 
 Fc_python_List = []
+
+Fc_clust_python = np.zeros((Bct_list[i].shape[0], Bct_list[i].shape[0]))
 for i in range(nSub):
     Bc = Bct_list[i].toarray()
     indBc = np.abs(Bc).sum(axis=1)>0
-    Bc = Bc[indBc,:]
+    Bc_red = Bc[indBc,:]
     BcKplus = BcKplus_List[i]
     indBcKplus = np.abs(BcKplus).sum(axis=1)>0
     BcKplus = BcKplus[indBcKplus,:] 
-    BcKplus_python = np.linalg.solve(K_reg_List[i],Bc.T)
-    Fc_i = np.dot(Bc,BcKplus_python)
+    BcKplus_python = np.linalg.solve(K_reg_List[i],Bc_red.T)
+    BcKplus_ = np.linalg.solve(K_reg_List[i],Bc.T)
+    Fc_i = np.dot(Bc_red,BcKplus_python)
+    Fc_clust_python += np.dot(Bc,BcKplus_)
     Fc_python_List.append(Fc_i)
 
 for ii in range(nSub):
  
     ttt = Gc_List[ii][np.abs(Gc_List[ii]).sum(axis=1)>0,:] - Gc_newList[ii]
-    print( np.linalg.norm(ttt))
+    print np.linalg.norm(ttt)
 
 
 for ii in range(nSub):
     ddd0 = np.linalg.norm(Fc_python_List[ii] - Fc_List[ii])
     ddd1 = np.linalg.norm(Fc_python_List[ii])
-    print( ddd0 / ddd1 )
+    print "|Fc_python - Fc_myAp|/|Fc_python|",ddd0 / ddd1  
+
+
+Fc_clust =  load_matrix(path0,"dump_Fc_clust_","",0,False,True,0)
+
+
+ddd0 = np.linalg.norm(Fc_clust - Fc_clust_python)
+ddd1 = np.linalg.norm(Fc_clust)
+print "|Fc_clust_python - Fc_clust_myAp|/|Fc_clust_python|",ddd0 / ddd1  
+
+
+
