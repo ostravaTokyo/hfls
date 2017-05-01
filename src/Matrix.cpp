@@ -584,7 +584,7 @@ void Matrix::factorization(){
 
     // regularization:
     // for cube 4x4x4 nodes
-    // adding penalty to specifi DOF
+    // adding penalty to specific diagonal entries of stiff. mat.
     int nullPivots[6] = { 3 * 0 + 0,
                           3 * 0 + 1,
                           3 * 0 + 2,
@@ -600,8 +600,6 @@ void Matrix::factorization(){
             cnt++;
         }
     }
-
-
     InitializeSolve();
 #endif
 }

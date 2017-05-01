@@ -100,7 +100,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
         K_reg[i] = K[i];
         K_reg[i].factorization();
 
-
         Matrix BcK_dense;
         BcK_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
         BcK_dense.setZero();
