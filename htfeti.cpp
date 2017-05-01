@@ -13,6 +13,6 @@ int main(int argc, char *argv[]){
     options.set_values(n_subdomOnCluster, path2data);
 //
     Cluster cluster(options);
-//    std::cout << "----------------- done -----------------\n" ;
+    std::cout << "----------------- done -----------------\n" ;
     return 0;
 }
