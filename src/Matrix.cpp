@@ -24,6 +24,9 @@ bool Matrix::cmp_int_int_I(int_int_dbl a,int_int_dbl b)
 bool Matrix::cmp_int_int_J(int_int_dbl a,int_int_dbl b)
 { return (a.J < b.J); }
 
+bool Matrix::compareDouble(double i, double j)
+{ return fabs(i)<=fabs(j); }
+
 void Matrix::zero_dense(int _n_row,int _n_col){
     bool NorT = true;
     zero_dense(_n_row, _n_col, NorT);
@@ -399,7 +402,7 @@ void Matrix::DNS2COO(){
     format = 0;
 }
 
-void Matrix::printToFile(string nameOfMat, int indOfMat,
+void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
                                                         bool _printCooOrDense)
 {
     if (l2g_i_coo.size() == 0){
@@ -410,7 +413,7 @@ void Matrix::printToFile(string nameOfMat, int indOfMat,
     }
 
     const int _format = format;
-    string path2matrix = "../data/dump_" + nameOfMat + "_" +
+    string path2matrix = folder+"/dump_" + nameOfMat + "_" +
                                                      to_string(indOfMat)+".txt";
     FILE *fp = NULL;
     fp = fopen(path2matrix.c_str(), "w");
@@ -530,7 +533,14 @@ Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
 
 
 void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
-    mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, X_in.n_col);
+    int _n_rhs;
+    if (X_out.DNS_transposed){
+        _n_rhs = X_out.n_row_cmprs;
+    }
+    else{
+        _n_rhs = X_out.n_col;
+    }
+    mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, _n_rhs);
 }
 
 
@@ -581,24 +591,64 @@ double Matrix::norm2()
 }
 
 
+void Matrix::getNullPivots(vector < int > & null_pivots){
 
 
+  int cols = n_col;
+  int rows = n_row_cmprs;
+
+  vector <double> N(dense);
+  std::vector <double>::iterator  it;
+  int I,J,K,colInd,rowInd;
+  double *tmpV = new double[rows];
+  double pivot;
+  int tmp_int;
+  int *_nul_piv = new int [rows];
+  for (int i = 0;i<rows;i++) _nul_piv[i]=i;
+
+  auto ij = [&]( int ii, int jj ) -> int {
+      return ii + rows * jj;
+  };
+
+  for (int j=0;j<cols;j++){
+    it = std::max_element(N.begin(),N.end()-j*rows, compareDouble);
+    I = it - N.begin();
+    colInd = I/rows;
+    rowInd = I-colInd*rows;
+    for (int k=0;k<cols-j;k++){
+      tmpV[k] = N[ij(rows-1-j,k)];
+      N[ij(rows-1-j,k)] = N[ij(rowInd,k)];
+      N[ij(rowInd,k)]= tmpV[k];
+    }
+    tmp_int = _nul_piv[rowInd];
+    _nul_piv[rowInd] = _nul_piv[rows-1-j];
+    _nul_piv[rows-1-j] = tmp_int;
+    if (cols - 1 - j != colInd) {
+        memcpy( tmpV, &(N[ij(0,cols-1-j)]) , sizeof( double ) * rows);
+        memcpy( &(N[ij(0, cols - 1 - j)]), &(N[ij(0, colInd)]), sizeof( double ) * rows);
+        memcpy( &(N[ij(0,colInd)]),tmpV , sizeof( double ) * rows);
+    }
+    pivot = N[ij(rows-1-j,cols-1-j)];
+    for (int J=0;J<cols-j-1;J++){
+      for (int I=0;I<rows-j;I++){
+        N[ij(I,J)] -= N[ij(I,cols-1-j)]*N[ij(rows-1-j,J)]/pivot;
+      }
+    }
+  }
+  for (int i = 0;i<cols;i++){
+    null_pivots.push_back(_nul_piv[rows-1-i]);
+  }
+  sort(null_pivots.begin(),null_pivots.end());
+//
+  delete [] _nul_piv;
+  delete [] tmpV;
+//
+}
 
 
+void Matrix::factorization(vector <int> & _nullPivots){
 
 
-
-
-
-
-
-
-
-
-
-
-
-void Matrix::factorization(){
 
 #ifdef USE_PARDISO
 
@@ -615,7 +665,7 @@ void Matrix::factorization(){
     int j, cnt = 0;
     for (int i = 0; i < n_row_cmprs; i++) {
         j = i_ptr[i];
-        if (i == nullPivots[cnt]){
+        if (i == _nullPivots[cnt]){
             val[j] *= 2;
             cnt++;
         }
@@ -810,7 +860,7 @@ void Matrix::FinalizeSolve(int _i)
 #endif
 }
 
-void Matrix::testPardiso(){
+void Matrix::testPardiso(string folder){
 #ifdef USE_PARDISO
 /*------------------------------ TEST ------------------------------*/
     Matrix A;
@@ -848,7 +898,7 @@ void Matrix::testPardiso(){
     A.format = 0;
     A.symmetric = 2;
 
-//    A.printToFile("A",1000,true);
+//    A.printToFile("A",folder,1000,true);
     A.COO2CSR();
 
     cout << "A_III  " << A.i_ptr.size() << endl;
@@ -875,9 +925,9 @@ void Matrix::testPardiso(){
     cout << "|| exact - numerical solution || = " << sqrt(delta) << "\n";
 
     U.DNS2CSR();
-    U.printToFile("X",1000,true);
+    U.printToFile("X",folder,1000,true);
     B.DNS2CSR();
-    B.printToFile("B",1000,true);
+    B.printToFile("B",folder,1000,true);
     A.FinalizeSolve(0);
 /*------------------------------ TEST ------------------------------*/
 #endif
