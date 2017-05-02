@@ -154,7 +154,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Bf[i].printToFile("Bf",folder,i,printCooOrDense);
         Gc[i].printToFile("Gc",folder,i,printCooOrDense);
         Gc[i].l2g_i_coo = Bc[i].l2g_i_coo;
-        cout << "  " << i <<"/" << nS <<"  ...\n";
+        cout << "  " << (i + 1) <<"/" << nS <<"  ...\n";
     }
 
 //    Matrix::testPardiso();
