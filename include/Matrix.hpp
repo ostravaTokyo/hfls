@@ -76,6 +76,7 @@ public:
     void FinalizeSolve(int);
     void setZero();
     void getNullPivots(vector < int > & );
+    void sortAndUniqueCOO(vector < int_int_dbl > &);
 
 
     MKL_INT iparm[64];
