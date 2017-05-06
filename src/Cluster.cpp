@@ -10,7 +10,7 @@ int symmetric, format, offset;
 bool reduceZeroRows, transpose, printCooOrDense;
 
 #if 0
-    std::string path2matrix = options.path2data+"/testMat"+to_string(0)+".txt";
+//    std::string path2matrix = options.path2data+"/testMat"+to_string(0)+".txt";
     Matrix A;
 
     symmetric = 0;  // 0-not, 1-lower tr., 2-upper tr.
@@ -166,6 +166,10 @@ bool reduceZeroRows, transpose, printCooOrDense;
     create_Gc_clust();
     Gc_clust.printToFile("Gc_clust",folder,0,printCooOrDense);
 
+    create_Ac_clust();
+    Ac_clust.getBasicMatrixInfo();
+    cout << "0 Ac_clust.format = " << Ac_clust.format << endl;
+    Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
 
     for (int i = 0 ; i < nS; i++){
        K_reg[i].FinalizeSolve(i);
@@ -189,7 +193,6 @@ void Cluster::create_Gc_clust(){
     bool remapCols = false;
     create_clust_object(A_clust, A_i, remapCols);
 }
-
 
 void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool remapCols){
 
@@ -232,21 +235,92 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
         }
         A_clust.n_col += A_i[d].n_col;
     }
+    /* updated on nnz */
     A_clust.nnz = cnt;
     tmpVec.resize(A_clust.nnz);
-
     A_clust.sortAndUniqueCOO(tmpVec);
-
-    A_clust.n_row = A_clust.n_row_cmprs;
-
-
-
-    if (A_clust.symmetric > 0){
-        A_clust.n_col = A_clust.n_row_cmprs;
-    }
-
-    A_clust.COO2CSR();
-
+    /* tmpVec released from the memory */
     tmpVec.clear();
     tmpVec.shrink_to_fit();
+
+    /* both Fc or Gc do not have compressed rows,
+     * therefore n_row = n_row_cmprs                        */
+    A_clust.n_row = A_clust.n_row_cmprs;
+
+    /* if Fc, n_col == n_row (or n_row_cmprs)               */
+    if (A_clust.symmetric > 0)
+        A_clust.n_col = A_clust.n_row_cmprs;
+    /* transform to CSR format */
+    A_clust.COO2CSR();
+}
+
+void Cluster::create_Ac_clust(){
+
+    Ac_clust.symmetric = 2;
+    Ac_clust.format= 0;
+
+
+    Ac_clust.nnz = Fc_clust.nnz + Gc_clust.nnz;
+
+    vector < int_int_dbl > tmpVec;
+    tmpVec.resize(Ac_clust.nnz);
+
+    int cnt = 0;
+    /* Fc_clust */
+    for (int i = 0; i < Fc_clust.n_row; i++) {
+        for (int j = Fc_clust.i_ptr[i]; j < Fc_clust.i_ptr[i + 1]; j++) {
+            tmpVec[cnt].I = i;
+            tmpVec[cnt].J = Fc_clust.j_col[j];
+            tmpVec[cnt].V = Fc_clust.val[j];
+            cnt++;
+        }
+    }
+    for (int i = 0; i < Gc_clust.n_row; i++) {
+        for (int j = Gc_clust.i_ptr[i]; j < Gc_clust.i_ptr[i + 1]; j++) {
+            tmpVec[cnt].I = i;
+            tmpVec[cnt].J = Gc_clust.j_col[j] + Fc_clust.n_col;
+            tmpVec[cnt].V = Gc_clust.val[j];
+            cnt++;
+        }
+    }
+
+    Ac_clust.sortAndUniqueCOO(tmpVec);
+    tmpVec.clear();
+    tmpVec.shrink_to_fit();
+
+    Ac_clust.n_row = Ac_clust.n_row_cmprs;
+    Ac_clust.n_col = Fc_clust.n_col + Gc_clust.n_col;
+
+    Ac_clust.COO2CSR();
+
+    /* only upper triangular part of symmetric matrix
+    /*      Ac = [Fc     Gc]    =   [ Ac[0,0] Ac[0,1] ]
+     *           [Gc^T   O ]    =   [ Ac[1,0] Ac[1,1] ]
+     * is kept in the memeory.
+     * Due to dissection, zero diagonal matrix is placed
+     * in the block (1,1)                                   */
+    cout << " ============== " << Ac_clust.n_col - Ac_clust.n_row << endl;
+    int init_nnz = Ac_clust.nnz;
+    int new_nnz = init_nnz + Gc_clust.n_col;
+    /* n_row = n_row_cmprs = n_col */
+    Ac_clust.nnz = new_nnz;
+    Ac_clust.n_row = Ac_clust.n_col;
+    Ac_clust.n_row_cmprs = Ac_clust.n_col;
+    /* update sizes of sparse structures*/
+    Ac_clust.i_ptr.resize(Ac_clust.n_col + 1);
+    Ac_clust.j_col.resize(new_nnz);
+    Ac_clust.val.resize(new_nnz);
+    Ac_clust.l2g_i_coo.resize(Ac_clust.n_col);
+
+
+    for (int i = 0; i < Gc_clust.n_col; i++){
+        Ac_clust.i_ptr[Fc_clust.n_col + 1 + i] = init_nnz + 1 + i;
+        Ac_clust.j_col[init_nnz + i] = Fc_clust.n_row + i;
+        Ac_clust.val[init_nnz + i] = 0;
+        Ac_clust.l2g_i_coo[Fc_clust.n_row + i] = Fc_clust.n_row + i;
+    }
+    Ac_clust.i_ptr[Ac_clust.n_row] = new_nnz;
+
+
+
 }

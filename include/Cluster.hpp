@@ -33,10 +33,12 @@ public:
 
     Matrix Fc_clust;
     Matrix Gc_clust;
+    Matrix Ac_clust;
 
     void create_clust_object(Matrix &, vector <Matrix> & , bool);
     void create_Fc_clust();
     void create_Gc_clust();
+    void create_Ac_clust();
 
 };
 
