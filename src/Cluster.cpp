@@ -235,73 +235,10 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
     A_clust.nnz = cnt;
     tmpVec.resize(A_clust.nnz);
 
+    A_clust.sortAndUniqueCOO(tmpVec);
 
-/* sort according to index I -------------------------------------------------*/
-    sort(tmpVec.begin(),tmpVec.end(),Matrix::cmp_int_int_I);
-/* partial sorting according to index J (per sets with same I)----------------*/
-    int startInd = 0, endInd = 1;
-    int tmpVecIprev = tmpVec[0].I;
-    for (int i = 1 ; i < tmpVec.size(); i ++){
-        if (tmpVec[i].I == tmpVecIprev){
-            endInd++;
-        }
-        if (tmpVec[i].I != tmpVecIprev || (tmpVec[i].I == tmpVecIprev &&
-                 i == tmpVec.size() - 1))
-        {
-            sort(tmpVec.begin() + startInd,
-                              tmpVec.begin() + (endInd  ),Matrix::cmp_int_int_J);
-            startInd = i;
-            endInd = i + 1;
-        }
-        tmpVecIprev = tmpVec[i].I;
-    }
+    A_clust.n_row = A_clust.n_row_cmprs;
 
-/* Cumulating duplicated A[I,J] elements--------------------------------------*/
-    int prevInd_I = -1;
-    int prevInd_J = -1;
-    int counter = 0;
-    int cnt_j = -1;
-    A_clust.l2g_i_coo.resize(tmpVec.size());
-
-    A_clust.i_coo_cmpr.resize(A_clust.nnz);
-    A_clust.j_col.resize(A_clust.nnz);
-    A_clust.val.resize(A_clust.nnz);
-
-
-    for (int i = 0 ; i < tmpVec.size(); i++){
-
-        if (prevInd_I != tmpVec[i].I){
-            A_clust.l2g_i_coo[counter] = tmpVec[i].I;
-            counter++;
-        }
-        if (prevInd_I == tmpVec[i].I && prevInd_J == tmpVec[i].J){
-            A_clust.val[cnt_j] += tmpVec[i].V;
-            A_clust.nnz--;
-        }
-        else {
-            cnt_j++;
-            A_clust.i_coo_cmpr[cnt_j] = counter - 1;
-            A_clust.j_col[cnt_j] = tmpVec[i].J;
-            A_clust.val[cnt_j] = tmpVec[i].V;
-        }
-        prevInd_I = tmpVec[i].I;
-        prevInd_J = tmpVec[i].J;
-    }
-
-    A_clust.l2g_i_coo.resize(counter );
-    A_clust.l2g_i_coo.shrink_to_fit();
-
-    A_clust.i_coo_cmpr.resize(A_clust.nnz);
-    A_clust.i_coo_cmpr.shrink_to_fit();
-
-    A_clust.j_col.resize(A_clust.nnz);
-    A_clust.j_col.shrink_to_fit();
-
-    A_clust.val.resize(A_clust.nnz);
-    A_clust.val.shrink_to_fit();
-
-    A_clust.n_row_cmprs = counter;
-    A_clust.n_row = counter;
 
 
     if (A_clust.symmetric > 0){

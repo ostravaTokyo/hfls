@@ -148,61 +148,18 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
         }
 /* Sorting [I, J, V]  --------------------------------------------------------*/
 //        if (_format != 2){
-            vector < int_int_dbl > tmpVec;
-            tmpVec.resize(i_coo_cmpr.size());
-            for (int i = 0; i < i_coo_cmpr.size();i++){
-                tmpVec[i].I = i_coo_cmpr[i];
-                tmpVec[i].J = j_col[i];
-                tmpVec[i].V = val[i];
-            }
-/* sort according to index I -------------------------------------------------*/
-            sort(tmpVec.begin(),tmpVec.end(),Matrix::cmp_int_int_I);
-/* partial sorting according to index J (per sets with same I)----------------*/
-            int startInd = 0, endInd = 1;
-            int tmpVecIprev = tmpVec[0].I;
-            for (int i = 1 ; i < i_coo_cmpr.size(); i ++){
-                if (tmpVec[i].I == tmpVecIprev){
-                    endInd++;
-                }
-                if (tmpVec[i].I != tmpVecIprev || (tmpVec[i].I == tmpVecIprev &&
-                         i == i_coo_cmpr.size() - 1))
-                {
-                    sort(tmpVec.begin() + startInd,
-                                      tmpVec.begin() + (endInd  ),Matrix::cmp_int_int_J);
-                    startInd = i;
-                    endInd = i + 1;
-                }
-                tmpVecIprev = tmpVec[i].I;
-            }
-    /* Cumulating duplicated A[I,J] elements--------------------------------------*/
-            int prevInd_I = -1;
-            int prevInd_J = -1;
-            int counter = 0;
-            int cnt_j = -1;
-            l2g_i_coo.resize(i_coo_cmpr.size());
-            for (int i = 0 ; i < i_coo_cmpr.size(); i ++){
-                if (prevInd_I != tmpVec[i].I){
-                    l2g_i_coo[counter] = tmpVec[i].I;
-                    counter++;
-                }
-                if (prevInd_I == tmpVec[i].I && prevInd_J == tmpVec[i].J){
-                    val[cnt_j] += tmpVec[i].V;
-                    nnz--;
-                }
-                else {
-                    cnt_j++;
-                    i_coo_cmpr[cnt_j] = counter - 1;
-                    j_col[cnt_j] = tmpVec[i].J;
-                    val[cnt_j] = tmpVec[i].V;
-                }
-                prevInd_I = tmpVec[i].I;
-                prevInd_J = tmpVec[i].J;
-            }
-            l2g_i_coo.resize(counter );
-            l2g_i_coo.shrink_to_fit();
-            n_row_cmprs = counter;
-            tmpVec.clear();
-            tmpVec.shrink_to_fit();
+        vector < int_int_dbl > tmpVec;
+        tmpVec.resize(i_coo_cmpr.size());
+        for (int i = 0; i < i_coo_cmpr.size();i++){
+            tmpVec[i].I = i_coo_cmpr[i];
+            tmpVec[i].J = j_col[i];
+            tmpVec[i].V = val[i];
+        }
+/*AAA*/
+        sortAndUniqueCOO(tmpVec);
+/*BBB*/
+        tmpVec.clear();
+        tmpVec.shrink_to_fit();
 
         //}
         if (_format == 1){
@@ -212,10 +169,90 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
     numel = n_row_cmprs * n_col;
 }
 
+
+void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
+/* sort according to index I -------------------------------------------------*/
+    sort(tmpVec.begin(),tmpVec.end(),Matrix::cmp_int_int_I);
+/* partial sorting according to index J (per sets with same I)----------------*/
+    int startInd = 0, endInd = 1;
+    int tmpVecIprev = tmpVec[0].I;
+    for (int i = 1 ; i < nnz; i ++){
+        if (tmpVec[i].I == tmpVecIprev){
+            endInd++;
+        }
+        if (tmpVec[i].I != tmpVecIprev || (tmpVec[i].I == tmpVecIprev &&
+                 i == nnz - 1))
+        {
+            sort(tmpVec.begin() + startInd,
+                              tmpVec.begin() + (endInd  ),Matrix::cmp_int_int_J);
+            startInd = i;
+            endInd = i + 1;
+        }
+        tmpVecIprev = tmpVec[i].I;
+    }
+/* Cumulating duplicated A[I,J] elements--------------------------------------*/
+    int prevInd_I = -1;
+    int prevInd_J = -1;
+    int counter = 0;
+    int cnt_j = -1;
+
+    if (l2g_i_coo.size() != tmpVec.size()){
+        l2g_i_coo.resize(tmpVec.size());
+    }
+    if (i_coo_cmpr.size() != tmpVec.size()){
+        i_coo_cmpr.resize(tmpVec.size());
+    }
+    if (j_col.size() != tmpVec.size()){
+        j_col.resize(tmpVec.size());
+    }
+    if (val.size() != tmpVec.size()){
+        val.resize(tmpVec.size());
+    }
+
+    int init_nnz = nnz;
+    for (int i = 0 ; i < init_nnz; i ++){
+        if (prevInd_I != tmpVec[i].I){
+            l2g_i_coo[counter] = tmpVec[i].I;
+            counter++;
+        }
+        if (prevInd_I == tmpVec[i].I && prevInd_J == tmpVec[i].J){
+            val[cnt_j] += tmpVec[i].V;
+            nnz--;
+        }
+        else {
+            cnt_j++;
+            i_coo_cmpr[cnt_j] = counter - 1;
+            j_col[cnt_j] = tmpVec[i].J;
+            val[cnt_j] = tmpVec[i].V;
+        }
+        prevInd_I = tmpVec[i].I;
+        prevInd_J = tmpVec[i].J;
+    }
+
+    l2g_i_coo.resize(counter );
+    l2g_i_coo.shrink_to_fit();
+
+    i_coo_cmpr.resize(nnz);
+    i_coo_cmpr.shrink_to_fit();
+
+    j_col.resize(nnz);
+    j_col.shrink_to_fit();
+
+    val.resize(nnz);
+    val.shrink_to_fit();
+
+    n_row_cmprs = counter;
+
+}
+
+
+
 void Matrix::COO2CSR(){
 //    if (format == 1){
 //        return;
 //    }
+
+// COO is already is sorted without redundant entries
     int pi = -1;
     int cnt = 0;
     i_ptr.resize(n_row_cmprs + 1);
@@ -456,11 +493,9 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
         }
         if (format == 0 && _format == 1){
             COO2CSR();
-            cout << " AAAAAAAAAAAAAAA \n";
         }
         if (format == 1 && _format == 0){
             CSR2COO();
-            cout << " BBBBBBBBBBBBBBB \n";
         }
         if (_format == 2){
             CSRorCOO2DNS(DNS_reducedZeroRows,DNS_transposed);

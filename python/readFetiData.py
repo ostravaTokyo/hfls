@@ -34,7 +34,7 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
 #
     return tmp
 
-path0 = "../data1"
+path0 = "../data"
 nSub = 8
 
 
