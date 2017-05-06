@@ -489,6 +489,7 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
             }
         }
         else {
+            cout << "format = " << format << endl;
             cerr << "Unexpected format of matrix to be printed !!!" << "\n";
         }
         if (format == 0 && _format == 1){
@@ -624,6 +625,21 @@ double Matrix::norm2()
     }
     return sqrt(_norm2);
 }
+
+
+void Matrix::getBasicMatrixInfo(){
+    printf("symmetric           %d (0: unsym, 1: sym. lower tr., 2: sym. upper tr.)\n", symmetric);
+    printf("format              %d (0: coo, 1: csr, 2: dense)\n", format);
+    printf("nnz:                %d \n", nnz);
+    printf("n_row_cmprs:        %d \n", n_row_cmprs);
+    printf("n_row:              %d \n", n_row);
+    printf("n_col:              %d \n", n_col);
+    printf("i_ptr.size():       %d \n", i_ptr.size());
+    printf("i_coo_cmpr.size():  %d \n", i_coo_cmpr.size());
+    printf("j_col.size():       %d \n", j_col.size());
+    printf("val.size():         %d \n", val.size());
+}
+
 
 
 void Matrix::getNullPivots(vector < int > & null_pivots){

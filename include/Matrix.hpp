@@ -78,6 +78,7 @@ public:
     void getNullPivots(vector < int > & );
     void sortAndUniqueCOO(vector < int_int_dbl > &);
 
+    void getBasicMatrixInfo();
 
     MKL_INT iparm[64];
     MKL_INT mtype;
