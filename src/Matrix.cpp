@@ -70,14 +70,17 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
 /* FORMAT = 2: DNS                                                            */
 
     ifstream input(path2matrix.c_str());
-    cout << path2matrix.c_str() <<"\n";
     input >> n_row;
     input >> n_col;
     input >> nnz;
+    symmetric = _symmetric;
+
+#if VERBOSE_LEVEL>3
+    cout << path2matrix.c_str() <<"\n";
     cout<< "n_row "<< n_row << endl;
     cout<< "n_col "<< n_col << endl;
     cout<< "nnz   "<< nnz   << endl;
-    symmetric = _symmetric;
+#endif
 
     if (_format == 2)    /*DNS*/
     {
@@ -268,7 +271,7 @@ void Matrix::COO2CSR(){
     i_coo_cmpr.clear();
     i_coo_cmpr.shrink_to_fit();
     format = 1;
-#if 0
+#if VERBOSE_LEVEL>4
 /* test - print 'i_ptr' to cmd                                                */
     for (int i = 0 ; i < n_row_cmprs + 1; i++){
         cout << " i_ptr["<< i<<"]="
@@ -504,6 +507,7 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
 //        cout << " format=" << format << "_format =" << _format << "\n";
     }
     else{
+        cout << " print matrix directly from dense is " << endl;
         cout << " not implemented yet " << endl;
 //        if (format < 2) {
 //            CSRorCOO2DNS(true,true);

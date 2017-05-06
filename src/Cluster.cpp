@@ -145,7 +145,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
         /* print */
         /* K, R, etc.*/
+#if VERBOSE_LEVER>3
         cout << "   ... printing matrices start  ...";
+#endif
         K[i].printToFile("K",folder,i,printCooOrDense);
         K_reg[i].printToFile("K_reg",folder,i,printCooOrDense);
         R[i].printToFile("R",folder,i,printCooOrDense);
@@ -154,7 +156,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Bf[i].printToFile("Bf",folder,i,printCooOrDense);
         Gc[i].printToFile("Gc",folder,i,printCooOrDense);
         Gc[i].l2g_i_coo = Bc[i].l2g_i_coo;
+#if VERBOSE_LEVER>3
         cout << "  " << (i + 1) <<"/" << nS <<"  ...\n";
+#endif
     }
 
 //    Matrix::testPardiso();
@@ -168,7 +172,10 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
     create_Ac_clust();
     Ac_clust.getBasicMatrixInfo();
+
+#if VERBOSE_LEVER>3
     cout << "0 Ac_clust.format = " << Ac_clust.format << endl;
+#endif
     Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
 
     for (int i = 0 ; i < nS; i++){
@@ -299,7 +306,6 @@ void Cluster::create_Ac_clust(){
      * is kept in the memeory.
      * Due to dissection, zero diagonal matrix is placed
      * in the block (1,1)                                   */
-    cout << " ============== " << Ac_clust.n_col - Ac_clust.n_row << endl;
     int init_nnz = Ac_clust.nnz;
     int new_nnz = init_nnz + Gc_clust.n_col;
     /* n_row = n_row_cmprs = n_col */
