@@ -68,7 +68,6 @@ public:
     void DNS2CSR();
     void DNS2COO();
     void compresRows();
-    static Matrix CreateCopyFrom(const Matrix&);
     void readCooFromFile(string, int,int,int);
     void printToFile(string,string,int,bool);
     void InitializeSolve();
