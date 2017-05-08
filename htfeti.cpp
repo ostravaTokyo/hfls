@@ -19,7 +19,9 @@ int main(int argc, char *argv[]){
 
 
     int var = 0;
-
+    if (argc == 2) {
+       var = atoi(argv[1]);
+    }
     switch (var)
     {
         case (0):
