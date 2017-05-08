@@ -29,16 +29,33 @@ public:
     std::vector< Matrix> Bf;
     /* FETI  (second ...)*/
     std::vector< Matrix> Gc;
+    std::vector< Matrix> Gf;
 
+
+
+
+    int nS;
+
+
+
+    Matrix Gf_clust;
 
     Matrix Fc_clust;
     Matrix Gc_clust;
     Matrix Ac_clust;
 
+
+    /* FETI */
+    void create_Gf_clust();
+
+    /* HFETI */
     void create_clust_object(Matrix &, vector <Matrix> & , bool);
     void create_Fc_clust();
     void create_Gc_clust();
     void create_Ac_clust();
+
+    /* constraints */
+    void create_cluster_constraints();
 
 };
 
