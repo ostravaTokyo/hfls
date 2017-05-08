@@ -27,18 +27,18 @@ bool Matrix::cmp_int_int_J(int_int_dbl a,int_int_dbl b)
 bool Matrix::compareDouble(double i, double j)
 { return fabs(i)<=fabs(j); }
 
-void Matrix::zero_dense(int _n_row,int _n_col){
+void Matrix::zero_dense(int n_row,int n_col){
     bool NorT = true;
-    zero_dense(_n_row, _n_col, NorT);
+    zero_dense(n_row, n_col, NorT);
 }
 
 
-void Matrix::zero_dense(int _n_row,int _n_col, bool NorT){
-    nnz  = _n_row * _n_col;
-    numel = _n_row * _n_col;
-    n_row = _n_row;
-    n_col = _n_col;
-    n_row_cmprs = _n_row;
+void Matrix::zero_dense(int n_row_,int n_col_, bool NorT){
+    nnz  = n_row_ * n_col_;
+    numel = n_row_ * n_col_;
+    n_row = n_row_;
+    n_col = n_col_;
+    n_row_cmprs = n_row_;
     DNS_reducedZeroRows = false;
     DNS_transposed = !NorT;
     symmetric = 0;
@@ -54,7 +54,7 @@ void Matrix::zero_dense(int _n_row,int _n_col, bool NorT){
 }
 
 
-void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
+void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
                                                                      int offset)
 {
 /* MATRIX MARKET FORMAT                                                       */
@@ -73,7 +73,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
     input >> n_row;
     input >> n_col;
     input >> nnz;
-    symmetric = _symmetric;
+    symmetric = symmetric_;
 
 #if VERBOSE_LEVEL>3
     cout << path2matrix.c_str() <<"\n";
@@ -82,7 +82,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
     cout<< "nnz   "<< nnz   << endl;
 #endif
 
-    if (_format == 2)    /*DNS*/
+    if (format_ == 2)    /*DNS*/
     {
         dense.resize(n_row * n_col);
         n_row_cmprs = n_row;
@@ -112,7 +112,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
         I-=offset;
         J-=offset;
 
-        if (_format == 2) /* dense */
+        if (format_ == 2) /* dense */
         {
             dense[I + J * n_row] = V;
         }
@@ -137,8 +137,8 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
 /* and update size of vectors (i_coo_cmpr, j_col, ....)-----------------------*/
     nnz = _nnz;
 /*                                                                            */
-    format = _format;
-    if (_format != 2){
+    format = format_;
+    if (format_ != 2){
         if (i_coo_cmpr.size() > nnz){
             i_coo_cmpr.resize(nnz);
             i_coo_cmpr.shrink_to_fit();
@@ -150,7 +150,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
             val.shrink_to_fit();
         }
 /* Sorting [I, J, V]  --------------------------------------------------------*/
-//        if (_format != 2){
+//        if (format_ != 2){
         vector < int_int_dbl > tmpVec;
         tmpVec.resize(i_coo_cmpr.size());
         for (int i = 0; i < i_coo_cmpr.size();i++){
@@ -165,7 +165,7 @@ void Matrix::readCooFromFile(string path2matrix, int _symmetric, int _format,
         tmpVec.shrink_to_fit();
 
         //}
-        if (_format == 1){
+        if (format_ == 1){
             COO2CSR();
         }
     }
@@ -299,7 +299,7 @@ void Matrix::CSR2COO(){
 
 
 
-void Matrix::dummyFunction(int _n_row, int I, int J, double V)
+void Matrix::dummyFunction(int n_row_, int I, int J, double V)
 {
     if (!DNS_reducedZeroRows){
         I = l2g_i_coo[I];
@@ -309,41 +309,41 @@ void Matrix::dummyFunction(int _n_row, int I, int J, double V)
             dense[I * n_col + J] = V;
         }
         else{
-            dense[ I + J * _n_row] = V;
+            dense[ I + J * n_row_] = V;
         }
     }
     else{
-        dense[ I + J * _n_row] = V;
+        dense[ I + J * n_row_] = V;
         if (I != J){
-            dense[ J + I * _n_row] = V;
+            dense[ J + I * n_row_] = V;
         }
     }
 }
 
 
 
-void Matrix::CSRorCOO2DNS(bool _reduceZeroRows, bool _transpose){
+void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_){
 /*                                                                            */
     if (format == 2){
         /* matrix is in required format, nothing to do                        */
         return;
     }
 /*----------------------------------------------------------------------------*/
-    int _format = format;
+    int format_ = format;
     int I, J;
     double V;
-    DNS_reducedZeroRows = _reduceZeroRows;
-    DNS_transposed = _transpose;
-    int _n_row;
+    DNS_reducedZeroRows = reduceZeroRows_;
+    DNS_transposed = transpose_;
+    int n_row_;
     if (DNS_reducedZeroRows ){
-        _n_row = n_row_cmprs;
+        n_row_ = n_row_cmprs;
     }
     else{
-        _n_row = n_row;
+        n_row_ = n_row;
     }
 
     dense.resize(n_row * n_col);
-    for (int i = 0; i < _n_row * n_col;i++){
+    for (int i = 0; i < n_row_ * n_col;i++){
         dense[i] = 0;
     }
 
@@ -352,7 +352,7 @@ void Matrix::CSRorCOO2DNS(bool _reduceZeroRows, bool _transpose){
             I = i_coo_cmpr[i];
             J = j_col[i];
             V = val[i];
-            dummyFunction(_n_row,I,J,V);
+            dummyFunction(n_row_,I,J,V);
         }
     }
     else if (format == 1){
@@ -361,7 +361,7 @@ void Matrix::CSRorCOO2DNS(bool _reduceZeroRows, bool _transpose){
                 I = i;
                 J = j_col[j];
                 V = val[j];
-                dummyFunction(_n_row,I,J,V);
+                dummyFunction(n_row_,I,J,V);
             }
         }
     }
@@ -370,11 +370,11 @@ void Matrix::CSRorCOO2DNS(bool _reduceZeroRows, bool _transpose){
                                                            " format!!!" << "\n";
     }
 
-    if(_format == 0){
+    if(format_ == 0){
         i_coo_cmpr.clear();
         i_coo_cmpr.shrink_to_fit();
     }
-    else if (_format == 1){
+    else if (format_ == 1){
         i_ptr.clear();
         i_ptr.shrink_to_fit();
     }
@@ -452,7 +452,7 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
         }
     }
 
-    const int _format = format;
+    const int format_ = format;
     string path2matrix = folder+"/dump_" + nameOfMat + "_" +
                                                      to_string(indOfMat)+".txt";
     FILE *fp = NULL;
@@ -467,11 +467,13 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
             DNS2COO();
         }
         int I, J,Itmp;
+    fprintf(fp, "%%%%MatrixMarket matrix coordinate real %s\n",
+        symmetric == 0 ? "general" : "symmetric");
         fprintf(fp, "%d\t%d\t%d\n", n_row, n_col, nnz);
         if (format == 0){
             for (int i = 0; i < nnz; i++) {
-                I = l2g_i_coo[i_coo_cmpr[i]];
-                J = j_col[i];
+                I = l2g_i_coo[i_coo_cmpr[i]] + 1;
+                J = j_col[i] + 1;
                 V = val[i];
                 fprintf(fp, "%d\t%d\t%.16e\n", I,J,V);
             }
@@ -479,8 +481,8 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
         else if (format == 1){
             for (int i = 0; i < n_row_cmprs; i++) {
                 for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
-                    I = l2g_i_coo[i];
-                    J = j_col[j];
+                    I = l2g_i_coo[i] + 1;
+                    J = j_col[j] + 1;
                     V = val[j];
                     if (DNS_transposed){
                         Itmp = I;
@@ -495,16 +497,16 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
             cout << "format = " << format << endl;
             cerr << "Unexpected format of matrix to be printed !!!" << "\n";
         }
-        if (format == 0 && _format == 1){
+        if (format == 0 && format_ == 1){
             COO2CSR();
         }
-        if (format == 1 && _format == 0){
+        if (format == 1 && format_ == 0){
             CSR2COO();
         }
-        if (_format == 2){
+        if (format_ == 2){
             CSRorCOO2DNS(DNS_reducedZeroRows,DNS_transposed);
         }
-//        cout << " format=" << format << "_format =" << _format << "\n";
+//        cout << " format=" << format << "format_ =" << format_ << "\n";
     }
     else{
         cout << " print matrix directly from dense is " << endl;
@@ -540,11 +542,11 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
 //            fprintf(fp, "\n");
 //        }
 //
-//        if (_format != 2){
-//            if (_format == 0) {
+//        if (format_ != 2){
+//            if (format_ == 0) {
 //                DNS2COO();
 //            }
-//            else if (_format == 1){
+//            else if (format_ == 1){
 //                DNS2CSR();
 //            }
 //        }
@@ -566,10 +568,6 @@ void Matrix::setZero(){
     }
 }
 
-Matrix Matrix::CreateCopyFrom(const Matrix&AtoBeCopied){
-    Matrix Aout = AtoBeCopied;
-    return Aout;
-}
 
 
 void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
@@ -638,10 +636,10 @@ void Matrix::getBasicMatrixInfo(){
     printf("n_row_cmprs:        %d \n", n_row_cmprs);
     printf("n_row:              %d \n", n_row);
     printf("n_col:              %d \n", n_col);
-    printf("i_ptr.size():       %d \n", i_ptr.size());
-    printf("i_coo_cmpr.size():  %d \n", i_coo_cmpr.size());
-    printf("j_col.size():       %d \n", j_col.size());
-    printf("val.size():         %d \n", val.size());
+    printf("i_ptr.size():       %lu \n", i_ptr.size());
+    printf("i_coo_cmpr.size():  %lu \n", i_coo_cmpr.size());
+    printf("j_col.size():       %lu \n", j_col.size());
+    printf("val.size():         %lu \n", val.size());
 }
 
 
@@ -905,13 +903,13 @@ void Matrix::FinalizeSolve(int _i)
              &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
             iparm, &msglvl, &ddum, &ddum, &error);
 
-    if (_i == 0 ) {
-        for (int i = 0 ; i < 64 ; i++ ){
-            if (iparm[i] < 0 ){
-                cout <<"iparm[" << i <<"] = " << iparm[i] << "\n";
-            }
-        }
-    }
+//    if (_i == 0 ) {
+//        for (int i = 0 ; i < 64 ; i++ ){
+//            if (iparm[i] < 0 ){
+//                cout <<"iparm[" << i <<"] = " << iparm[i] << "\n";
+//            }
+//        }
+//    }
 #endif
 }
 
