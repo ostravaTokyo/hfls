@@ -28,7 +28,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
     return
 
 #endif
-    const int nS = options.n_subdomOnCluster;
+    nS = options.n_subdomOnCluster;
     string folder = options.path2data;
 
     K.resize(nS);
@@ -40,6 +40,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
     Bf.resize(nS);
     Bc_dense.resize(nS);
     Fc.resize(nS);
+    Gf.resize(nS);
     Gc.resize(nS);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -82,6 +83,9 @@ bool reduceZeroRows, transpose, printCooOrDense;
   }
 
 
+
+//    create_cluster_constraints();
+
 #if 0
     for (int i_sub = 0; i_sub < nS; i_sub++){
         Matrix Y;
@@ -97,14 +101,13 @@ bool reduceZeroRows, transpose, printCooOrDense;
         printf("|KR|/(|K|*|R|) = %.6e \n", normKR / (normK*normR));
     }
 #endif
+
+
     printCooOrDense = true;
     for (int i = 0; i < nS ; i++ ){
 
         vector <int > nullPivots;
         R[i].getNullPivots(nullPivots);
-//        for (int i = 0 ; i < nullPivots.size(); i++){
-//            cout << nullPivots[i] << endl;
-//        }
 
         K_reg[i] = K[i];
         K_reg[i].factorization(nullPivots);
@@ -112,7 +115,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 
         Matrix BcK_dense;
-        //BcK_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
         BcK_dense = Bc_dense[i];
         BcK_dense.setZero();
 
@@ -124,7 +126,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Lumped[i].printToFile("Lumped",folder,i,printCooOrDense);
 
         Matrix BcKplus_dense;
-//        BcKplus_dense = Matrix::CreateCopyFrom(Bc_dense[i]);
         BcKplus_dense = Bc_dense[i];
         BcKplus_dense.setZero();
 
@@ -135,6 +136,11 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Fc[i].printToFile("Fc",folder,i,printCooOrDense);
         Fc[i].l2g_i_coo = Bc[i].l2g_i_coo;
 
+        /* Gf - constraints matrix */
+        int n_rowGf = Bf[i].n_row_cmprs;
+        int n_colGf = R[i].n_col;
+        Gf[i].zero_dense(n_rowGf, n_colGf );
+        Bf[i].mult(R[i],Gf[i],true);
 
         /* Gc - constraints matrix */
         int n_rowGc = Bc[i].n_row_cmprs;
@@ -156,12 +162,17 @@ bool reduceZeroRows, transpose, printCooOrDense;
         Bf[i].printToFile("Bf",folder,i,printCooOrDense);
         Gc[i].printToFile("Gc",folder,i,printCooOrDense);
         Gc[i].l2g_i_coo = Bc[i].l2g_i_coo;
+        Gf[i].printToFile("Gf",folder,i,printCooOrDense);
+        Gf[i].l2g_i_coo = Bf[i].l2g_i_coo;
 #if VERBOSE_LEVER>3
         cout << "  " << (i + 1) <<"/" << nS <<"  ...\n";
 #endif
     }
 
 //    Matrix::testPardiso();
+
+    create_Gf_clust();
+    Gf_clust.printToFile("Gf_clust",folder,0,printCooOrDense);
 
     /* Fc_clust  */
     create_Fc_clust();
@@ -183,6 +194,16 @@ bool reduceZeroRows, transpose, printCooOrDense;
     }
 }
 
+
+void Cluster::create_Gf_clust(){
+
+    Matrix & A_clust = Gf_clust;
+    vector <Matrix> & A_i = Gf;
+    A_clust.symmetric = 0;
+    bool remapCols = false;
+    create_clust_object(A_clust, A_i, remapCols);
+}
+
 void Cluster::create_Fc_clust(){
 
     Matrix & A_clust = Fc_clust;
@@ -200,6 +221,7 @@ void Cluster::create_Gc_clust(){
     bool remapCols = false;
     create_clust_object(A_clust, A_i, remapCols);
 }
+
 
 void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool remapCols){
 
@@ -326,6 +348,106 @@ void Cluster::create_Ac_clust(){
         Ac_clust.l2g_i_coo[Fc_clust.n_row + i] = Fc_clust.n_row + i;
     }
     Ac_clust.i_ptr[Ac_clust.n_row] = new_nnz;
+
+}
+
+
+
+
+
+
+//  int first[] = {5,10,15,20,25};
+//  int second[] = {50,40,30,20,10};
+//  std::vector<int> v(10);                      // 0  0  0  0  0  0  0  0  0  0
+//  std::vector<int>::iterator it;
+//
+//  std::sort (first,first+5);     //  5 10 15 20 25
+//  std::sort (second,second+5);   // 10 20 30 40 50
+//
+//  it=std::set_intersection (first, first+5, second, second+5, v.begin());
+//                                               // 10 20 0  0  0  0  0  0  0  0
+//  v.resize(it-v.begin());                      // 10 20
+
+
+
+
+
+
+
+void Cluster::create_cluster_constraints(){
+    vector < vector < int > > subDOFset;
+
+
+    vector<int>::iterator it;
+#if 1
+
+//     25----26----27----28----29
+//      |           |           |
+//      |           |           |
+//     20----21----22----23----24
+//      |           |           |
+//      |           |           |
+//     15    16    17    18    19
+//      |           |           |
+//      |           |           |
+//     10----11----12----13----14
+//      |           |           |
+//      |           |           |
+//      5     6     7     8     9
+//      |           |           |
+//      |           |           |
+//      0-----1-----2-----3-----4
+
+    int nS_ = 6;
+    subDOFset.resize(nS_);
+
+    int data0[] = {0, 1, 2, 5, 6, 7, 10, 11, 12};
+    subDOFset[0].insert(subDOFset[0].begin(), data0, data0 + 9);
+
+    int data1[] = {2, 3, 4, 7, 8, 9, 12, 13, 14};
+    subDOFset[1].insert(subDOFset[1].begin(), data1, data1 + 9);
+
+    int data2[] = {10, 11, 12, 15, 16, 17, 20, 21, 22};
+    subDOFset[2].insert(subDOFset[2].begin(), data2, data2 + 9);
+
+    int data3[] = {12, 13, 14, 17, 18, 19, 22, 23, 24};
+    subDOFset[3].insert(subDOFset[3].begin(), data3, data3 + 9);
+
+    int data4[] = {20, 21, 22, 25, 26, 27};
+    subDOFset[4].insert(subDOFset[4].begin(), data4, data4 + 6);
+
+    int data5[] = {22, 23, 24, 27, 28, 29};
+    subDOFset[5].insert(subDOFset[5].begin(), data5, data5 + 6);
+#endif
+
+
+    /* filling subDOFset be DOF set over each subdomain */
+    int maxSize=0;
+    for (int i = 0 ; i < nS_ ; i++){
+//        subDOFset[i] = Bf[i].l2g_i_coo;
+        sort(subDOFset[i].begin(), subDOFset[i].end());
+        it = unique (subDOFset[i].begin(), subDOFset[i].end());
+        subDOFset[i].resize( distance(subDOFset[i].begin(),it));
+        if (subDOFset[i].size() > maxSize)
+            maxSize = subDOFset[i].size();
+    }
+
+
+    vector<int> v(2 * maxSize);
+
+    for (int i = 0; i < nS_ - 1 ; i++){
+        for (int j = i + 1; j < nS_ ; j++){
+            cout << "(" << i << ":"  << j << ")\t";
+            v.resize( 2 * maxSize );
+            it=set_intersection (subDOFset[i].begin(), subDOFset[i].end(),
+                                 subDOFset[j].begin(), subDOFset[j].end(), v.begin());
+            v.resize(it-v.begin());
+            for (int k = 0 ; k < v.size(); k++)
+                cout << v[k] << " ";
+            cout << endl;
+        }
+        cout << "\n";
+    }
 
 
 
