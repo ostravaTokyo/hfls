@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include "Mesh.hpp"
 #include "Matrix.hpp"
 #include "Array1d_double64.hpp"
 
@@ -31,6 +32,7 @@ public:
     std::vector< Matrix> Gc;
     std::vector< Matrix> Gf;
 
+//    Mesh mesh;
 
 
 

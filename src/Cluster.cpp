@@ -28,6 +28,19 @@ bool reduceZeroRows, transpose, printCooOrDense;
     return
 
 #endif
+
+//    mesh.Mesh();
+//
+//    for (int i = 0 ; i < mesh.nPoints; i++){
+//       cout << mesh.points[i].x << "  " ;
+//       cout << mesh.points[i].y << "  " ;
+//       cout << mesh.points[i].z << " \n " ;
+//    }
+
+
+
+
+
     nS = options.n_subdomOnCluster;
     string folder = options.path2data;
 
@@ -323,7 +336,7 @@ void Cluster::create_Ac_clust(){
     Ac_clust.COO2CSR();
 
     /* only upper triangular part of symmetric matrix
-    /*      Ac = [Fc     Gc]    =   [ Ac[0,0] Ac[0,1] ]
+     *      Ac = [Fc     Gc]    =   [ Ac[0,0] Ac[0,1] ]
      *           [Gc^T   O ]    =   [ Ac[1,0] Ac[1,1] ]
      * is kept in the memeory.
      * Due to dissection, zero diagonal matrix is placed
