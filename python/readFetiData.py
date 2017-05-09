@@ -34,15 +34,19 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
 #
     return tmp
 
-path0 = "../data3"
-nSub = 27
-
+path0 = "../data"
+nSub = 8
 
 Bc_List = []
 Bct_list = []
 
+Bf_List = []
+Bft_list = []
+
 K_newList = []
 R_newList = []
+
+Gf_newList = []
 
 Gc_newList = []
 Gc_List = []
@@ -55,30 +59,30 @@ BcKplus_List = []
 
 
 
-if 0:
+if 1:
 
 
     for i in range(nSub):
 
-        K_new  = load_matrix(path0,"dump_K_","",str(i),True,True,0)
+        K_new  = load_matrix(path0,"dump_K_","",str(i),True,True,1)
         K_orig = load_matrix(path0,"K","",str(i),True,False,1) 
         del_ = np.linalg.norm(K_new.toarray() - K_orig.toarray())
         n_k_orig = np.linalg.norm(K_orig.toarray()) 
 
         K_List.append(K_new.toarray())
 
-        K_reg = load_matrix(path0,"dump_K_reg_","",str(i),False,True,0)
+        K_reg = load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)
         K_reg_List.append(K_reg)
 
 
-        Fc = load_matrix(path0,"dump_Fc_","",str(i),False,False,0)
+        Fc = load_matrix(path0,"dump_Fc_","",str(i),False,False,1)
         Fc_List.append(Fc)
 
         K_newList.append(K_new)
 
         print "|K_new - K_orig| / | K_orig | :    %e, | K_orig | = %e " % (del_, n_k_orig) 
 
-        R_new  = load_matrix(path0,"dump_R_","",str(i),True,False,0)
+        R_new  = load_matrix(path0,"dump_R_","",str(i),True,False,1)
         R_newList.append(R_new)
         R_orig = load_matrix(path0,"R1","",str(i),True,False,1) 
         del_ = np.linalg.norm(R_new.toarray() - R_orig.toarray())
@@ -87,23 +91,36 @@ if 0:
 
 
         
-        Bc_new  = load_matrix(path0,"dump_Bc_","",str(i),True,False,0)
+        Bc_new  = load_matrix(path0,"dump_Bc_","",str(i),True,False,1)
         Bc_List.append(Bc_new)
         Bc_orig = load_matrix(path0,"B0","",str(i),True,False,1) 
         del_ = np.linalg.norm(Bc_new.toarray() - Bc_orig.toarray())
         n_k_orig = np.linalg.norm(Bc_orig.toarray()) 
         print "|Bc_new - Bc_orig| / | Bc_orig | : %e, | Bc_orig | = %e " % (del_, n_k_orig) 
-        Bct_new  = load_matrix(path0,"dump_Bc_dense_","",str(i),True,False,0)
+        Bct_new  = load_matrix(path0,"dump_Bc_dense_","",str(i),True,False,1)
         Bct_list.append(Bct_new)
+
+        Bf_new  = load_matrix(path0,"dump_Bf_","",str(i),True,False,1)
+        Bf_List.append(Bf_new)
+        Bf_orig = load_matrix(path0,"B1","",str(i),True,False,1) 
+        del_ = np.linalg.norm(Bf_new.toarray() - Bf_orig.toarray())
+        n_k_orig = np.linalg.norm(Bf_orig.toarray()) 
+        print "|Bf_new - Bf_orig| / | Bf_orig | : %e, | Bf_orig | = %e " % (del_, n_k_orig) 
+#        Bft_new  = load_matrix(path0,"dump_Bf_dense_","",str(i),True,False,0)
+
+
+
+
 
         Bc = Bc_List[0].toarray();
         Rc = R_newList[0].toarray();
         
         Gc_List.append(np.dot(Bc, Rc))
-        Gc_newList.append(load_matrix(path0,"dump_Gc_","",0,False,False,0))
+        Gc_newList.append(load_matrix(path0,"dump_Gc_","",0,False,False,1))
+        Gf_newList.append(load_matrix(path0,"dump_Gf_","",0,False,False,1))
 
 
-        BcKplus  = load_matrix(path0,"dump_BcKplus_","",str(i),False,False,0)
+        BcKplus  = load_matrix(path0,"dump_BcKplus_","",str(i),False,False,1)
         BcKplus_List.append(BcKplus)
     #    
     #    
@@ -125,12 +142,19 @@ if 0:
         Bc_red = Bc[indBc,:]
         BcKplus = BcKplus_List[i]
 
+        Bf = Bf_List[i].toarray()
+        indBf = np.abs(Bf).sum(axis=1)>0
+        Bf_red = Bf[indBf,:]
 
         Rc = R_newList[i].toarray()
+        
+        
 
         if (i == 0):
+            Gf_clust_python = np.dot(Bf,Rc)
             Gc_clust_python = np.dot(Bc,Rc)
         else:
+            Gf_clust_python = np.hstack((Gf_clust_python,np.dot(Bf,Rc)))
             Gc_clust_python = np.hstack((Gc_clust_python,np.dot(Bc,Rc)))
         indBcKplus = np.abs(BcKplus).sum(axis=1)>0
         BcKplus = BcKplus[indBcKplus,:] 
@@ -152,9 +176,10 @@ if 0:
         print "|Fc_python - Fc_myAp|/|Fc_python|",ddd0 / ddd1  
 
 
-    Fc_clust =  load_matrix(path0,"dump_Fc_clust_","",0,False,True,0)
-    Gc_clust =  load_matrix(path0,"dump_Gc_clust_","",0,False,False,0)
-    Ac_clust =  load_matrix(path0,"dump_Ac_clust_","",0,False,False,0)
+    Fc_clust =  load_matrix(path0,"dump_Fc_clust_","",0,False,True,1)
+    Gc_clust =  load_matrix(path0,"dump_Gc_clust_","",0,False,False,1)
+    Gf_clust =  load_matrix(path0,"dump_Gf_clust_","",0,False,False,1)
+    Ac_clust =  load_matrix(path0,"dump_Ac_clust_","",0,False,True,1)
     Ac_clust_python = np.hstack((Fc_clust_python,Gc_clust_python))
 
     Z = np.zeros((Gc_clust_python.shape[1],Ac_clust.shape[1]))
@@ -169,8 +194,21 @@ if 0:
     ddd0 = np.linalg.norm(Gc_clust - Gc_clust_python)
     ddd1 = np.linalg.norm(Gc_clust)
     print "|Gc_clust_python - Gc_clust_myAp|/|Gc_clust_python|",ddd0 / ddd1  
+    
+    ddd0 = np.linalg.norm(Gf_clust - Gf_clust_python)
+    ddd1 = np.linalg.norm(Gf_clust)
+    print "|Gf_clust_python - Gf_clust_myAp|/|Gf_clust_python|",ddd0 / ddd1  
 
     ddd0 = np.linalg.norm(Ac_clust - Ac_clust_python)
     ddd1 = np.linalg.norm(Ac_clust)
     print "|Ac_clust_python - Ac_clust_myAp|/|Ac_clust_python|",ddd0 / ddd1  
 
+
+
+
+
+#plt.subplot(1,2,1)
+#plt.spy(Gf_clust_python,markersize=1)
+#plt.subplot(1,2,2)
+#plt.spy(Gf_clust,markersize=1)
+#plt.show()
