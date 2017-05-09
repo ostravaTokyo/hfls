@@ -9,7 +9,7 @@ all:
 	(cd src; make) 
 	$(LD) $(LDOPT) -o main htfeti.o \
 	src/*.o $(SHARED_COMPILER)
-	-mkdir build
+	-mkdir -p build
 	-mv main build/
 
 clean:
