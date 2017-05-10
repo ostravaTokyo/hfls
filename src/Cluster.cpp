@@ -31,11 +31,11 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
     mesh.createMesh();
 //
-    for (int i = 0 ; i < mesh.nPoints; i++){
-       cout << mesh.points[i].x << "  " ;
-       cout << mesh.points[i].y << "  " ;
-       cout << mesh.points[i].z << " \n " ;
-    }
+//    for (int i = 0 ; i < mesh.nPoints; i++){
+//       cout << mesh.points[i].x << "  " ;
+//       cout << mesh.points[i].y << "  " ;
+//       cout << mesh.points[i].z << " \n " ;
+//    }
 
 
 
