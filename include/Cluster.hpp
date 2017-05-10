@@ -32,7 +32,7 @@ public:
     std::vector< Matrix> Gc;
     std::vector< Matrix> Gf;
 
-//    Mesh mesh;
+    Mesh mesh;
 
 
 
