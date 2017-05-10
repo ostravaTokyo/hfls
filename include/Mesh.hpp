@@ -20,6 +20,7 @@ struct Element
    int ind[8];
    int PartitionId;
    int MaterialId;
+   int nSub;
 
 };
 
@@ -38,6 +39,7 @@ public:
 
     int nElements;
     int nPoints;
+    int nSub;
     vector < Element > elements;
     vector < Point  > points;
     void createMesh();
