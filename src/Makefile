@@ -4,6 +4,7 @@ SOURCESCPP = Array1d_double64.cpp \
              Cluster.cpp \
              Matrix.cpp \
              Mesh.cpp \
+             Data.cpp \
              Options.cpp
 
 include ../Make.inc

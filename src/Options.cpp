@@ -1,4 +1,4 @@
-#include "../include/Options.hpp"
+#include "Options.hpp"
 //
 void Options::set_values(int n_subdomOnCluster_, std::string path2data_)
 {

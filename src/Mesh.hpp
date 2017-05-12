@@ -15,8 +15,9 @@
 
 using namespace std;
 
-struct Element
+class Element
 {
+public:
    int ind[8];
    int PartitionId;
    int MaterialId;
@@ -24,8 +25,9 @@ struct Element
 
 };
 
-struct Point
+class Point
 {
+public:
    double x;
    double y;
    double z;

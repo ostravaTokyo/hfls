@@ -1,5 +1,9 @@
-#include "../include/Cluster.hpp"
-
+#include "Cluster.hpp"
+#include <unistd.h>
+#include <cstdlib>
+#ifdef DISSECTION
+#include "Dissection.hpp"
+#endif
 using namespace std;
 
 Cluster::Cluster(Options options)
@@ -202,9 +206,31 @@ bool reduceZeroRows, transpose, printCooOrDense;
 #endif
     Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
 
+#ifdef DISSECTION
+    {
+      uint64_t *_dslv = new uint64_t;
+      int num_threads = 1;
+      diss_init(*_dslv, 0, 1, 0, num_threads, 1);
+      int sym = 1; // isSym = 1 + upper_flag = 0
+      int decomposer = 0;
+      diss_s_fact(*_dslv,
+		  Ac_clust.n_row, &Ac_clust.i_ptr[0], &Ac_clust.j_col[0],
+		  sym, decomposer);
+      
+      int indefinite_flag = 1;
+      int scaling = 2;
+      double eps_pivot = 1.0e-2;
+      diss_n_fact(*_dslv, &Ac_clust.val[0], scaling, eps_pivot, 
+		indefinite_flag);
+      int n0;
+      diss_get_kern_dim(*_dslv, &n0);
+      fprintf(stderr, "%s %d : ## kernel dimension = %d\n", __FILE__, __LINE__, n0);
+    }
+#endif
     for (int i = 0 ; i < nS; i++){
        K_reg[i].FinalizeSolve(i);
     }
+
 }
 
 

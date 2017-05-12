@@ -14,7 +14,7 @@ file(GLOB htfeti_SRC
 )
 
 if(UNIX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++11 -fPIC")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fPIC")
 endif()
 # -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
 

@@ -15,3 +15,6 @@ all:
 clean:
 	-rm *.o main
 	(cd src; make clean)
+
+tar:
+	tar czvf hfls.tar.gz htfeti.cpp src/*.cpp include/*.hpp Defs.inc Make.inc Makefile src/Makefile
