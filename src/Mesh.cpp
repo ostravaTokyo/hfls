@@ -5,9 +5,9 @@ using namespace std;
 
 Mesh::Mesh()
 {
-    nElements = 0;
+    nElementsClst = 0;
     nPoints = 0;
-    nSub = 0;
+    nSubClst = 0;
 }
 
 Mesh::~Mesh()
@@ -19,14 +19,13 @@ Mesh::~Mesh()
 
 void Mesh::createMesh(){
     // - geometry setting ()
-    double length[] = {6.0, 1.0, 1.0}; // corresponds to python benchmark
+    double length[] = {4.0, 4.0, 4.0}; // corresponds to python benchmark
     //double length[] = {1.0, 1.0, 1.0};
     double radius = 1050.0;
 
     // - decomposition
-    int nElSubXYZ[] = {4,4,4};
-    int nSubXYZ[] = {2,2,1};
-
+    int nElSubXYZ[] = {1,1,1};
+    int nSubXYZ[] = {1,1,2};
 
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -44,11 +43,13 @@ void Mesh::createMesh(){
     shift[2] =     0 * length[2];
 
 
-    nElements = nElxyz_all[0] * nElxyz_all[1] * nElxyz_all[2];
+
+    nSubClst = nSubXYZ[0] * nSubXYZ[1] * nSubXYZ[2];
+    nElementsClst = nElxyz_all[0] * nElxyz_all[1] * nElxyz_all[2];
     nPoints = (nElxyz_all[0] + 1) * (nElxyz_all[1] + 1) * (nElxyz_all[2] + 1);
 
 
-    elements.resize(nElements);
+    elements.resize(nElementsClst);
     points.resize(nPoints);
 
 
@@ -76,10 +77,6 @@ void Mesh::createMesh(){
         flag_radius = false;
     }
 
-//    if (mpi_rank == 0){
-//        cout << " minimal radius:  " << radius_min << endl;
-//        cout << " original radis: " << radius << endl;
-//    }
 
 
 
@@ -155,3 +152,11 @@ void Mesh::createMesh(){
 /*
     */
 }
+
+//void Mesh::feti_ddm_cluster(){
+//
+//
+//    if (nSubClst == 0){
+//        //nSubClst = nSubXYZ[0] * nSubXYZ[1] + nSubXYZ[2];
+//
+//}

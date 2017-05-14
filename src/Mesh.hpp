@@ -21,7 +21,6 @@ public:
    int ind[8];
    int PartitionId;
    int MaterialId;
-   int nSub;
 
 };
 
@@ -39,7 +38,9 @@ public:
     Mesh();
     ~Mesh();
 
-    int nElements;
+    int nElementsClst;
+    int nSubClst;
+    vector < int > nElementsSub;
     int nPoints;
     int nSub;
     vector < Element > elements;

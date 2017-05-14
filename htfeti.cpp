@@ -17,7 +17,7 @@ int main(int argc, char *argv[]){
     string path2data;
 
 
-    int var = 0;
+    int var = 5;
     if (argc == 2) {
        var = atoi(argv[1]);
     }
@@ -48,6 +48,11 @@ int main(int argc, char *argv[]){
             // 'kernel' gluing
             n_subdomOnCluster = 27;
             path2data = "../data4/";
+            break;
+        case (5):
+            // data are created in application
+            // and 'path2data' is setup for dumped files
+            path2data = "../data5/";
             break;
     }
 

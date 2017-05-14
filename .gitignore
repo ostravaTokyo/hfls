@@ -35,6 +35,7 @@ data1/*
 data2/*
 data3/*
 data4/*
+python/*.txt
 
 build*/*
 
@@ -49,3 +50,4 @@ main
 *autosave*
 *.tar*
 *.zip
+
