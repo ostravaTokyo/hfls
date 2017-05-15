@@ -24,8 +24,8 @@ void Mesh::createMesh(){
     double radius = 1050.0;
 
     // - decomposition
-    int nElSubXYZ[] = {1,1,1};
-    int nSubXYZ[] = {1,1,2};
+    int nElSubXYZ[] = {5,5,5};
+    int nSubXYZ[] = {4,4,4};
 
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

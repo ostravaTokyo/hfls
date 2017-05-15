@@ -302,7 +302,7 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate){
 
     double C [36];
     double gaussPoints[24];
-    double e = 2.1e5;
+    double e = 10000;
     double mu = 0.3;
     double const1 = e / ((1. + mu) * (1. - 2. * mu));
     double mu2 = 1. - mu;
@@ -325,16 +325,6 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate){
     C[28] = mu3 * const1;
     C[21] = mu3 * const1;
     C[35] = mu3 * const1;
-
-
-
-//    for (int i = 0; i < 6 ; i++){
-//        for (int j = 0; j < 6 ; j++){
-//            cout << C[i+6*j] << " ";
-//        }
-//        cout << endl;
-//    }
-
     //
     gaussPoints[0] = -pt; // 0
     gaussPoints[1] = -pt;
@@ -464,19 +454,6 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate){
           i_local_K_f.val_f[j + 16] += acceleration[2] * density * N[j] * detJ;
         }
     }
-
-
-
-//        for (int i = 0; i < 24; i++){
-//            for (int j = 0; j < 24; j++){
-//                cout << i_local_K_f.val_K[i + j * 24] << " ";
-//            }
-//            cout << endl;
-//        }
-//        for (int i = 0; i < 24; i ++){
-//            cout << i_local_K_f.ieq[i] << " ";
-//        }
-//        cout << endl;
 }
 
 

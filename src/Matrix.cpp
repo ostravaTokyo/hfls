@@ -836,8 +836,8 @@ void Matrix::InitializeSolve()
     /* .. Reordering and Symbolic Factorization. This step also allocates */
     /* all memory that is necessary for the factorization. */
     /* -------------------------------------------------------------------- */
-    n = n_row;
-    MKL_INT n1 = n_row;
+    n = n_row_cmprs;
+    MKL_INT n1 = n_row_cmprs;
     phase = 11;
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
              &n1, &val[0], &i_ptr[0], &j_col[0],

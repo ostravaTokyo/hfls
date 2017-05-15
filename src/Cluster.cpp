@@ -76,6 +76,8 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //    Fc.resize(nS);
 //    Gf.resize(nS);
 //    Gc.resize(nS);
+    bool printMat = false;
+
 
     printCooOrDense = true;
 
@@ -83,9 +85,11 @@ bool reduceZeroRows, transpose, printCooOrDense;
 /*_NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW_*/
     for (int d = 0; d < K_new.size(); d++){
         cout << "d = " << d << endl;
-        K_new[d].printToFile("K_new",folder,d,printCooOrDense);
+        if (printMat)
+            K_new[d].printToFile("K_new",folder,d,printCooOrDense);
         K_new[d].getBasicMatrixInfo();
-        Bc_new[d].printToFile("Bc_new",folder,d,printCooOrDense);
+        if (printMat)
+            Bc_new[d].printToFile("Bc_new",folder,d,printCooOrDense);
         Bc_new[d].getBasicMatrixInfo();
 //
 //
@@ -93,7 +97,8 @@ bool reduceZeroRows, transpose, printCooOrDense;
         reduceZeroRows = true;
         transpose = true;
         Bc_dense_new[d].CSRorCOO2DNS(reduceZeroRows,transpose);
-        Bc_dense_new[d].printToFile("Bc_dense_new",folder,d,printCooOrDense);
+        if (printMat)
+            Bc_dense_new[d].printToFile("Bc_dense_new",folder,d,printCooOrDense);
 //
 //
 //
@@ -107,7 +112,8 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
         K_reg_new[d] = K_new[d];
         K_reg_new[d].factorization(nullPivots_new);
-        K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
+        if (printMat)
+            K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
 
 //
 //
@@ -118,30 +124,38 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //
 //
         K_new[d].mult(Bc_dense_new[d],BcK_dense_new,true);
-        BcK_dense_new.printToFile("BcK_dense_new",folder,d,printCooOrDense);
+        if (printMat)
+            BcK_dense_new.printToFile("BcK_dense_new",folder,d,printCooOrDense);
         Lumped_new[d].zero_dense(Bc_new[d].n_row_cmprs,  Bc_new[d].n_row_cmprs);
         Bc_new[d].mult(BcK_dense_new,Lumped_new[d],true);
-        Lumped_new[d].printToFile("Lumped_new",folder,d,printCooOrDense);
+        if (printMat)
+            Lumped_new[d].printToFile("Lumped_new",folder,d,printCooOrDense);
 //
+
+//      Matrix BcKplus_dense;
+//      BcKplus_dense = Bc_dense[i];
+//      BcKplus_dense.setZero();
+
+//      K_reg[i].solve(Bc_dense[i],BcKplus_dense);
+//      BcKplus_dense.printToFile("BcKplus",folder,i,printCooOrDense);
+//      Fc[i].zero_dense(Bc[i].n_row_cmprs,  Bc[i].n_row_cmprs);
+//      Bc[i].mult(BcKplus_dense,Fc[i],true);
+//      Fc[i].printToFile("Fc",folder,i,printCooOrDense);
+//      Fc[i].l2g_i_coo = Bc[i].l2g_i_coo;
+
+
+
         Matrix BcKplus_dense_new;
         BcKplus_dense_new = Bc_dense_new[d];
         BcKplus_dense_new.setZero();
 
-
-//        K_reg[i].solve(Bc_dense[i],BcKplus_dense);
-//        BcKplus_dense.printToFile("BcKplus",folder,i,printCooOrDense);
-//        Fc[i].zero_dense(Bc[i].n_row_cmprs,  Bc[i].n_row_cmprs);
-//        Bc[i].mult(BcKplus_dense,Fc[i],true);
-//        Fc[i].printToFile("Fc",folder,i,printCooOrDense);
-//        Fc[i].l2g_i_coo = Bc[i].l2g_i_coo;
-
-
-
         K_reg_new[d].solve(Bc_dense_new[d],BcKplus_dense_new);
-        BcKplus_dense_new.printToFile("BcKplus_new",folder,d,printCooOrDense);
+        if (printMat)
+            BcKplus_dense_new.printToFile("BcKplus_new",folder,d,printCooOrDense);
         Fc_new[d].zero_dense(Bc_new[d].n_row_cmprs,  Bc_new[d].n_row_cmprs);
         Bc_new[d].mult(BcKplus_dense_new,Fc_new[d],true);
-        Fc_new[d].printToFile("Fc_new",folder,d,printCooOrDense);
+        if (printMat)
+            Fc_new[d].printToFile("Fc_new",folder,d,printCooOrDense);
         Fc_new[d].l2g_i_coo = Bc_new[d].l2g_i_coo;
 
 
@@ -151,7 +165,8 @@ bool reduceZeroRows, transpose, printCooOrDense;
         int n_colGc = R_new[d].n_col;
         Gc_new[d].zero_dense(n_rowGc, n_colGc );
         Bc_new[d].mult(R_new[d],Gc_new[d],true);
-        Gc_new[d].printToFile("Gc_new",folder,d,printCooOrDense);
+        if (printMat)
+            Gc_new[d].printToFile("Gc_new",folder,d,printCooOrDense);
         Gc_new[d].l2g_i_coo = Bc_new[d].l2g_i_coo;
 
 
@@ -166,7 +181,8 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //            }
 //            cout << endl;
 //        }
-        R_new[d].printToFile("R_new",folder,d,printCooOrDense);
+        if (printMat)
+            R_new[d].printToFile("R_new",folder,d,printCooOrDense);
 
 //
     }
@@ -329,11 +345,13 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
     /* Fc_clust  */
     create_Fc_clust_new();
-    Fc_clust_new.printToFile("Fc_clust_new",folder,0,printCooOrDense);
+    if (printMat)
+        Fc_clust_new.printToFile("Fc_clust_new",folder,0,printCooOrDense);
 
     create_Gc_clust_new();
     cout << "====================================================\n";
-    Gc_clust_new.printToFile("Gc_clust_new",folder,0,printCooOrDense);
+    if (printMat)
+        Gc_clust_new.printToFile("Gc_clust_new",folder,0,printCooOrDense);
 
     create_Ac_clust_new();
     Ac_clust_new.getBasicMatrixInfo();
@@ -529,27 +547,6 @@ void Cluster::create_Ac_clust_new(){
 
 
 
-
-
-
-//  int first[] = {5,10,15,20,25};
-//  int second[] = {50,40,30,20,10};
-//  std::vector<int> v(10);                      // 0  0  0  0  0  0  0  0  0  0
-//  std::vector<int>::iterator it;
-//
-//  std::sort (first,first+5);     //  5 10 15 20 25
-//  std::sort (second,second+5);   // 10 20 30 40 50
-//
-//  it=std::set_intersection (first, first+5, second, second+5, v.begin());
-//                                               // 10 20 0  0  0  0  0  0  0  0
-//  v.resize(it-v.begin());                      // 10 20
-
-
-
-
-
-
-
 void Cluster::create_cluster_constraints(){
 
 
@@ -664,7 +661,8 @@ void Cluster::create_cluster_constraints(){
                 if (print2cmd){
                     cout << ind_neigh_sub << " ";
                 }
-                if ( (d + 1) == ind_neigh_sub){
+                if (ind_neigh_sub > d){
+//                if ( it1->second.size() == 1 || (d + 1) == ind_neigh_sub){
                     j_col_Bc_curr = data.g2l[d][global_DOF];
                     Bc_new[d].l2g_i_coo.push_back(cntLam);
                     Bc_new[d].j_col.push_back(j_col_Bc_curr);
@@ -675,12 +673,11 @@ void Cluster::create_cluster_constraints(){
                     Bc_new[ind_neigh_sub].j_col.push_back(j_col_Bc_neigh);
                     Bc_new[ind_neigh_sub].val.push_back(-1);
 
-                    cout << j_col_Bc_curr <<" -------- " << j_col_Bc_neigh << endl;
+                    //cout << j_col_Bc_curr <<" -------- " << j_col_Bc_neigh << endl;
 
                     cntLam++;
+                    break;
                 }
-
-
             }
             if (print2cmd){
                 cout << endl;
@@ -704,8 +701,8 @@ void Cluster::create_cluster_constraints(){
         }
         Bc_new[d].COO2CSR();
 
-        for (int i = 0 ; i < Bc_new[d].l2g_i_coo.size();i++)
-            cout << Bc_new[d].l2g_i_coo[i] << " ";
-        cout << endl;
+//        for (int i = 0 ; i < Bc_new[d].l2g_i_coo.size();i++)
+//            cout << Bc_new[d].l2g_i_coo[i] << " ";
+//        cout << endl;
     }
 }
