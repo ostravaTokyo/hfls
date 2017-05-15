@@ -49,11 +49,15 @@ bool reduceZeroRows, transpose, printCooOrDense;
     Lumped_new.resize(nSubClst);
 
 
+
+    cout << "assembling of K, f ... \n" ;
     data.fe_assemb_local_K_f(mesh);
+    cout << "symbolic factorization etc. ... \n" ;
     data.feti_symbolic(mesh,K_new);
     data.feti_numeric(mesh,K_new);
-    /* matric Bc created */
+    cout << "boolean matrix is being created. ... \n" ;
     create_cluster_constraints();
+    cout << "ker(K) is being created ... \n" ;
     data.create_analytic_ker_K(mesh,R_new);
 
 
@@ -87,10 +91,10 @@ bool reduceZeroRows, transpose, printCooOrDense;
         cout << "d = " << d << endl;
         if (printMat)
             K_new[d].printToFile("K_new",folder,d,printCooOrDense);
-        K_new[d].getBasicMatrixInfo();
+        //K_new[d].getBasicMatrixInfo();
         if (printMat)
             Bc_new[d].printToFile("Bc_new",folder,d,printCooOrDense);
-        Bc_new[d].getBasicMatrixInfo();
+        //Bc_new[d].getBasicMatrixInfo();
 //
 //
         Bc_dense_new[d] = Bc_new[d];
@@ -105,10 +109,10 @@ bool reduceZeroRows, transpose, printCooOrDense;
         vector <int > nullPivots_new;
         R_new[d].getNullPivots(nullPivots_new);
 
-        for (int i = 0 ; i < nullPivots_new.size(); i++){
-            cout << nullPivots_new[i] << " ";
-        }
-        cout << endl;
+//        for (int i = 0 ; i < nullPivots_new.size(); i++){
+//            cout << nullPivots_new[i] << " ";
+//        }
+//        cout << endl;
 
         K_reg_new[d] = K_new[d];
         K_reg_new[d].factorization(nullPivots_new);
@@ -149,6 +153,10 @@ bool reduceZeroRows, transpose, printCooOrDense;
         BcKplus_dense_new = Bc_dense_new[d];
         BcKplus_dense_new.setZero();
 
+
+
+        if (d == 0)
+            cout << "Fc[i] (for each subdom) is being created ... \n" ;
         K_reg_new[d].solve(Bc_dense_new[d],BcKplus_dense_new);
         if (printMat)
             BcKplus_dense_new.printToFile("BcKplus_new",folder,d,printCooOrDense);
@@ -161,6 +169,8 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 
         /* Gc - constraints matrix */
+        if (d == 0)
+            cout << "Gc[i] (for each subdom) is being created ... \n" ;
         int n_rowGc = Bc_new[d].n_row_cmprs;
         int n_colGc = R_new[d].n_col;
         Gc_new[d].zero_dense(n_rowGc, n_colGc );
@@ -344,15 +354,19 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //    Gf_clust_new.printToFile("Gf_clust",folder,0,printCooOrDense);
 
     /* Fc_clust  */
+
+    cout << "Fc_clust is being created ... \n" ;
     create_Fc_clust_new();
     if (printMat)
         Fc_clust_new.printToFile("Fc_clust_new",folder,0,printCooOrDense);
 
+    cout << "Gc_clust is being created ... \n" ;
     create_Gc_clust_new();
     cout << "====================================================\n";
     if (printMat)
         Gc_clust_new.printToFile("Gc_clust_new",folder,0,printCooOrDense);
 
+    cout << "Ac_clust is being created ... \n" ;
     create_Ac_clust_new();
     Ac_clust_new.getBasicMatrixInfo();
 
