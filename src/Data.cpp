@@ -63,8 +63,8 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_new){
         int n = R.n_row_cmprs;
         double x,y,z;
         int n_nods = int(n / 3);
-        cout<< "n       =    "<< n << endl;
-        cout<< "n_nods  =    "<< n_nods << endl;
+//        cout<< "n       =    "<< n << endl;
+//        cout<< "n_nods  =    "<< n_nods << endl;
         for (int i = 0 ; i < n_nods; i++){
 
             int in_glob = int ( l2g[d][3*i] / 3);
