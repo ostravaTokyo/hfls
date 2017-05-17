@@ -140,8 +140,18 @@ if 0:
 
 
 
-Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),False,False,1) 
-plt.spy(Ac_clust_new,markersize = .1);plt.show()
+Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1) 
+
+
+r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
+Ac = Ac_clust_new.toarray()[np.ix_(r,r)]
+plt.subplot(1,2,1)
+plt.spy(Ac_clust_new ,markersize = .1)
+plt.subplot(1,2,2)
+plt.spy(Ac,markersize = .1)
+
+plt.show()
+#plt.spy(Ac_clust_new,markersize = .1);plt.show()
 
 
 #Fc_python_List = []
