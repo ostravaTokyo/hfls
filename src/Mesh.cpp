@@ -17,15 +17,20 @@ Mesh::~Mesh()
 
 
 
-void Mesh::createMesh(){
+void Mesh::createMesh(const Options &options){
     // - geometry setting ()
     double length[] = {4.0, 4.0, 4.0}; // corresponds to python benchmark
     //double length[] = {1.0, 1.0, 1.0};
     double radius = 1050.0;
 
     // - decomposition
-    int nElSubXYZ[] = {7,7,7};
-    int nSubXYZ[] = {2,2,2};
+    int nElSubXYZ[3];
+    int nSubXYZ[3];
+    for (int i = 0; i < 3; i++){
+        nElSubXYZ[i] = options.meshSetting.n[i];
+        nSubXYZ[i] = options.meshSetting.N[i];
+    }
+
 
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

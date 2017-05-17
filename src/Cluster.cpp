@@ -36,7 +36,7 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
 /*_NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW_*/
     /* mesh belonging to i-th cluster (currently, i=0 only)*/
-    mesh.createMesh();
+    mesh.createMesh(options);
     const int nSubClst = mesh.nSubClst;
 
     Bc_new.resize(nSubClst);

@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "Options.hpp"
 
 
 using namespace std;
@@ -45,7 +46,7 @@ public:
     int nSub;
     vector < Element > elements;
     vector < Point  > points;
-    void createMesh();
+    void createMesh(const Options &);
 };
 
 
