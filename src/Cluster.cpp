@@ -563,7 +563,6 @@ void Cluster::create_Ac_clust_new(){
 
 void Cluster::create_cluster_constraints(){
 
-
     int nSubClst = mesh.nSubClst;
     vector < vector < int > > subDOFset;
     vector<int>::iterator it;
@@ -573,48 +572,6 @@ void Cluster::create_cluster_constraints(){
     for (int d = 0 ; d <  nSubClst; d++){
         subDOFset[d].insert(subDOFset[d].begin(), data.l2g[d].begin(), data.l2g[d].end());
     }
-
-#if 1
-
-#else
-//     25----26----27----28----29
-//      |           |           |
-//      |           |           |
-//     20----21----22----23----24
-//      |           |           |
-//      |           |           |
-//     15    16    17    18    19
-//      |           |           |
-//      |           |           |
-//     10----11----12----13----14
-//      |           |           |
-//      |           |           |
-//      5     6     7     8     9
-//      |           |           |
-//      |           |           |
-//      0-----1-----2-----3-----4
-
-    nSubClst = 6;
-    subDOFset.resize(nSubClst);
-
-    int data0[] = {0, 1, 2, 5, 6, 7, 10, 11, 12};
-    subDOFset[0].insert(subDOFset[0].begin(), data0, data0 + 9);
-
-    int data1[] = {2, 3, 4, 7, 8, 9, 12, 13, 14};
-    subDOFset[1].insert(subDOFset[1].begin(), data1, data1 + 9);
-
-    int data2[] = {10, 11, 12, 15, 16, 17, 20, 21, 22};
-    subDOFset[2].insert(subDOFset[2].begin(), data2, data2 + 9);
-
-    int data3[] = {12, 13, 14, 17, 18, 19, 22, 23, 24};
-    subDOFset[3].insert(subDOFset[3].begin(), data3, data3 + 9);
-
-    int data4[] = {20, 21, 22, 25, 26, 27};
-    subDOFset[4].insert(subDOFset[4].begin(), data4, data4 + 6);
-
-    int data5[] = {22, 23, 24, 27, 28, 29};
-    subDOFset[5].insert(subDOFset[5].begin(), data5, data5 + 6);
-#endif
 
 
     /* filling subDOFset be DOF set over each subdomain */
