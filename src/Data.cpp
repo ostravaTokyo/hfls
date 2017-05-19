@@ -16,6 +16,9 @@ void Data::fe_assemb_local_K_f(Mesh &mesh){
     Point coord[8];
     local_K_f_clust.resize(mesh.nElementsClst);
 
+    double E = mesh.material.young_modulus;
+    double mu = mesh.material.poissons_ratio;
+
     for (int i = 0; i < mesh.nElementsClst; i++){
         Element &i_elem =  mesh.elements[i];
         for (int j = 0; j < 8; j++){
@@ -29,7 +32,7 @@ void Data::fe_assemb_local_K_f(Mesh &mesh){
             local_K_f_clust[i].ieq[j + 8] = 3 * iii + 1;
             local_K_f_clust[i].ieq[j + 16] = 3 * iii + 2;
         }
-        stf_mtrx_solid45(local_K_f_clust[i], coord);
+        stf_mtrx_solid45(local_K_f_clust[i], coord, E, mu);
     }
 
 //    delete [] coord;
@@ -265,7 +268,7 @@ double Data::inverse_matrix_3x3(double *A, double *iA) {
 }
 
 
-void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate){
+void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate, double E, double mu){
 
 
 
@@ -302,9 +305,13 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate){
 
     double C [36];
     double gaussPoints[24];
-    double e = 10000;
-    double mu = 0.3;
-    double const1 = e / ((1. + mu) * (1. - 2. * mu));
+//    double E = 10000;
+    //double E = 2.1e9;  // if this mat. is set up,
+    //                      Dissection has problem with accuracy
+    //                      during the factorization of Ac = [ Fc  Gc ]
+    //                                                       [ Gct  O ] 
+ //   double mu = 0.3;
+    double const1 = E / ((1. + mu) * (1. - 2. * mu));
     double mu2 = 1. - mu;
     double mu3 = 0.5 - mu;
     double pt = 0.577350269189626;

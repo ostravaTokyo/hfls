@@ -31,7 +31,8 @@ void Mesh::createMesh(const Options &options){
         nSubXYZ[i] = options.meshSetting.N[i];
     }
 
-
+    material.young_modulus = options.young_modulus;
+    material.poissons_ratio = options.poissons_ratio;
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //                                  GEOMETRY DEFINITION
@@ -108,6 +109,18 @@ void Mesh::createMesh(const Options &options){
             }
         }
     }
+
+
+//    for (int kk = 0; kk <  nElxyz_all[2] + 1; kk+=nElSubXYZ[2]){
+//        for (int jj = 0; jj <  nElxyz_all[1] + 1; jj+=nElSubXYZ[1]){
+//            for (int ii = 0; ii <  nElxyz_all[0] + 1; ii+=nElSubXYZ[0]){
+//
+//            }
+//        }
+//    }
+
+
+
 
     int ttt[8], _first_set[4];
     vector < int > tmp_vec (ttt, ttt + sizeof(ttt)/sizeof(int));

@@ -33,6 +33,12 @@ public:
    double z;
 };
 
+class Material
+{
+public:
+    double young_modulus;
+    double poissons_ratio;
+};
 
 class Mesh{
 public:
@@ -47,6 +53,7 @@ public:
     vector < Element > elements;
     vector < Point  > points;
     void createMesh(const Options &);
+    Material material;
 };
 
 

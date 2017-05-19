@@ -11,10 +11,11 @@ public:
 
 class Options {
     public:
-        int n_subdomOnCluster;
         std::string  path2data;
-        void set_values(int, std::string);
+        void set_values(std::string, int, char*[], double, double);
         CubeMesh meshSetting;
+        double young_modulus;
+        double poissons_ratio;
 
 };
 #endif
