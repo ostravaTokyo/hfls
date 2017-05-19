@@ -10,10 +10,13 @@ int main(int argc, char *argv[]){
 
 
     string path2data = "../data/";
-/* norm of matrix is mofiedable by 'young_modulus' */
+/* norm of matrix can be changed by following 2 parameters */
     double young_modulus = 10000;
+    double poissons_ratio = 0.3;
+
+
 //    double young_modulus = 2.1e9;
-    double poissons_ratio = 0.4999;
+//    double poissons_ratio = 0.4999;
 
 /* ---------------------------------------------------------*/
 /* ---------------------------------------------------------*/
