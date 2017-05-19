@@ -19,7 +19,7 @@ Mesh::~Mesh()
 
 void Mesh::createMesh(const Options &options){
     // - geometry setting ()
-    double length[] = {4.0, 4.0, 4.0}; // corresponds to python benchmark
+    double length[] = {1.0, 1.0, 1.0}; // corresponds to python benchmark
     //double length[] = {1.0, 1.0, 1.0};
     double radius = 1050.0;
 
