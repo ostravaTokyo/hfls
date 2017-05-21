@@ -141,6 +141,8 @@ if 0:
 
 
 Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1) 
+ker_Ac_new = load_matrix(path0,"dump_ker_Ac_","",str(0),False,True,1) 
+R0_new = load_matrix(path0,"dump_R_new_","",str(0),False,True,1) 
 
 
 r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
