@@ -52,6 +52,8 @@ public:
     int nSub;
     vector < Element > elements;
     vector < Point  > points;
+    vector < int > cornerNodes;
+    vector < int > cornerDOFs;
     void createMesh(const Options &);
     Material material;
 };

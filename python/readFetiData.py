@@ -148,9 +148,9 @@ R0_new = load_matrix(path0,"dump_R_new_","",str(0),False,True,1)
 r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
 Ac = Ac_clust_new.toarray()[np.ix_(r,r)]
 plt.subplot(1,2,1)
-plt.spy(Ac_clust_new ,markersize = .1)
+plt.spy(Ac_clust_new ,markersize = 1)
 plt.subplot(1,2,2)
-plt.spy(Ac,markersize = .1)
+plt.spy(Ac,markersize = 1)
 
 plt.show()
 #plt.spy(Ac_clust_new,markersize = .1);plt.show()

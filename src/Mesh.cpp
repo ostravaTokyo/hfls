@@ -111,14 +111,42 @@ void Mesh::createMesh(const Options &options){
     }
 
 
-//    for (int kk = 0; kk <  nElxyz_all[2] + 1; kk+=nElSubXYZ[2]){
-//        for (int jj = 0; jj <  nElxyz_all[1] + 1; jj+=nElSubXYZ[1]){
-//            for (int ii = 0; ii <  nElxyz_all[0] + 1; ii+=nElSubXYZ[0]){
-//
-//            }
-//        }
-//    }
 
+    // definition of corner nodes and DOFs for cube
+    int nxNx_1 = nElSubXYZ[0] * nSubXYZ[0] + 1;
+    int nxNx_1_nyNy_1 = (nElSubXYZ[1] * nSubXYZ[1] + 1) * nxNx_1;
+    int i_node;
+    int c0 = 0;
+    int c1 = nxNx_1 - 1;
+    int c2 = (nxNx_1_nyNy_1 - 1) - nxNx_1 + 1;
+    int c3 = nxNx_1_nyNy_1 - 1;
+    int tmp_int = nxNx_1_nyNy_1 * nElSubXYZ[2] * nSubXYZ[2];
+    int c4 = tmp_int + c0;
+    int c5 = tmp_int + c1;
+    int c6 = tmp_int + c2;
+    int c7 = tmp_int + c3;
+    int n_cornerNodes = (nSubXYZ[0] + 1) * (nSubXYZ[1] + 1) * (nSubXYZ[2] + 1) - 8;
+    cornerNodes.resize(n_cornerNodes);
+    cornerDOFs.resize(3 * n_cornerNodes);
+//    cout << "==========" << endl;
+    int cntCN = 0;
+    for (int k = 0; k < nElSubXYZ[2] * nSubXYZ[2] + 1; k += nElSubXYZ[2]){
+        for (int j = 0; j < nElSubXYZ[1] * nSubXYZ[1] + 1; j += nElSubXYZ[1]){
+            for (int i = 0; i < nElSubXYZ[0] * nSubXYZ[0] + 1; i += nElSubXYZ[0]){
+                i_node = i + nxNx_1 * j + nxNx_1_nyNy_1 * k;
+                if (i_node != c0 && i_node != c1 && i_node != c2 && i_node != c3 &&
+                    i_node != c4 && i_node != c5 && i_node != c6 && i_node != c7){
+//                    cout << i_node << " " ;
+                    cornerNodes[cntCN] = i_node;
+                    cornerDOFs[3 * cntCN + 0] = 3 * i_node + 0;
+                    cornerDOFs[3 * cntCN + 1] = 3 * i_node + 1;
+                    cornerDOFs[3 * cntCN + 2] = 3 * i_node + 2;
+                    cntCN ++;
+                }
+            }
+        }
+    }
+//    cout << "==========" << endl;
 
 
 
