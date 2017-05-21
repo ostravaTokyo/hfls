@@ -13,6 +13,9 @@ Cluster::Cluster(Options options)
 int symmetric, format, offset;
 bool reduceZeroRows, transpose, printCooOrDense;
 
+
+bool printMat = bool (options.print_matrices);
+
 #if 0
 //    std::string path2matrix = options.path2data+"/testMat"+to_string(0)+".txt";
     Matrix A;
@@ -58,7 +61,10 @@ bool reduceZeroRows, transpose, printCooOrDense;
     cout << "boolean matrix is being created. ... \n" ;
     create_cluster_constraints();
     cout << "ker(K) is being created ... \n" ;
-    data.create_analytic_ker_K(mesh,R_new);
+
+    if (options.solver_opt.solver == 0){
+        data.create_analytic_ker_K(mesh,R_new);
+    }
 
 
 
@@ -80,7 +86,6 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //    Fc.resize(nS);
 //    Gf.resize(nS);
 //    Gc.resize(nS);
-    bool printMat = false;
 
 
     printCooOrDense = true;
@@ -106,18 +111,29 @@ bool reduceZeroRows, transpose, printCooOrDense;
 //
 //
 //
-        vector <int > nullPivots_new;
-        R_new[d].getNullPivots(nullPivots_new);
 
 //        for (int i = 0 ; i < nullPivots_new.size(); i++){
 //            cout << nullPivots_new[i] << " ";
 //        }
 //        cout << endl;
 
-        K_reg_new[d] = K_new[d];
-        K_reg_new[d].factorization(nullPivots_new);
-        if (printMat)
-            K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
+        if (options.solver_opt.solver == 0){
+            vector <int > nullPivots_new;
+            R_new[d].getNullPivots(nullPivots_new);
+            K_reg_new[d] = K_new[d];
+            K_reg_new[d].factorization(nullPivots_new);
+            if (printMat)
+                K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
+        }
+        else if (options.solver_opt.solver == 1){
+            K_new[d].symbolic_factorization();
+            K_new[d].numeric_factorization(R_new[d]);
+//            if (printMat)
+//                R_new[d].printToFile("R_new",folder,d,printCooOrDense);
+        }
+
+
+
 
 //
 //
@@ -157,7 +173,13 @@ bool reduceZeroRows, transpose, printCooOrDense;
 
         if (d == 0)
             cout << "Fc[i] (for each subdom) is being created ... \n" ;
-        K_reg_new[d].solve(Bc_dense_new[d],BcKplus_dense_new);
+
+        if (options.solver_opt.solver == 0){
+            K_reg_new[d].solve(Bc_dense_new[d],BcKplus_dense_new);
+        }
+        else if (options.solver_opt.solver == 1 ){
+            K_new[d].diss_solve(Bc_dense_new[d],BcKplus_dense_new);
+        }
         if (printMat)
             BcKplus_dense_new.printToFile("BcKplus_new",folder,d,printCooOrDense);
         Fc_new[d].zero_dense(Bc_new[d].n_row_cmprs,  Bc_new[d].n_row_cmprs);
@@ -393,13 +415,29 @@ bool reduceZeroRows, transpose, printCooOrDense;
 		indefinite_flag);
       int n0;
       diss_get_kern_dim(*_dslv, &n0);
+
+
+      int n_rowAc = Ac_clust_new.n_col;
+      int n_colAc = n0;
+      Matrix ker_Ac;
+      ker_Ac.zero_dense(n_rowAc,n_colAc);
+
+      diss_get_kern_vecs(*_dslv, &ker_Ac.dense[0]);
+      printCooOrDense = true;
+      ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
+
+
+
+
       fprintf(stderr, "%s %d : ## kernel dimension = %d\n", __FILE__, __LINE__, n0);
     }
 #endif
-    for (int i = 0 ; i < mesh.nSubClst; i++){
-       K_reg_new[i].FinalizeSolve(i);
-    }
 
+    if (options.solver_opt.solver = 0){
+        for (int i = 0 ; i < mesh.nSubClst; i++){
+           K_reg_new[i].FinalizeSolve(i);
+        }
+    }
 }
 
 
