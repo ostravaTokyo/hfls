@@ -59,7 +59,7 @@ bool printMat = bool (options.print_matrices);
     data.feti_symbolic(mesh,K_new);
     data.feti_numeric(mesh,K_new);
     cout << "boolean matrix is being created. ... \n" ;
-    create_cluster_constraints();
+    create_cluster_constraints(options);
     cout << "ker(K) is being created ... \n" ;
 
     if (options.solver_opt.solver == 0){
@@ -110,30 +110,20 @@ bool printMat = bool (options.print_matrices);
             Bc_dense_new[d].printToFile("Bc_dense_new",folder,d,printCooOrDense);
 //
 //
-//
-
-//        for (int i = 0 ; i < nullPivots_new.size(); i++){
-//            cout << nullPivots_new[i] << " ";
-//        }
-//        cout << endl;
 
         if (options.solver_opt.solver == 0){
-            vector <int > nullPivots_new;
+            vector < int > nullPivots_new;
             R_new[d].getNullPivots(nullPivots_new);
             K_reg_new[d] = K_new[d];
             K_reg_new[d].factorization(nullPivots_new);
-            if (printMat)
+            if (printMat){
                 K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
+            }
         }
         else if (options.solver_opt.solver == 1){
             K_new[d].symbolic_factorization();
             K_new[d].numeric_factorization(R_new[d]);
-//            if (printMat)
-//                R_new[d].printToFile("R_new",folder,d,printCooOrDense);
         }
-
-
-
 
 //
 //
@@ -141,7 +131,6 @@ bool printMat = bool (options.print_matrices);
         Matrix BcK_dense_new;
         BcK_dense_new = Bc_dense_new[d];
         BcK_dense_new.setZero();
-//
 //
         K_new[d].mult(Bc_dense_new[d],BcK_dense_new,true);
         if (printMat)
@@ -599,7 +588,7 @@ void Cluster::create_Ac_clust_new(){
 
 
 
-void Cluster::create_cluster_constraints(){
+void Cluster::create_cluster_constraints(const Options &options){
 
     int nSubClst = mesh.nSubClst;
     vector < vector < int > > subDOFset;
@@ -658,6 +647,7 @@ void Cluster::create_cluster_constraints(){
     int cntLam = 0;
     int j_col_Bc_curr;
     int j_col_Bc_neigh;
+
     for (int d = 0; d < nSubClst; d++){
         for ( auto it1 = data.interface[d].begin(); it1 != data.interface[d].end(); ++it1  ){
             global_DOF = it1->first;
@@ -665,6 +655,17 @@ void Cluster::create_cluster_constraints(){
                 cout << "["  << d << "]: ";
                 cout << global_DOF << " ";
             }
+
+
+
+            if (options.solver_opt.typeBc == 0){
+                it = find (mesh.cornerDOFs.begin(), mesh.cornerDOFs.end(), global_DOF);
+                if (it == mesh.cornerDOFs.end())
+                    continue;
+            }
+            //TODO: if 'global_DOF' is found in vector 'cornerDOFs', the entry
+            //                                                      should be deleted.
+
             for (int k = 0; k < it1->second.size(); k++){
                 ind_neigh_sub = it1->second[k];
                 if (print2cmd){

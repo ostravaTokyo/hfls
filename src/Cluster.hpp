@@ -69,7 +69,7 @@ public:
     void create_Ac_clust_new();
 
     /* constraints */
-    void create_cluster_constraints();
+    void create_cluster_constraints(const Options &);
 
 };
 
