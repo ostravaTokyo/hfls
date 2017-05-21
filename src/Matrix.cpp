@@ -19,6 +19,7 @@ Matrix::~Matrix()
 
 }
 
+
 bool Matrix::cmp_int_int_I(int_int_dbl a,int_int_dbl b)
 { return (a.I < b.I); }
 bool Matrix::cmp_int_int_J(int_int_dbl a,int_int_dbl b)
@@ -698,11 +699,59 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
 //
 }
 
+void Matrix::symbolic_factorization(){
+
+#ifdef DISSECTION
+      //diss_dslv = new uint64_t;
+      diss_num_threads = 1;
+      diss_dslv = new uint64_t;
+      diss_init(*diss_dslv, 0, 1, 0, diss_num_threads, 1);
+      int diss_sym = 1; // isSym = 1 + upper_flag = 0
+      int diss_decomposer = 0;
+
+      diss_s_fact(*diss_dslv,
+          n_row, &i_ptr[0], &j_col[0],
+          diss_sym, diss_decomposer);
+//      printCooOrDense = true;
+//      ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
+
+#endif
+
+
+}
+
+void Matrix::numeric_factorization(Matrix &R){
+//
+#ifdef DISSECTION
+      diss_indefinite_flag = 1;
+      diss_scaling = 2;
+      diss_eps_pivot = 1.0e-2;
+      diss_n_fact(*diss_dslv, &val[0], diss_scaling, diss_eps_pivot,
+        diss_indefinite_flag);
+      int n0;
+      diss_get_kern_dim(*diss_dslv, &n0);
+
+
+      R.zero_dense(n_row,n0);
+
+      diss_get_kern_vecs(*diss_dslv, &R.dense[0]);
+#endif
+
+}
+
+void Matrix::diss_solve(Matrix &B, Matrix &X){
+
+#ifdef DISSECTION
+    X = B;
+    int nrhs_ = B.n_col;
+    int projection = 0;
+    int trans = 0;
+    diss_solve_n(*diss_dslv,&X.dense[0],
+                 nrhs_, projection, trans);
+#endif
+}
 
 void Matrix::factorization(vector <int> & _nullPivots){
-
-
-
 #ifdef USE_PARDISO
 
     // regularization:
@@ -726,7 +775,6 @@ void Matrix::factorization(vector <int> & _nullPivots){
     InitializeSolve();
 #endif
 }
-
 
 
 

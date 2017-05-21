@@ -15,6 +15,17 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <unistd.h>
+#ifdef DISSECTION
+#include "Dissection.hpp"
+#endif
+
+
+
+
+//    symmetric = 0;  // 0-not, 1-lower tr., 2-upper tr.
+//    format = 1;     // 0-coo, 1-csr, 2-dense
+//    offset = 0;
 
 
 using namespace std;
@@ -87,11 +98,29 @@ public:
     MKL_INT maxfct, mnum, phase, error, msglvl;
     static void testPardiso(string);
     void factorization(vector < int > &);
+
+    uint64_t *diss_dslv;
+    int diss_num_threads;
+    int diss_sym;
+    int diss_decomposer;
+    int diss_indefinite_flag;
+    int diss_scaling;
+    double diss_eps_pivot;
+    void symbolic_factorization();
+    void numeric_factorization(Matrix &);
+    void diss_solve(Matrix &, Matrix &);
+
+
+
     double norm2();
 
     static bool cmp_int_int_I(int_int_dbl ,int_int_dbl );
     static bool cmp_int_int_J(int_int_dbl ,int_int_dbl );
     static bool compareDouble(double, double);
+
+
+
+
 
 
 };
