@@ -652,20 +652,22 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
   int rows = n_row_cmprs;
 
   vector <double> N(dense);
-  std::vector <double>::iterator  it;
+  vector <double>::iterator  it;
   int I,J,K,colInd,rowInd;
   double *tmpV = new double[rows];
+  int *_nul_piv = new int [rows];
   double pivot;
   int tmp_int;
-  int *_nul_piv = new int [rows];
-  for (int i = 0;i<rows;i++) _nul_piv[i]=i;
+  for (int i = 0;i<rows;i++){
+      _nul_piv[i]=i;
+  }
 
   auto ij = [&]( int ii, int jj ) -> int {
       return ii + rows * jj;
   };
 
   for (int j=0;j<cols;j++){
-    it = std::max_element(N.begin(),N.end()-j*rows, compareDouble);
+    it = max_element(N.begin(),N.end()-j*rows, compareDouble);
     I = it - N.begin();
     colInd = I/rows;
     rowInd = I-colInd*rows;
@@ -689,8 +691,9 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
       }
     }
   }
+  null_pivots.resize(cols);
   for (int i = 0;i<cols;i++){
-    null_pivots.push_back(_nul_piv[rows-1-i]);
+    null_pivots[i] = _nul_piv[rows-1-i];
   }
   sort(null_pivots.begin(),null_pivots.end());
 //
@@ -755,15 +758,6 @@ void Matrix::factorization(vector <int> & _nullPivots){
 #ifdef USE_PARDISO
 
     // regularization:
-    // for cube 4x4x4 nodes
-    // adding penalty to specific diagonal entries of stiff. mat.
-    int nullPivots[6] = { 3 * 0 + 0,
-                          3 * 0 + 1,
-                          3 * 0 + 2,
-                          3 * 1 + 1,
-                          3 * 1 + 2,
-                          3 * 4 + 2};
-
     int j, cnt = 0;
     for (int i = 0; i < n_row_cmprs; i++) {
         j = i_ptr[i];
