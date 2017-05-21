@@ -1,7 +1,11 @@
 #include "Options.hpp"
 //
+
+
+
 void Options::set_values(std::string path2data_, int argc, char * argv[],
-                           double young_modulus_, double poissons_ratio_)
+                           double young_modulus_, double poissons_ratio_,
+                         int pardiso_0_dissection_1, int printMat_)
 {
     path2data = path2data_;
 
@@ -14,7 +18,9 @@ void Options::set_values(std::string path2data_, int argc, char * argv[],
 
     young_modulus = young_modulus_;
     poissons_ratio = poissons_ratio_;
+    print_matrices = printMat_;
 
+    solver_opt.solver = pardiso_0_dissection_1;
 
 
     if (argc > 1) {
