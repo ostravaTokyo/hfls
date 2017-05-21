@@ -51,17 +51,18 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_new){
 
     for (int d = 0; d < nSubClst; d++){
         Matrix &R = R_new[d];
-        R.n_row = l2g[d].size();
-        R.n_row_cmprs = l2g[d].size();
-        R.n_col = 6;
-        R.numel= R.n_row * R.n_col;
-        R.dense.resize(R.numel);
-        R.symmetric = 0;
-        R.format = 2;
-        R.setZero();
-        R.l2g_i_coo.resize(R.n_row);
-        for (int i = 0; i < R.n_row; i++)
-            R.l2g_i_coo[i] = i;
+        R.zero_dense(l2g[d].size(),6);
+        //R.n_row = l2g[d].size();
+        //R.n_row_cmprs = l2g[d].size();
+        //R.n_col = 6;
+        //R.numel= R.n_row * R.n_col;
+        //R.dense.resize(R.numel);
+        //R.symmetric = 0;
+        //R.format = 2;
+        //R.setZero();
+        //R.l2g_i_coo.resize(R.n_row);
+        //for (int i = 0; i < R.n_row; i++)
+        //    R.l2g_i_coo[i] = i;
 
         int n = R.n_row_cmprs;
         double x,y,z;
