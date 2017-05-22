@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
     double young_modulus = 10000;
     double poissons_ratio = 0.3;
     /* linear solver */
-    double pardiso_0_dissection_1 = 0;
+    double pardiso_0_dissection_1 = 1;
     int print_matrices = 0;
     int typeBc = 0;    // 0 - corners, 2 - all  (1 reserved for 'null-space case')
 
