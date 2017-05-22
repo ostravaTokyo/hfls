@@ -746,7 +746,7 @@ void Matrix::diss_solve(Matrix &B, Matrix &X){
 
 #ifdef DISSECTION
     X = B;
-    int nrhs_ = B.n_col;
+    int nrhs_ = B.n_row_cmprs;
     int projection = 0;
     int trans = 0;
     diss_solve_n(*diss_dslv,&X.dense[0],
