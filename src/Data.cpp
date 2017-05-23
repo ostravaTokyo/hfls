@@ -177,6 +177,8 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_new)
 
         int neqSub = l2g[d].size();
         Matrix &_K = K_new[d];
+        _K.description = "stiffness matrix";
+        _K.order_number = d;
 
         _K.j_col.resize(nnz_K);
         _K.val.resize(nnz_K);

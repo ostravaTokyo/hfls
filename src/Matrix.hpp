@@ -61,6 +61,10 @@ public:
     int numel;
     bool DNS_reducedZeroRows;
     bool DNS_transposed;
+    string description;
+    int order_number;
+
+
 //    bool printCooOrDense;
     MKL_INT m;
     //coo row compressed
@@ -105,6 +109,8 @@ public:
     int diss_decomposer;
     int diss_indefinite_flag;
     int diss_scaling;
+    int diss_int0;
+    int solver;
     double diss_eps_pivot;
     void symbolic_factorization();
     void numeric_factorization(Matrix &);
