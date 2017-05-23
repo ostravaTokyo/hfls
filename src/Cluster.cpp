@@ -116,11 +116,13 @@ bool printMat = bool (options.print_matrices);
             R_new[d].getNullPivots(nullPivots_new);
             K_reg_new[d] = K_new[d];
             K_reg_new[d].factorization(nullPivots_new);
+            K_reg_new[d].solver = 0;
             if (printMat){
                 K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
             }
         }
         else if (options.solver_opt.solver == 1){
+            K_reg_new[d].solver = 1;
             K_new[d].symbolic_factorization();
             K_new[d].numeric_factorization(R_new[d]);
         }
@@ -415,16 +417,16 @@ bool printMat = bool (options.print_matrices);
       printCooOrDense = true;
       ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
 
-
-
-
       fprintf(stderr, "%s %d : ## kernel dimension = %d\n", __FILE__, __LINE__, n0);
     }
 #endif
 
-    if (options.solver_opt.solver = 0){
-        for (int i = 0 ; i < mesh.nSubClst; i++){
+    for (int i = 0 ; i < mesh.nSubClst; i++){
+        if (options.solver_opt.solver = 0){
            K_reg_new[i].FinalizeSolve(i);
+        }
+        else{
+           K_new[i].FinalizeSolve(i);
         }
     }
 }
