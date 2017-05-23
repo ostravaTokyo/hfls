@@ -246,9 +246,7 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
     val.shrink_to_fit();
 
     n_row_cmprs = counter;
-
 }
-
 
 
 void Matrix::COO2CSR(){
@@ -320,8 +318,6 @@ void Matrix::dummyFunction(int n_row_, int I, int J, double V)
         }
     }
 }
-
-
 
 void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_){
 /*                                                                            */
@@ -708,7 +704,7 @@ void Matrix::symbolic_factorization(){
       //diss_dslv = new uint64_t;
       diss_num_threads = 1;
       diss_dslv = new uint64_t;
-      diss_init(*diss_dslv, 0, 1, 0, diss_num_threads, 1);
+      diss_init(*diss_dslv, order_number, 1, 0, diss_num_threads, 1);
       int diss_sym = 1; // isSym = 1 + upper_flag = 0
       int diss_decomposer = 0;
 
@@ -747,6 +743,11 @@ void Matrix::diss_solve(Matrix &B, Matrix &X){
 #ifdef DISSECTION
     X = B;
     int nrhs_ = B.n_row_cmprs;
+
+//    cout << "B.n_row = " << B.n_row <<", ";
+//    cout << "B.n_row_cmprs = " << B.n_row_cmprs <<", ";
+//    cout << "B.n_col = " << B.n_col <<"\n";
+
     int projection = 0;
     int trans = 0;
     diss_solve_n(*diss_dslv,&X.dense[0],
@@ -936,23 +937,30 @@ void Matrix::solve(Matrix& B, Matrix& X){
 
 void Matrix::FinalizeSolve(int _i)
 {
+    if (solver == 0){
 #ifdef USE_PARDISO
+        double ddum;          /* Double dummy */
+        MKL_INT idum;         /* Integer dummy. */
+        phase = -1;           /* Release internal memory. */
+        PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
+                 &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
+                iparm, &msglvl, &ddum, &ddum, &error);
 
-    double ddum;          /* Double dummy */
-    MKL_INT idum;         /* Integer dummy. */
-    phase = -1;           /* Release internal memory. */
-    PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
-             &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
-            iparm, &msglvl, &ddum, &ddum, &error);
-
-//    if (_i == 0 ) {
-//        for (int i = 0 ; i < 64 ; i++ ){
-//            if (iparm[i] < 0 ){
-//                cout <<"iparm[" << i <<"] = " << iparm[i] << "\n";
-//            }
-//        }
-//    }
+    //    if (_i == 0 ) {
+    //        for (int i = 0 ; i < 64 ; i++ ){
+    //            if (iparm[i] < 0 ){
+    //                cout <<"iparm[" << i <<"] = " << iparm[i] << "\n";
+    //            }
+    //        }
+    //    }
 #endif
+    }
+    else if (solver == 1)
+    {
+#ifdef DISSECTION
+        diss_free(*diss_dslv);
+#endif
+    }
 }
 
 void Matrix::testPardiso(string folder){
