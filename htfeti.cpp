@@ -15,8 +15,9 @@ int main(int argc, char *argv[]){
     double poissons_ratio = 0.3;
     /* linear solver */
     double pardiso_0_dissection_1 = 1;
-    int print_matrices = 0;
+    int print_matrices = 1;
     int typeBc = 0;    // 0 - corners, 2 - all  (1 reserved for 'null-space case')
+    bool Ac_extended_by_kerGc = true;
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
@@ -25,7 +26,7 @@ int main(int argc, char *argv[]){
     Options options;
     options.set_values(path2data, argc, argv,
                         young_modulus, poissons_ratio,
-                        pardiso_0_dissection_1,print_matrices,typeBc);
+                        pardiso_0_dissection_1,print_matrices,typeBc, Ac_extended_by_kerGc);
     Cluster cluster(options);
     cout << "----------------- done -----------------\n" ;
     return 0;
