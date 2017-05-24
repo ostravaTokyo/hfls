@@ -217,6 +217,14 @@ bool printMat = bool (options.print_matrices);
            K_reg_new[i].FinalizeSolve(i);
         }
     }
+    else if (options.solver_opt.solver == 1){
+        for (int i = 0 ; i < mesh.nSubClst; i++){
+           K_new[i].FinalizeSolve(i);
+        }
+    }
+
+
+
 }
 
 
