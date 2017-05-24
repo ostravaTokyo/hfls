@@ -5,7 +5,7 @@ DISSECTION_INC = /data_space/france/dissection/include
 
 #CXX	= icpc -std=c++13
 CXX	= g++ -std=c++11
-CCFLAGS   = -c -g0 -DDISSECTION -DUSE_PARDISO=1 -DVERBOSE_LEVEL=1 -I$(PROJ_DIR)/include -I$(DISSECTION_INC)
+CCFLAGS   = -c -g0 -DDISSECTION -DUSE_PARDISO=1 -DVERBOSE_LEVEL=3 -I$(PROJ_DIR)/include -I$(DISSECTION_INC)
 LD      = $(CXX)
 
 #LIB_DIR_MKL = /opt/intel/compilers_and_libraries_2017/linux/mkl/lib/intel64 
