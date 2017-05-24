@@ -113,7 +113,7 @@ public:
     int solver;
     double diss_eps_pivot;
     void symbolic_factorization();
-    void numeric_factorization(Matrix &);
+    void numeric_factorization(Matrix &,bool);
     void diss_solve(Matrix &, Matrix &);
 
 

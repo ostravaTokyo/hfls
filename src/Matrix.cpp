@@ -719,21 +719,37 @@ void Matrix::symbolic_factorization(){
 
 }
 
-void Matrix::numeric_factorization(Matrix &R){
+void Matrix::numeric_factorization(Matrix &R,bool checkOrthogonality){
 //
 #ifdef DISSECTION
-      diss_indefinite_flag = 1;
-      diss_scaling = 2;
-      diss_eps_pivot = 1.0e-2;
-      diss_n_fact(*diss_dslv, &val[0], diss_scaling, diss_eps_pivot,
-        diss_indefinite_flag);
-      int n0;
-      diss_get_kern_dim(*diss_dslv, &n0);
+    diss_indefinite_flag = 1;
+    diss_scaling = 2;
+    diss_eps_pivot = 1.0e-2;
+    diss_n_fact(*diss_dslv, &val[0], diss_scaling, diss_eps_pivot,
+      diss_indefinite_flag);
+    int n0;
+    diss_get_kern_dim(*diss_dslv, &n0);
+    R.zero_dense(n_row,n0);
+    diss_get_kern_vecs(*diss_dslv, &R.dense[0]);
+
+    if (checkOrthogonality){
+        Matrix Y;
+        Y.zero_dense(n_row_cmprs , R.n_col);
+        mult(R,Y,true);
+
+        double normK = norm2();
+        double normR = R.norm2();
+        double normKR = Y.norm2();
+
+        printf("=========    %s    =========\n",R.description.c_str());
+        printf("|A| = %.3e, ", normK);
+        printf("|N| = %.3e, ", normR);
+        printf("|A*N|/(|A|*|N|) = %.3e \n", normKR / (normK*normR));
+    }
 
 
-      R.zero_dense(n_row,n0);
 
-      diss_get_kern_vecs(*diss_dslv, &R.dense[0]);
+
 #endif
 
 }
