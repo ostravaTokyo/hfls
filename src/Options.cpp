@@ -5,7 +5,8 @@
 
 void Options::set_values(std::string path2data_, int argc, char * argv[],
                            double young_modulus_, double poissons_ratio_,
-                         int pardiso_0_dissection_1, int printMat_, int typeBc_)
+                         int pardiso_0_dissection_1, int printMat_, int typeBc_,
+                         bool Ac_extended_by_kerGc_)
 {
     path2data = path2data_;
 
@@ -22,6 +23,7 @@ void Options::set_values(std::string path2data_, int argc, char * argv[],
 
     solver_opt.solver = pardiso_0_dissection_1;
     solver_opt.typeBc = typeBc_;
+    solver_opt.Ac_extended_by_kerGc = Ac_extended_by_kerGc_;
 
 
     if (argc > 1) {
