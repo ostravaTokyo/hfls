@@ -130,7 +130,7 @@ public:
     static bool cmp_int_int_I(int_int_dbl ,int_int_dbl );
     static bool cmp_int_int_J(int_int_dbl ,int_int_dbl );
     static bool compareDouble(double, double);
-
+    static void updateCOOstructure(vector <int_int_dbl > &, Matrix &, int, int);
 
 
 

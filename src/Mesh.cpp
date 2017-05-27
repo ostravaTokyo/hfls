@@ -31,6 +31,11 @@ void Mesh::createMesh(const Options &options){
         nSubXYZ[i] = options.meshSetting.N[i];
     }
 
+
+    for (int i = 0; i < 3 ; i ++)
+        cout << ":::::::::::::::::::" << nSubXYZ[i] << " " ;
+    cout << endl;
+
     material.young_modulus = options.young_modulus;
     material.poissons_ratio = options.poissons_ratio;
 

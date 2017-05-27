@@ -27,7 +27,7 @@ public:
     std::vector< Matrix> R_new;
     std::vector< Matrix> Fc_new;
     std::vector< Matrix> Bc_new;
-    std::vector< Matrix> Bc_dense_new;
+    std::vector< Matrix> BcT_dense_new;
     std::vector< Matrix> Gc_new;
 
 

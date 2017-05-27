@@ -133,14 +133,38 @@ if 0:
 
 #Bc_g = np.hstack((Bc_new[0],Bc_new[1]))
 #Bc_g = np.hstack((Bc_g,Bc_new[2]))
-#Bc_g = np.hstack((Bc_g,Bc_new[2]))
+#Bc_g = np.hstack((Bc_g,Bc_new[2])) 
+#Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
+#KpBcT = load_matrix(path0,"dump_KplusBcT_new_","",str(0),True,True,1) 
+#BcT_dense = load_matrix(path0,"dump_BcT_dense_new_","",str(0),True,True,1) 
+#Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),True,True,1)
+GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
+GcTGc_sp = load_matrix(path0,"dump_GcTGc_sparse_clust_","",str(0),False,True,1) 
 
 
 
-Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
-Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),True,True,1)
+Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),False,False,1)
 
-Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),True,True,1)
+
+
+
+#KpBcT = load_matrix(path0,"dump_KplusBcT_new_","",str(0),True,True,1) 
+#BcT_dense = load_matrix(path0,"dump_BcT_dense_new_","",str(0),True,True,1) 
+
+
+#K = []
+#Kplus_K = []
+#K_Kplus_K = []
+#K_reg = []
+#for i in range(2): 
+#    K.append(load_matrix(path0,"dump_K_dense_","",str(i),False,False,1))
+#    K_reg.append(load_matrix(path0,"dump_K_reg_new_","",str(i),False,True,1)) 
+#    Kplus_K.append(load_matrix(path0,"dump_Kplus_K_","",str(i),False,False,1))
+#    K_Kplus_K.append(load_matrix(path0,"dump_K_Kplus_K_","",str(i),False,False,1))
+#
+#plt.spy(Fc_clust_new,markersize = .8);plt.show()
+
+#Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),True,True,1)
 
 
 
@@ -172,7 +196,6 @@ Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),True,True,1)
 
 #plt.show()
 
-GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),True,True,1) 
 #ker_Ac_new = load_matrix(path0,"dump_ker_Ac_","",str(0),False,True,1) 
 #ker_GcTGc = load_matrix(path0,"dump_ker_GcTGc_","",str(0),False,True,1) 
 #R0_new = load_matrix(path0,"dump_R_new_","",str(0),False,True,1) 
@@ -186,7 +209,6 @@ GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),True,True,1)
 #plt.subplot(1,2,2)
 #plt.spy(Ac,markersize = 0.125)
 
-plt.spy(Ac_clust_new,markersize = .1);plt.show()
 
 
 #Fc_python_List = []

@@ -7,6 +7,7 @@ using namespace std;
 
 Matrix::Matrix(){
     nnz = 0;
+    numel = 0;
     n_row = 0;
     n_col = 0;
     n_row_cmprs= 0;
@@ -180,6 +181,22 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
 /* sort according to index I -------------------------------------------------*/
     sort(tmpVec.begin(),tmpVec.end(),Matrix::cmp_int_int_I);
 /* partial sorting according to index J (per sets with same I)----------------*/
+
+
+
+//    if (label == "Fc_clust"){
+//        cout << "A ===========================================\n";
+//        for (int i = 0; i < tmpVec.size();i++){
+//           cout << i << ":::  "
+//                << tmpVec[i].I << " "
+//                <<  tmpVec[i].J  << " "
+//                <<  tmpVec[i].V  << "\n";
+//        }
+//    }
+
+
+    nnz = tmpVec.size();
+
     int startInd = 0, endInd = 1;
     int tmpVecIprev = tmpVec[0].I;
     for (int i = 1 ; i < nnz; i ++){
@@ -196,6 +213,20 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
         }
         tmpVecIprev = tmpVec[i].I;
     }
+
+
+
+//    if (label == "Fc_clust"){
+//        cout << "B ===========================================\n";
+//        for (int i = 0; i < tmpVec.size();i++){
+//           cout << i << ":::  "
+//                <<  tmpVec[i].I << " "
+//                <<  tmpVec[i].J  << " "
+//                <<  tmpVec[i].V  << "\n";
+//        }
+//    }
+
+
 /* Cumulating duplicated A[I,J] elements--------------------------------------*/
     int prevInd_I = -1;
     int prevInd_J = -1;
@@ -215,6 +246,7 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
         val.resize(tmpVec.size());
     }
 
+
     int init_nnz = nnz;
     for (int i = 0 ; i < init_nnz; i ++){
         if (prevInd_I != tmpVec[i].I){
@@ -227,13 +259,30 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
         }
         else {
             cnt_j++;
-            i_coo_cmpr[cnt_j] = counter - 1;
+            i_coo_cmpr[cnt_j] = tmpVec[i].I ;
             j_col[cnt_j] = tmpVec[i].J;
             val[cnt_j] = tmpVec[i].V;
         }
         prevInd_I = tmpVec[i].I;
         prevInd_J = tmpVec[i].J;
     }
+
+
+//    if (label == "Fc_clust"){
+//        cout << "C ===========================================\n";
+//        for (int i = 0; i < init_nnz;i++){
+//           cout << i << ":::  "
+//                <<  i_coo_cmpr[i]  << " "
+//                <<  j_col[i]  << " "
+//                <<  val[i]  << "\n";
+//        }
+//    }
+
+
+
+
+
+
 
     l2g_i_coo.resize(counter );
     l2g_i_coo.shrink_to_fit();
@@ -248,6 +297,8 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
     val.shrink_to_fit();
 
     n_row_cmprs = counter;
+    n_row = counter;
+
 }
 
 
@@ -365,7 +416,8 @@ void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_){
         }
     }
     else {
-        cerr << "Unexpected format of matrix to be converted to dense" <<
+        cout<< "############ "<< label << " ############" << endl;
+        cout << "Unexpected format of matrix to be converted to dense" <<
                                                            " format!!!" << "\n";
     }
 
@@ -493,6 +545,7 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
             }
         }
         else {
+            cout<< "############ "<< label << " ############" << endl;
             cout << "format = " << format << endl;
             cerr << "Unexpected format of matrix to be printed !!!" << "\n";
         }
@@ -624,7 +677,7 @@ void Matrix::mat_mult_dense(Matrix&A, string A_NorT, Matrix&B, string B_NorT){
                 else
                     B_kj = B.dense[j + k * B.n_row_cmprs];
 
-                dense[i + j * n_row_cmprs] = A_ik * B_kj;
+                dense[i + j * n_row_cmprs] += A_ik * B_kj;
             }
         }
     }
@@ -633,27 +686,51 @@ void Matrix::mat_mult_dense(Matrix&A, string A_NorT, Matrix&B, string B_NorT){
 
 
 void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
-    int _n_rhs;
-    if (X_out.DNS_transposed){
-        _n_rhs = X_out.n_row_cmprs;
+
+    int _n_col_rhs;
+    int _n_rws;
+
+    if (NorT)
+        _n_rws = n_row_cmprs;
+    else
+        _n_rws = n_col;
+
+
+    if (X_in.DNS_transposed){
+       _n_col_rhs = X_in.n_row_cmprs;
     }
     else{
-        _n_rhs = X_out.n_col;
+        _n_col_rhs = X_in.n_col;
     }
-    mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, _n_rhs);
+
+    if (X_out.nnz == 0) {
+       X_out.zero_dense(_n_rws,_n_col_rhs);
+    }
+
+
+    mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, _n_col_rhs);
 }
 
 
 void Matrix::mult(const double x_in[], double  x_out[], bool NorT, int n_rhs){
+
+
+//    if (label == "K_")
+//        cout << "KpKpKpKKpKpKpKpKpKpKpKpKpKKKKKKKKKKKKpK" << endl;
+
     for (int i = 0; i < n_row_cmprs; i++) {
         for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
             if (symmetric > 0 ){
                 for (int k = 0; k < n_rhs; k++){
                     x_out[i + k * n_row_cmprs] +=
                             val[j] * x_in[j_col[j] + k * n_col];
+//                    if (label == "K_")
+//                        cout << val[j] * x_in[j_col[j] + k * n_col];
                     if (j_col[j] != i){
                         x_out[j_col[j] + k * n_row_cmprs] +=
                                       val[j] * x_in[i + k * n_col];
+//                    if (label == "K_")
+//                        cout << val[j] * x_in[i + k * n_col];
                     }
                 }
             }
@@ -837,9 +914,19 @@ void Matrix::numeric_factorization(Matrix &R,bool checkOrthogonality){
 void Matrix::diss_solve(Matrix &B, Matrix &X){
 
 #ifdef DISSECTION
-    X = B;
-    int nrhs_ = B.n_row_cmprs;
+    int _n_row,_n_col;
+    if (B.DNS_transposed){
+        _n_row = B.n_col;
+        _n_col = B.n_row_cmprs;
+    }
+    else
+    {
+        _n_row = B.n_row_cmprs;
+        _n_col = B.n_col;
+    }
 
+    X.zero_dense(_n_row, _n_col);
+    X.dense = B.dense;
 //    cout << "B.n_row = " << B.n_row <<", ";
 //    cout << "B.n_row_cmprs = " << B.n_row_cmprs <<", ";
 //    cout << "B.n_col = " << B.n_col <<"\n";
@@ -847,7 +934,7 @@ void Matrix::diss_solve(Matrix &B, Matrix &X){
     int projection = 0;
     int trans = 0;
     diss_solve_n(*diss_dslv,&X.dense[0],
-                 nrhs_, projection, trans);
+                 _n_col, projection, trans);
 #endif
 }
 
@@ -864,7 +951,7 @@ void Matrix::factorization(vector <int> & _nullPivots){
     for (int i = 0; i < n_row_cmprs; i++) {
         j = i_ptr[i];
         if (i == _nullPivots[cnt]){
-            val[j] *= 2;
+            val[j] *= 100;
             cnt++;
         }
     }
@@ -1009,19 +1096,35 @@ void Matrix::InitializeSolve()
 
 void Matrix::solve(Matrix& B, Matrix& X){
 #ifdef USE_PARDISO
+
     /* -------------------------------------------------------------------- */
     /* .. Back substitution and iterative refinement. */
     /* -------------------------------------------------------------------- */
     phase = 33;
     iparm[7] = 2;         /* Max numbers of iterative refinement steps. */
     MKL_INT idum;         /* Integer dummy. */
+    int _n_row, _n_col;
     if (B.DNS_transposed){
-        nrhs = B.n_row_cmprs;
+        _n_row = B.n_col;
+        _n_col = B.n_row_cmprs;
     }
     else{
-        nrhs = B.n_col;
+        _n_row = B.n_row_cmprs;
+        _n_col = B.n_col;
     }
+    nrhs = _n_col;
 
+//    if (X.label == "Kplus_K"){
+//        X.getBasicMatrixInfo();
+//    }
+//    else{
+//        cout << "\n\n\n========================= \n\n\n";
+//
+//    }
+
+    if (X.nnz == 0 ){
+        X.zero_dense(_n_row,_n_col);
+    }
 
 
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
@@ -1138,3 +1241,20 @@ void Matrix::testPardiso(string folder){
 #endif
 }
 
+void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,int i_shift, int j_shift){
+
+
+    int_int_dbl i_tmpvec;
+    cout << "...........................\n";
+    for (int j = 0; j < denseMat.n_col;j++){
+        for (int i = 0; i < denseMat.n_row_cmprs;i++){
+            i_tmpvec.I = i_shift + i;
+            i_tmpvec.J = j_shift + j;
+            i_tmpvec.V = denseMat.dense[i + j * denseMat.n_row_cmprs ];
+            if (i_tmpvec.J >= i_tmpvec.I && i_tmpvec.V != 0){
+                vec_.push_back(i_tmpvec);
+            }
+        }
+    }
+
+}
