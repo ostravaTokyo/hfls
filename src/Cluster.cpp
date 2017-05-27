@@ -240,16 +240,19 @@ bool printMat = bool (options.print_matrices);
         Gc_clust_new.printToFile("Gc_clust_new",folder,0,printCooOrDense);
 
     cout << "GcTGc is being created ... \n" ;
-    create_GcTGc();
-    GcTGc_clust.getBasicMatrixInfo();
+    if (options.solver_opt.GcTGc_assembl_block_by_block){
+        cout << " ... block version "<< endl;
+        create_GcTGc_clust_sparse();
+        GcTGc_clust = GcTGc_sparse_clust;
+    }
+    else{
+        create_GcTGc();
+        GcTGc_clust.getBasicMatrixInfo();
+    }
+
+    GcTGc_sparse_clust.getBasicMatrixInfo();
     //if (printMat)
         GcTGc_clust.printToFile("GcTGc_clust",folder,0,printCooOrDense);
-
-    cout << "GcTGc_sparse is being created ... \n" ;
-    create_GcTGc_clust_sparse();
-    GcTGc_sparse_clust.printToFile("GcTGc_sparse_clust",folder,0,printCooOrDense);
-    GcTGc_sparse_clust.getBasicMatrixInfo();
-
 
 
 //    Matrix ker_GcT;
@@ -379,7 +382,7 @@ void Cluster::create_GcTGc_clust_sparse(){
         blockPointer[i] = blockPointer[i-1] + Gc_new[i-1].n_col;
 
     for (int i = 0 ; i < mesh.nSubClst ; i++){
-        cout <<"[" << i << "]"<<  endl ;
+//        cout <<"[" << i << "]"<<  endl ;
 
         GcTGc_sparse_clust.nnz += (Gc_new[i].n_col + 1) * Gc_new[i].n_col;
 
@@ -400,25 +403,16 @@ void Cluster::create_GcTGc_clust_sparse(){
                                  overlap.begin());
             overlap.resize(it-overlap.begin());
 
-
             int n_overlap = overlap.size();
-
             if (n_overlap > 0){
 
                 Matrix G_i, G_j, GiTGj;
-
                 G_i.submatrix_row_selector(Gc_new[i],overlap);
                 G_j.submatrix_row_selector(Gc_new[ind_neigh],overlap);
-
                 GiTGj.mat_mult_dense(G_i,"T",G_j,"N");
-
-                Matrix::updateCOOstructure( tmpVec, GiTGj,blockPointer[i],blockPointer[ind_neigh]);
-
-                G_i.getBasicMatrixInfo();
-                G_j.getBasicMatrixInfo();
-                GiTGj.label = "GiTGj";
-
-
+                Matrix::updateCOOstructure( tmpVec,
+                                            GiTGj,
+                                            blockPointer[i],blockPointer[ind_neigh]);
 //                cout <<"(" << ind_neigh << ")"<<  endl ;
 //                for (int k = 0 ; k < n_overlap; k++){
 //                    int iii = overlap[k];

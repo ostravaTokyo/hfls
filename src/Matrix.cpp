@@ -1245,7 +1245,6 @@ void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,in
 
 
     int_int_dbl i_tmpvec;
-    cout << "...........................\n";
     for (int j = 0; j < denseMat.n_col;j++){
         for (int i = 0; i < denseMat.n_row_cmprs;i++){
             i_tmpvec.I = i_shift + i;
