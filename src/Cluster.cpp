@@ -369,12 +369,9 @@ void Cluster::create_GcTGc_clust_sparse(){
 //
     vector<int>::iterator it;
     vector<int> overlap(n_inerf_c_max);
-
     int ind_neigh;
     GcTGc_sparse_clust.nnz = 0;
-
     vector < int_int_dbl > tmpVec;
-
     vector < int > blockPointer;
     blockPointer.resize(mesh.nSubClst);
     blockPointer[0] = 0;
@@ -382,63 +379,36 @@ void Cluster::create_GcTGc_clust_sparse(){
         blockPointer[i] = blockPointer[i-1] + Gc_new[i-1].n_col;
 
     for (int i = 0 ; i < mesh.nSubClst ; i++){
-//        cout <<"[" << i << "]"<<  endl ;
-
         GcTGc_sparse_clust.nnz += (Gc_new[i].n_col + 1) * Gc_new[i].n_col;
-
         Matrix Gii;
         Matrix Gc_i = Gc_new[i];
         Gc_i.CSRorCOO2DNS(true,false);
         Gii.mat_mult_dense(Gc_i,"T",Gc_i,"N");
         Gii.label = "Gii";
-
-        Matrix::updateCOOstructure( tmpVec, Gii,blockPointer[i],blockPointer[i]);
-
+        Matrix::updateCOOstructure( tmpVec,
+                                Gii,blockPointer[i],blockPointer[i]);
         for (int j = 0 ; j < neighbours[i].size(); j++){
             ind_neigh = neighbours[i][j];
-
             overlap.resize( n_inerf_c_max );
             it=set_intersection (Gc_new[i].l2g_i_coo.begin(), Gc_new[i].l2g_i_coo.end(),
                                  Gc_new[ind_neigh].l2g_i_coo.begin(), Gc_new[ind_neigh].l2g_i_coo.end(),
                                  overlap.begin());
             overlap.resize(it-overlap.begin());
-
             int n_overlap = overlap.size();
             if (n_overlap > 0){
-
                 Matrix G_i, G_j, GiTGj;
                 G_i.submatrix_row_selector(Gc_new[i],overlap);
                 G_j.submatrix_row_selector(Gc_new[ind_neigh],overlap);
                 GiTGj.mat_mult_dense(G_i,"T",G_j,"N");
                 Matrix::updateCOOstructure( tmpVec,
                                             GiTGj,
-                                            blockPointer[i],blockPointer[ind_neigh]);
-//                cout <<"(" << ind_neigh << ")"<<  endl ;
-//                for (int k = 0 ; k < n_overlap; k++){
-//                    int iii = overlap[k];
-//                    cout << "(" << Gc_new[i].g2l_i_coo[iii] << "-" << Gc_new[ind_neigh].g2l_i_coo[iii]<<")";
-//                }
+                                            blockPointer[i],
+                                            blockPointer[ind_neigh]);
             }
-//            else
-//            {
-//               cout <<"{" <<i << ","<<ind_neigh<<"}" ;
-//            }
-//            cout << endl;
-
             GcTGc_sparse_clust.nnz +=
                 Gc_new[i].n_col * Gc_new[ind_neigh].n_col;
-//            cout  << neighbours[i][j] << ", ";
         }
-//        cout << endl;
     }
-//    cout << "GcTGc = " <<  GcTGc_sparse_clust.nnz << endl;
-
-//    for (int i = 0; i < tmpVec.size(); i++){
-//        cout << tmpVec[i].I << "  ";
-//        cout << tmpVec[i].J << "  ";
-//        cout << tmpVec[i].V << "  \n";
-//    }
-
     GcTGc_sparse_clust.sortAndUniqueCOO(tmpVec);
     GcTGc_sparse_clust.n_col = GcTGc_sparse_clust.n_row;
     GcTGc_sparse_clust.COO2CSR();
@@ -725,8 +695,6 @@ void Cluster::create_cluster_constraints(const Options &options){
                 cout << "["  << d << "]: ";
                 cout << global_DOF << " ";
             }
-
-
 
             if (options.solver_opt.typeBc == 0){
                 it = find (mesh.cornerDOFs.begin(), mesh.cornerDOFs.end(), global_DOF);
