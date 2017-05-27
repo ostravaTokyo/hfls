@@ -2,6 +2,7 @@
 #define __CLUSTER_HPP_INCLUDED
 
 #include "vector"
+#include "map"
 #include "Options.hpp"
 #include <iostream>
 #include <string>
@@ -39,6 +40,7 @@ public:
     Matrix GcTGc_clust;
     Matrix kerGc;
 
+    Matrix GcTGc_sparse_clust;
 
     /* FETI */
     void create_Gf_clust_new();
@@ -49,9 +51,16 @@ public:
     void create_Gc_clust_new();
     void create_Ac_clust_new(bool);
     void create_GcTGc();
+    void create_GcTGc_clust_sparse();
+
+
+    /* dual */
+//    int n_inerf_c;
+    int n_inerf_c_max;
 
     /* constraints */
     void create_cluster_constraints(const Options &);
+    vector < vector < int > > neighbours;
 };
 
 #endif

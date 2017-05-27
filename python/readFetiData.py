@@ -1,4 +1,3 @@
-
 import numpy as np 
 from scipy import sparse
 import scipy.sparse.linalg as spla
@@ -50,8 +49,6 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
 
 path0 = "../data"
 nSub = 8
-
-
 
 
 
@@ -140,20 +137,56 @@ if 0:
 
 
 
-Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1) 
-ker_Ac_new = load_matrix(path0,"dump_ker_Ac_","",str(0),False,True,1) 
-R0_new = load_matrix(path0,"dump_R_new_","",str(0),False,True,1) 
+Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
+Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),True,True,1)
+
+Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),True,True,1)
 
 
-r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
-Ac = Ac_clust_new.toarray()[np.ix_(r,r)]
-plt.subplot(1,2,1)
-plt.spy(Ac_clust_new ,markersize = 1)
-plt.subplot(1,2,2)
-plt.spy(Ac,markersize = 1)
 
-plt.show()
-#plt.spy(Ac_clust_new,markersize = .1);plt.show()
+#r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
+#Ac_clust_new = Ac_clust_new.toarray() 
+##
+#P,L,U= scipy.linalg.lu(Ac_clust_new)
+#nnz0 = L.nonzero()[0].shape[0] +  U.nonzero()[0].shape[0]
+#
+#
+##
+##
+#AcR = Ac_clust_new[np.ix_(r,r)]
+#PR,LR,UR = scipy.linalg.lu(AcR)
+#nnzR = LR.nonzero()[0].shape[0] +  UR.nonzero()[0].shape[0]
+##
+##
+#plt.subplot(2,2,1)
+#plt.spy(L,markersize=0.1);
+#plt.subplot(2,2,2)
+#plt.spy(U,markersize=0.1);
+#plt.subplot(2,2,3)
+#plt.spy(LR,markersize=0.1);
+#plt.subplot(2,2,4)
+#plt.spy(UR,markersize=0.1);
+
+#print ("nnz = %d, nnz(reordered) = %d ") % (nnz0, nnzR) 
+
+
+#plt.show()
+
+GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),True,True,1) 
+#ker_Ac_new = load_matrix(path0,"dump_ker_Ac_","",str(0),False,True,1) 
+#ker_GcTGc = load_matrix(path0,"dump_ker_GcTGc_","",str(0),False,True,1) 
+#R0_new = load_matrix(path0,"dump_R_new_","",str(0),False,True,1) 
+
+#Gc_H = np.dot(GcTGc.toarray(),ker_GcTGc)
+
+#r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
+#Ac = Ac_clust_new.toarray()[np.ix_(r,r)]
+#plt.subplot(1,2,1)
+#plt.spy(Ac_clust_new ,markersize = 2.0)
+#plt.subplot(1,2,2)
+#plt.spy(Ac,markersize = 0.125)
+
+plt.spy(Ac_clust_new,markersize = .1);plt.show()
 
 
 #Fc_python_List = []

@@ -12,6 +12,8 @@ Matrix::Matrix(){
     n_row_cmprs= 0;
     DNS_reducedZeroRows = false;
     DNS_transposed = false;
+    diss_scaling = -1;
+    msglvl = -1;
 }
 
 Matrix::~Matrix()
@@ -565,6 +567,69 @@ void Matrix::setZero(){
     }
 }
 
+void Matrix::submatrix_row_selector(Matrix &A_, vector <int> &v){
+
+    Matrix A;
+    A = A_;
+    A.CSRorCOO2DNS(true,false);
+    zero_dense(v.size(), A.n_col);
+
+
+    for (int j = 0 ; j < n_col; j++){
+        for (int i = 0 ; i < n_row_cmprs; i++){
+            dense[i + j * n_row_cmprs ] =  A.dense[ A.g2l_i_coo[ v[i] ] + j * A.n_row_cmprs ];
+        }
+    }
+
+    A.DNS2CSR();
+
+}
+
+
+void Matrix::mat_mult_dense(Matrix&A, string A_NorT, Matrix&B, string B_NorT){
+
+    int n_k;
+    if (A_NorT == "N"){
+        n_row_cmprs = A.n_row_cmprs;
+        n_k = A.n_col;
+    }
+    else
+    {
+        n_row_cmprs = A.n_col;
+        n_k = A.n_row_cmprs;
+    }
+    if (B_NorT == "N")
+    {
+        n_col = B.n_col;
+    }
+    else
+    {
+        n_col = B.n_row_cmprs;
+    }
+
+    zero_dense(n_row_cmprs,n_col);
+
+
+    double A_ik, B_kj;
+
+    for (int i = 0; i < n_row_cmprs; i++){
+        for (int j = 0 ; j < n_col; j++){
+            for (int k = 0; k < n_k; k++){
+                if (A_NorT == "N")
+                    A_ik = A.dense[i + k * A.n_row_cmprs];
+                else
+                    A_ik = A.dense[k + i * A.n_row_cmprs];
+                if (B_NorT == "N")
+                    B_kj = B.dense[k + j * B.n_row_cmprs];
+                else
+                    B_kj = B.dense[j + k * B.n_row_cmprs];
+
+                dense[i + j * n_row_cmprs] = A_ik * B_kj;
+            }
+        }
+    }
+
+}
 
 
 void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
@@ -627,6 +692,7 @@ double Matrix::norm2()
 
 
 void Matrix::getBasicMatrixInfo(){
+    printf("< %s >              \n", label.c_str());
     printf("symmetric           %d (0: unsym, 1: sym. lower tr., 2: sym. upper tr.)\n", symmetric);
     printf("format              %d (0: coo, 1: csr, 2: dense)\n", format);
     printf("nnz:                %d \n", nnz);
@@ -637,8 +703,15 @@ void Matrix::getBasicMatrixInfo(){
     printf("i_coo_cmpr.size():  %lu \n", i_coo_cmpr.size());
     printf("j_col.size():       %lu \n", j_col.size());
     printf("val.size():         %lu \n", val.size());
+
+    double density = 100 * nnz / (double)( n_row_cmprs * n_col );
+
+    printf("sparsity:           %1.2f %% \n", density);
 }
 
+int Matrix::ij(int i_, int j_){
+   return i_ + j_ * n_row_cmprs;
+}
 
 
 void Matrix::getNullPivots(vector < int > & null_pivots){
@@ -649,7 +722,7 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
 
   vector <double> N(dense);
   vector <double>::iterator  it;
-  int I,J,K,colInd,rowInd;
+  int I,colInd,rowInd;
   double *tmpV = new double[rows];
   int *_nul_piv = new int [rows];
   double pivot;
@@ -658,9 +731,9 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
       _nul_piv[i]=i;
   }
 
-  auto ij = [&]( int ii, int jj ) -> int {
-      return ii + rows * jj;
-  };
+//  auto ij = [&]( int ii, int jj ) -> int {
+//      return ii + rows * jj;
+//  };
 
   for (int j=0;j<cols;j++){
     it = max_element(N.begin(),N.end()-j*rows, compareDouble);
@@ -719,19 +792,26 @@ void Matrix::symbolic_factorization(){
 
 }
 
-void Matrix::numeric_factorization(Matrix &R,bool checkOrthogonality){
-//
+void Matrix::numeric_factorization(){
 #ifdef DISSECTION
     diss_indefinite_flag = 1;
-    diss_scaling = 2;
+    if (diss_scaling < 0){
+        diss_scaling = 1;
+    }
     diss_eps_pivot = 1.0e-2;
     diss_n_fact(*diss_dslv, &val[0], diss_scaling, diss_eps_pivot,
       diss_indefinite_flag);
+#endif
+}
+
+void Matrix::numeric_factorization(Matrix &R,bool checkOrthogonality){
+//
+#ifdef DISSECTION
+    numeric_factorization();
     int n0;
     diss_get_kern_dim(*diss_dslv, &n0);
     R.zero_dense(n_row,n0);
     diss_get_kern_vecs(*diss_dslv, &R.dense[0]);
-
     if (checkOrthogonality){
         Matrix Y;
         Y.zero_dense(n_row_cmprs , R.n_col);
@@ -741,7 +821,7 @@ void Matrix::numeric_factorization(Matrix &R,bool checkOrthogonality){
         double normR = R.norm2();
         double normKR = Y.norm2();
 
-        printf("=========    %s    =========\n",R.description.c_str());
+        printf("=========    %s    =========\n",R.label.c_str());
         printf("|A| = %.3e, ", normK);
         printf("|N| = %.3e, ", normR);
         printf("|A*N|/(|A|*|N|) = %.3e \n", normKR / (normK*normR));
@@ -771,9 +851,14 @@ void Matrix::diss_solve(Matrix &B, Matrix &X){
 #endif
 }
 
+void Matrix::factorization(){
+#ifdef USE_PARDISO
+    InitializeSolve();
+#endif
+}
+
 void Matrix::factorization(vector <int> & _nullPivots){
 #ifdef USE_PARDISO
-
     // regularization:
     int j, cnt = 0;
     for (int i = 0; i < n_row_cmprs; i++) {
@@ -783,7 +868,7 @@ void Matrix::factorization(vector <int> & _nullPivots){
             cnt++;
         }
     }
-    InitializeSolve();
+    factorization();
 #endif
 }
 
@@ -824,6 +909,8 @@ void Matrix::InitializeSolve()
 {
 
 #ifdef USE_PARDISO
+    if (msglvl<0)
+        msglvl = 0;
     mtype = -2;              /* Real symmetric matrix */
     nrhs = 1;               /* Number of right hand sides. */
     MKL_INT i;
@@ -881,7 +968,6 @@ void Matrix::InitializeSolve()
     iparm[34] = 1;        /* One- or zero-based indexing of columns and rows.*/
     maxfct = 1;           /* Maximum number of numerical factorizations. */
     mnum = 1;             /* Which factorization to use. */
-    msglvl = 0;           /* Print statistical information in file */
     error = 0;            /* Initialize error flag */
     /* -------------------------------------------------------------------- */
     /* .. Initialize the internal solver memory pointer. This is only */

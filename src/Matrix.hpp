@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "map"
 
 #include <unistd.h>
 #ifdef DISSECTION
@@ -51,6 +52,7 @@ public:
     vector < int >     j_col; // new MKL_INT[crs->nnz];
     vector < int >     i_coo_cmpr;
     vector < int >     l2g_i_coo;
+    map <int,int>      g2l_i_coo;
     vector < double >  dense;
     int format;               /* COO, CSR, DNS */
     int symmetric;            /* 0-no, 1-lower triang., 2-upper triang. */
@@ -61,9 +63,10 @@ public:
     int numel;
     bool DNS_reducedZeroRows;
     bool DNS_transposed;
-    string description;
+    string label;
     int order_number;
 
+    int ij(int, int);
 
 //    bool printCooOrDense;
     MKL_INT m;
@@ -91,6 +94,7 @@ public:
     void setZero();
     void getNullPivots(vector < int > & );
     void sortAndUniqueCOO(vector < int_int_dbl > &);
+    void submatrix_row_selector(Matrix &, vector <int> &);
 
     void getBasicMatrixInfo();
 
@@ -102,6 +106,7 @@ public:
     MKL_INT maxfct, mnum, phase, error, msglvl;
     static void testPardiso(string);
     void factorization(vector < int > &);
+    void factorization();
 
     uint64_t *diss_dslv;
     int diss_num_threads;
@@ -113,9 +118,11 @@ public:
     int solver;
     double diss_eps_pivot;
     void symbolic_factorization();
+    void numeric_factorization();
     void numeric_factorization(Matrix &,bool);
     void diss_solve(Matrix &, Matrix &);
 
+    void mat_mult_dense(Matrix&, string, Matrix&, string);
 
 
     double norm2();
