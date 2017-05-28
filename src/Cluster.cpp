@@ -702,27 +702,30 @@ void Cluster::create_cluster_constraints(const Options &options){
                 }
                 if (options.solver_opt.typeBc == 1){
 
-                    Bc_from_Rt.printToFile("Bc_from_Rt","../data",i+j,true);
+                    bool is_full_column_rank =
+                            Matrix::test_of_Bc_constraints(Bc_from_Rt);
 
+                    if (is_full_column_rank){
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    for (int k = 0; k < Bc_from_Rt.n_row_cmprs;k++){
-                        for (int l = 0; l < Bc_from_Rt.n_col;l++){
+                        for (int k = 0; k < Bc_from_Rt.n_row_cmprs;k++){
+                            for (int l = 0; l < Bc_from_Rt.n_col;l++){
 
-                            double Bc_from_Rt_lk = Bc_from_Rt.dense[k + l * Bc_from_Rt.n_row_cmprs];
+                                double Bc_from_Rt_lk = Bc_from_Rt.dense[k + l * Bc_from_Rt.n_row_cmprs];
 
-                            // @! i_coo_cmpr is firstly filled by cluster global numbering
-                            //    and later remaped to local subdomain numbering
-                            j_col_Bc_curr = data.g2l[i][v[l]];
-                            Bc_new[i].i_coo_cmpr.push_back(cntLam);
-                            Bc_new[i].j_col.push_back(j_col_Bc_curr);
-                            Bc_new[i].val.push_back(Bc_from_Rt_lk);
+                                // @! i_coo_cmpr is firstly filled by cluster global numbering
+                                //    and later remaped to local subdomain numbering
+                                j_col_Bc_curr = data.g2l[i][v[l]];
+                                Bc_new[i].i_coo_cmpr.push_back(cntLam);
+                                Bc_new[i].j_col.push_back(j_col_Bc_curr);
+                                Bc_new[i].val.push_back(Bc_from_Rt_lk);
 
-                            j_col_Bc_neigh = data.g2l[j][v[l]];
-                            Bc_new[j].i_coo_cmpr.push_back(cntLam);
-                            Bc_new[j].j_col.push_back(j_col_Bc_neigh);
-                            Bc_new[j].val.push_back(-Bc_from_Rt_lk);
+                                j_col_Bc_neigh = data.g2l[j][v[l]];
+                                Bc_new[j].i_coo_cmpr.push_back(cntLam);
+                                Bc_new[j].j_col.push_back(j_col_Bc_neigh);
+                                Bc_new[j].val.push_back(-Bc_from_Rt_lk);
+                            }
+                            cntLam++;
                         }
-                        cntLam++;
                     }
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
@@ -838,11 +841,6 @@ void Cluster::create_cluster_constraints(const Options &options){
 
 
 
-//        for (int i = 0 ; i < Bc_new[d].val.size();i++){
-//            cout << Bc_new[d].i_coo_cmpr[i] << "  "    ;
-//            cout << Bc_new[d].j_col[i] << "  " ;
-//            cout << Bc_new[d].val[i] << "  \n" ;
-//        }
 
         Bc_new[d].COO2CSR();
 //        Bc_new[d].getBasicMatrixInfo();

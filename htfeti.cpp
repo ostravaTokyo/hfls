@@ -15,8 +15,8 @@ int main(int argc, char *argv[]){
     double poissons_ratio = 0.3;
     /* linear solver */
     double pardiso_0_dissection_1 = 1;
-    int print_matrices = 0;
-    int typeBc = 1;    // 0: corners, 1: zero and first approx. (ker), 2: all nodes on interf.)
+    int print_matrices = 1;
+    int typeBc = 0;    // 0: corners, 1: zero and first approx. (ker), 2: all nodes on interf.)
     bool Ac_extended_by_kerGc = false;
     bool GcTGc_assembl_block_by_block= true;
 

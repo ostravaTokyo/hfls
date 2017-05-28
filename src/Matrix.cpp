@@ -1257,3 +1257,65 @@ void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,in
     }
 
 }
+
+
+bool Matrix::test_of_Bc_constraints(Matrix &A){
+
+
+  Matrix BcTBc;
+  BcTBc.mat_mult_dense(A,"N",A,"T");
+
+  const int twenty = 20;
+  double jump_in_eigenvalues_alerting_singularity = 1e-4;
+  int  sc_size = BcTBc.n_row_cmprs;
+  int ind_U_V;
+  int defect_K_in = 0;
+
+
+
+  double *S_S     = new double[BcTBc.n_col];
+  double *U_S     = new double[BcTBc.n_col * BcTBc.n_col];
+  double *Vt_S    = new double[BcTBc.n_col * BcTBc.n_col];
+  double *superb  = new double[BcTBc.n_col-1];
+  MKL_INT info;
+  MKL_INT lds = BcTBc.n_col, Scols= BcTBc.n_col, Srows = BcTBc.n_row_cmprs;
+  info = LAPACKE_dgesvd( LAPACK_COL_MAJOR, 'A', 'A', Scols, Srows, &(BcTBc.dense[0]), lds,
+                        S_S, U_S, lds, Vt_S, lds, superb );
+
+
+//  cout << endl;
+//  cout << endl;
+//  for (int i = 0 ; i < BcTBc.n_col; i++){
+//      cout << S_S[i] << "  ";
+//  }
+//  cout << endl;
+
+
+
+//  int itMax = twenty < BcTBc.n_row ? sc_size - twenty-1 : 0 ;
+  double ratio;
+
+  for (int i = 0; i < sc_size-1;i++){
+    ratio = fabs(S_S[i+1]/S_S[i]);
+    if (ratio < jump_in_eigenvalues_alerting_singularity){
+      ind_U_V = i+1;
+      defect_K_in=sc_size-(i+1);
+      break;
+    }
+  }
+//
+//  cout << " defect BcTBc = " << defect_K_in << endl;
+
+
+
+
+
+
+  delete [] S_S ;
+  delete [] U_S ;
+  delete [] Vt_S;
+  delete [] superb;
+
+  return defect_K_in == 0;
+
+}

@@ -132,6 +132,7 @@ public:
     static bool compareDouble(double, double);
     static void updateCOOstructure(vector <int_int_dbl > &, Matrix &, int, int);
 
+    static bool test_of_Bc_constraints(Matrix &);
 
 
 

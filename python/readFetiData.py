@@ -134,8 +134,9 @@ if 0:
 #Bc_g = np.hstack((Bc_new[0],Bc_new[1]))
 #Bc_g = np.hstack((Bc_g,Bc_new[2]))
 #Bc_g = np.hstack((Bc_g,Bc_new[2])) 
+KpBcT0 = load_matrix(path0,"dump_KplusBcT_new_","",str(0),False,False,1) 
+KpBcT1 = load_matrix(path0,"dump_KplusBcT_new_","",str(1),False,False,1) 
 Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
-#KpBcT = load_matrix(path0,"dump_KplusBcT_new_","",str(0),True,True,1) 
 #BcT_dense = load_matrix(path0,"dump_BcT_dense_new_","",str(0),True,True,1) 
 Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),True,True,1)
 GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
@@ -143,23 +144,25 @@ GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1)
 
 plt.subplot(1,3,1)
 plt.spy(GcTGc, markersize=0.7)
+plt.xlabel("nnz = %d" % (GcTGc.nonzero()[0].shape[0]))
 plt.subplot(1,3,2)
 plt.spy(Fc_clust_new, markersize=0.7)
+plt.xlabel("nnz = %d" % (Fc_clust_new.nonzero()[0].shape[0]))
 plt.subplot(1,3,3)
 plt.spy(Ac_clust_new, markersize=0.7)
+plt.xlabel("nnz = %d" % (Ac_clust_new.nonzero()[0].shape[0]))
 plt.show()
 
-Bc_from_Rt = []
-for i in range(1,14):
-    Bc_from_Rt.append( load_matrix(path0,"dump_Bc_from_Rt_","",str(i),False,False,1) )
-
+#Bc_from_Rt = []
+#for i in range(1,14):
+#    Bc_from_Rt.append( load_matrix(path0,"dump_Bc_from_Rt_","",str(i),False,False,1) )
+#
 
 # Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),False,False,1)
 
 
 
 
-#KpBcT = load_matrix(path0,"dump_KplusBcT_new_","",str(0),True,True,1) 
 #BcT_dense = load_matrix(path0,"dump_BcT_dense_new_","",str(0),True,True,1) 
 
 
