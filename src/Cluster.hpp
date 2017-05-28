@@ -56,7 +56,7 @@ public:
 
     /* dual */
 //    int n_inerf_c;
-    int n_inerf_c_max;
+    int n_interf_c_max;
 
     /* constraints */
     void create_cluster_constraints(const Options &);

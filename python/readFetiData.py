@@ -149,7 +149,9 @@ plt.subplot(1,3,3)
 plt.spy(Ac_clust_new, markersize=0.7)
 plt.show()
 
-
+Bc_from_Rt = []
+for i in range(1,14):
+    Bc_from_Rt.append( load_matrix(path0,"dump_Bc_from_Rt_","",str(i),False,False,1) )
 
 
 # Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),False,False,1)

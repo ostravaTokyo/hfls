@@ -56,8 +56,6 @@ bool printMat = bool (options.print_matrices);
     cout << "symbolic factorization etc. ... \n" ;
     data.feti_symbolic(mesh,K_new);
     data.feti_numeric(mesh,K_new);
-    cout << "boolean matrix is being created. ... \n" ;
-    create_cluster_constraints(options);
     cout << "ker(K) is being created ... \n" ;
 
     if (options.solver_opt.solver == 0){
@@ -67,6 +65,32 @@ bool printMat = bool (options.print_matrices);
     string folder = options.path2data;
     printCooOrDense = true;
     checkOrthogonality = false;
+
+
+
+
+    for (int d = 0; d < K_new.size(); d++){
+        if (options.solver_opt.solver == 0){
+            vector < int > nullPivots_new;
+            R_new[d].getNullPivots(nullPivots_new);
+            K_reg_new[d] = K_new[d];
+            K_reg_new[d].factorization(nullPivots_new);
+            if (printMat){
+                K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
+                K_reg_new[d].getBasicMatrixInfo();
+            }
+        }
+        else if (options.solver_opt.solver == 1){
+            K_new[d].symbolic_factorization();
+            R_new[d].label = "kerK";
+            K_new[d].numeric_factorization(R_new[d],checkOrthogonality);
+        }
+    }
+
+    // constraints must wait for factorization (to use R)
+    cout << "boolean matrix is being created. ... \n" ;
+    create_cluster_constraints(options);
+
 
 
     for (int d = 0; d < K_new.size(); d++){
@@ -100,22 +124,6 @@ bool printMat = bool (options.print_matrices);
             BcT_dense_new[d].getBasicMatrixInfo();
         }
 //
-
-        if (options.solver_opt.solver == 0){
-            vector < int > nullPivots_new;
-            R_new[d].getNullPivots(nullPivots_new);
-            K_reg_new[d] = K_new[d];
-            K_reg_new[d].factorization(nullPivots_new);
-            if (printMat){
-                K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
-                K_reg_new[d].getBasicMatrixInfo();
-            }
-        }
-        else if (options.solver_opt.solver == 1){
-            K_new[d].symbolic_factorization();
-            R_new[d].label = "kerK";
-            K_new[d].numeric_factorization(R_new[d],checkOrthogonality);
-        }
 
         // generalized inverse test || K * Kplus * K - K || / || K ||
         bool testGenInv = false;
@@ -368,9 +376,15 @@ void Cluster::create_GcTGc(){
 void Cluster::create_GcTGc_clust_sparse(){
 //
     vector<int>::iterator it;
-    vector<int> overlap(n_inerf_c_max);
+    vector<int> overlap(n_interf_c_max);
     int ind_neigh;
     GcTGc_sparse_clust.nnz = 0;
+
+
+    GcTGc_sparse_clust.symmetric = 2;
+    GcTGc_sparse_clust.format= 0;
+
+
     vector < int_int_dbl > tmpVec;
     vector < int > blockPointer;
     blockPointer.resize(mesh.nSubClst);
@@ -389,7 +403,7 @@ void Cluster::create_GcTGc_clust_sparse(){
                                 Gii,blockPointer[i],blockPointer[i]);
         for (int j = 0 ; j < neighbours[i].size(); j++){
             ind_neigh = neighbours[i][j];
-            overlap.resize( n_inerf_c_max );
+            overlap.resize( n_interf_c_max );
             it=set_intersection (Gc_new[i].l2g_i_coo.begin(), Gc_new[i].l2g_i_coo.end(),
                                  Gc_new[ind_neigh].l2g_i_coo.begin(), Gc_new[ind_neigh].l2g_i_coo.end(),
                                  overlap.begin());
@@ -633,6 +647,10 @@ void Cluster::create_cluster_constraints(const Options &options){
     vector<int>::iterator it;
     subDOFset.resize(nSubClst);
     data.interface.resize(nSubClst);
+    int cntLam = 0;
+    int j_col_Bc_curr;
+    int j_col_Bc_neigh;
+
 
     for (int d = 0 ; d <  nSubClst; d++){
         subDOFset[d].insert(subDOFset[d].begin(), data.l2g[d].begin(), data.l2g[d].end());
@@ -650,9 +668,7 @@ void Cluster::create_cluster_constraints(const Options &options){
     }
 
     vector<int> v(2 * maxSize);
-
     neighbours.resize(nSubClst);
-
     bool print2cmd = false;
 
     for (int i = 0; i < nSubClst - 1 ; i++){
@@ -663,13 +679,54 @@ void Cluster::create_cluster_constraints(const Options &options){
             v.resize(it-v.begin());
 
             if (v.size() > 0){
+
+                // TODO !!! temporarly
+                Matrix Bc_from_Rt;
+                if (options.solver_opt.typeBc == 1){
+                   Bc_from_Rt.zero_dense(R_new[i].n_col,v.size());
+                }
+
+
                 neighbours[i].push_back(j);
                 for (int k = 0 ; k < v.size(); k++){
                     data.interface[i][v[k]].push_back(j);
                     data.interface[j][v[k]].push_back(i);
+
+                    if (options.solver_opt.typeBc == 1){
+                        for (int l = 0; l < R_new[i].n_col;l++){
+                            int g2ldof = data.g2l[i][v[k]];
+                            Bc_from_Rt.dense[l + k * Bc_from_Rt.n_row_cmprs] =
+                                    R_new[i].dense[g2ldof + l * R_new[i].n_row_cmprs];
+                        }
+                    }
+                }
+                if (options.solver_opt.typeBc == 1){
+
+                    Bc_from_Rt.printToFile("Bc_from_Rt","../data",i+j,true);
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    for (int k = 0; k < Bc_from_Rt.n_row_cmprs;k++){
+                        for (int l = 0; l < Bc_from_Rt.n_col;l++){
+
+                            double Bc_from_Rt_lk = Bc_from_Rt.dense[k + l * Bc_from_Rt.n_row_cmprs];
+
+                            // @! i_coo_cmpr is firstly filled by cluster global numbering
+                            //    and later remaped to local subdomain numbering
+                            j_col_Bc_curr = data.g2l[i][v[l]];
+                            Bc_new[i].i_coo_cmpr.push_back(cntLam);
+                            Bc_new[i].j_col.push_back(j_col_Bc_curr);
+                            Bc_new[i].val.push_back(Bc_from_Rt_lk);
+
+                            j_col_Bc_neigh = data.g2l[j][v[l]];
+                            Bc_new[j].i_coo_cmpr.push_back(cntLam);
+                            Bc_new[j].j_col.push_back(j_col_Bc_neigh);
+                            Bc_new[j].val.push_back(-Bc_from_Rt_lk);
+                        }
+                        cntLam++;
+                    }
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
             }
-
             if (print2cmd){
                 cout << "(" << i << ":"  << j << ")[" << v.size()<< "]\t";
                 for (int k = 0 ; k < v.size(); k++)
@@ -682,79 +739,117 @@ void Cluster::create_cluster_constraints(const Options &options){
         }
     }
 
+
+
+
     int global_DOF;
     int ind_neigh_sub;
-    int cntLam = 0;
-    int j_col_Bc_curr;
-    int j_col_Bc_neigh;
 
-    for (int d = 0; d < nSubClst; d++){
-        for ( auto it1 = data.interface[d].begin(); it1 != data.interface[d].end(); ++it1  ){
-            global_DOF = it1->first;
-            if (print2cmd){
-                cout << "["  << d << "]: ";
-                cout << global_DOF << " ";
-            }
 
-            if (options.solver_opt.typeBc == 0){
-                it = find (mesh.cornerDOFs.begin(), mesh.cornerDOFs.end(), global_DOF);
-                if (it == mesh.cornerDOFs.end())
-                    continue;
-            }
-            //TODO: if 'global_DOF' is found in vector 'cornerDOFs', the entry
-            //                                                      should be deleted.
-
-            for (int k = 0; k < it1->second.size(); k++){
-                ind_neigh_sub = it1->second[k];
+    if (options.solver_opt.typeBc != 1 ){
+        cntLam = 0;
+        for (int d = 0; d < nSubClst; d++){
+            for ( auto it1 = data.interface[d].begin(); it1 != data.interface[d].end(); ++it1  ){
+                global_DOF = it1->first;
                 if (print2cmd){
-                    cout << ind_neigh_sub << " ";
+                    cout << "["  << d << "]: ";
+                    cout << global_DOF << " ";
                 }
-                if (ind_neigh_sub > d){
-//                if ( it1->second.size() == 1 || (d + 1) == ind_neigh_sub){
-                    j_col_Bc_curr = data.g2l[d][global_DOF];
-                    Bc_new[d].l2g_i_coo.push_back(cntLam);
-                    Bc_new[d].j_col.push_back(j_col_Bc_curr);
-                    Bc_new[d].val.push_back(1);
 
-
-                    j_col_Bc_neigh = data.g2l[ind_neigh_sub][global_DOF];
-                    Bc_new[ind_neigh_sub].l2g_i_coo.push_back(cntLam);
-                    Bc_new[ind_neigh_sub].j_col.push_back(j_col_Bc_neigh);
-                    Bc_new[ind_neigh_sub].val.push_back(-1);
-
-                    //cout << j_col_Bc_curr <<" -------- " << j_col_Bc_neigh << endl;
-
-                    cntLam++;
-                    break;
+                if (options.solver_opt.typeBc == 0){
+                    it = find (mesh.cornerDOFs.begin(), mesh.cornerDOFs.end(), global_DOF);
+                    if (it == mesh.cornerDOFs.end())
+                        continue;
                 }
-            }
-            if (print2cmd){
-                cout << endl;
+                //TODO: if 'global_DOF' is found in vector 'cornerDOFs', the entry
+                //                                                      should be deleted.
+
+                for (int k = 0; k < it1->second.size(); k++){
+                    ind_neigh_sub = it1->second[k];
+                    if (print2cmd){
+                        cout << ind_neigh_sub << " ";
+                    }
+                    if (ind_neigh_sub > d){
+    //                if ( it1->second.size() == 1 || (d + 1) == ind_neigh_sub){
+                        j_col_Bc_curr = data.g2l[d][global_DOF];
+                        Bc_new[d].l2g_i_coo.push_back(cntLam);
+                        Bc_new[d].j_col.push_back(j_col_Bc_curr);
+                        Bc_new[d].val.push_back(1);
+
+
+                        j_col_Bc_neigh = data.g2l[ind_neigh_sub][global_DOF];
+                        Bc_new[ind_neigh_sub].l2g_i_coo.push_back(cntLam);
+                        Bc_new[ind_neigh_sub].j_col.push_back(j_col_Bc_neigh);
+                        Bc_new[ind_neigh_sub].val.push_back(-1);
+
+                        //cout << j_col_Bc_curr <<" -------- " << j_col_Bc_neigh << endl;
+
+                        cntLam++;
+                        break;
+                    }
+                }
+                if (print2cmd){
+                    cout << endl;
+                }
             }
         }
     }
 
     int _nnz;
-    n_inerf_c_max = 0;
+    n_interf_c_max = 0;
     for (int d = 0 ; d < nSubClst; d++){
         _nnz = Bc_new[d].val.size();
         Bc_new[d].nnz = _nnz;
         Bc_new[d].n_row = cntLam;
-        Bc_new[d].n_row_cmprs = _nnz;
         Bc_new[d].n_col = data.l2g[d].size();
         Bc_new[d].symmetric = 0;
         Bc_new[d].format = 0;
 
-        Bc_new[d].i_coo_cmpr.resize(Bc_new[d].nnz);
-        for (int i = 0; i < Bc_new[d].nnz; i++){
-            Bc_new[d].i_coo_cmpr[i] = i;
-            Bc_new[d].g2l_i_coo.insert ( pair < int, int > ( Bc_new[d].l2g_i_coo[i] , i ));
+
+        if (options.solver_opt.typeBc == 1){
+            vector<int>::iterator it;
+            vector < int > l2g_(Bc_new[d].i_coo_cmpr);
+            sort(l2g_.begin(), l2g_.end());
+            it = unique (l2g_.begin(), l2g_.end());
+            l2g_.resize( distance(l2g_.begin(),it));
+            Bc_new[d].n_row_cmprs = l2g_.size();
+
+
+            for (int i = 0; i < l2g_.size(); i++){
+                Bc_new[d].g2l_i_coo.insert ( pair < int, int > ( l2g_[i] , i ));
+            }
+
+            for (int i = 0; i < Bc_new[d].i_coo_cmpr.size(); i++){
+                Bc_new[d].i_coo_cmpr[i] =
+                        Bc_new[d].g2l_i_coo[ Bc_new[d].i_coo_cmpr[i] ];
+            }
+            Bc_new[d].l2g_i_coo = l2g_;
+
         }
+        else{
+
+            Bc_new[d].n_row_cmprs = Bc_new[d].l2g_i_coo.size();
+            Bc_new[d].i_coo_cmpr.resize(Bc_new[d].n_row_cmprs);
+            for (int i = 0; i < Bc_new[d].n_row_cmprs; i++){
+                Bc_new[d].i_coo_cmpr[i] = i;
+                Bc_new[d].g2l_i_coo.insert ( pair < int, int > ( Bc_new[d].l2g_i_coo[i] , i ));
+            }
+        }
+
+
+
+//        for (int i = 0 ; i < Bc_new[d].val.size();i++){
+//            cout << Bc_new[d].i_coo_cmpr[i] << "  "    ;
+//            cout << Bc_new[d].j_col[i] << "  " ;
+//            cout << Bc_new[d].val[i] << "  \n" ;
+//        }
+
         Bc_new[d].COO2CSR();
+//        Bc_new[d].getBasicMatrixInfo();
 
         // max number of 'c-type' constraints on one subdomain
-        if (Bc_new[d].n_row_cmprs > n_inerf_c_max)
-            n_inerf_c_max = Bc_new[d].n_row_cmprs;
+        if (Bc_new[d].n_row_cmprs > n_interf_c_max)
+            n_interf_c_max = Bc_new[d].n_row_cmprs;
 
     }
 }
