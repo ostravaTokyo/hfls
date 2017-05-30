@@ -450,6 +450,8 @@ void Matrix::DNS2CSR(){
 }
 
 void Matrix::DNS2COO(){
+
+    bool KEEP_ZERO_ENTRIES = true;
     if (format == 0){
         return;
     }
@@ -462,7 +464,7 @@ void Matrix::DNS2COO(){
     }
     nnz = 0;
     for (int i = 0; i < _n_row * n_col;i++) {
-       if (dense[i] != 0){
+       if (KEEP_ZERO_ENTRIES || dense[i] != 0){
            nnz++;
        }
     }
@@ -480,7 +482,7 @@ void Matrix::DNS2COO(){
             else{
                 _val = dense[i + j * _n_row];
             }
-            if (_val != 0){
+            if (KEEP_ZERO_ENTRIES || _val != 0){
                 i_coo_cmpr[cnt] = i;
                 j_col[cnt] = j;
                 val[cnt] = _val;
@@ -1272,7 +1274,6 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
   int defect_K_in = 0;
 
 
-
   double *S_S     = new double[BcTBc.n_col];
   double *U_S     = new double[BcTBc.n_col * BcTBc.n_col];
   double *Vt_S    = new double[BcTBc.n_col * BcTBc.n_col];
@@ -1281,16 +1282,6 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
   MKL_INT lds = BcTBc.n_col, Scols= BcTBc.n_col, Srows = BcTBc.n_row_cmprs;
   info = LAPACKE_dgesvd( LAPACK_COL_MAJOR, 'A', 'A', Scols, Srows, &(BcTBc.dense[0]), lds,
                         S_S, U_S, lds, Vt_S, lds, superb );
-
-
-//  cout << endl;
-//  cout << endl;
-//  for (int i = 0 ; i < BcTBc.n_col; i++){
-//      cout << S_S[i] << "  ";
-//  }
-//  cout << endl;
-
-
 
 //  int itMax = twenty < BcTBc.n_row ? sc_size - twenty-1 : 0 ;
   double ratio;
@@ -1305,11 +1296,6 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
   }
 //
 //  cout << " defect BcTBc = " << defect_K_in << endl;
-
-
-
-
-
 
   delete [] S_S ;
   delete [] U_S ;

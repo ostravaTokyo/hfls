@@ -121,8 +121,8 @@ if 0:
 #
         print(' ...%d '%(i))
     Gc_clust_new = load_matrix(path0,"dump_Gc_clust_new_","",str(0),False,False,1)
-    Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),False,True,1)
     Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),False,True,1)
+    Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),False,True,1)
 
     Ac_clust_python = np.hstack((Fc_clust_new,Gc_clust_new))
 
@@ -134,12 +134,12 @@ if 0:
 #Bc_g = np.hstack((Bc_new[0],Bc_new[1]))
 #Bc_g = np.hstack((Bc_g,Bc_new[2]))
 #Bc_g = np.hstack((Bc_g,Bc_new[2])) 
-KpBcT0 = load_matrix(path0,"dump_KplusBcT_new_","",str(0),False,False,1) 
-KpBcT1 = load_matrix(path0,"dump_KplusBcT_new_","",str(1),False,False,1) 
-Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
 #BcT_dense = load_matrix(path0,"dump_BcT_dense_new_","",str(0),True,True,1) 
 Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),True,True,1)
+Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
 GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
+KpBcT0 = load_matrix(path0,"dump_KplusBcT_new_","",str(0),False,False,1) 
+KpBcT1 = load_matrix(path0,"dump_KplusBcT_new_","",str(1),False,False,1) 
 
 
 plt.subplot(1,3,1)
