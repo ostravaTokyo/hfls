@@ -241,6 +241,12 @@ bool printMat = bool (options.print_matrices);
 //    if (printMat)
         Fc_clust_new.printToFile("Fc_clust_new",folder,0,printCooOrDense);
 
+
+
+    Matrix S_Fc_clust;
+
+    Matrix::getSVD_DNS(Fc_clust_new,S_Fc_clust,true);
+
     cout << "Gc_clust is being created ... \n" ;
     create_Gc_clust_new();
     cout << "====================================================\n";
@@ -257,6 +263,10 @@ bool printMat = bool (options.print_matrices);
         create_GcTGc();
         GcTGc_clust.getBasicMatrixInfo();
     }
+
+    Matrix S_GcTGc;
+    Matrix::getSVD_DNS(GcTGc_clust,S_GcTGc,true);
+
 
     GcTGc_sparse_clust.getBasicMatrixInfo();
     //if (printMat)
@@ -276,7 +286,14 @@ bool printMat = bool (options.print_matrices);
 
     cout << "Ac_clust is being created ... \n" ;
     create_Ac_clust_new(options.solver_opt.Ac_extended_by_kerGc);
+    Matrix S_Ac_clust;
+    Matrix::getSVD_DNS(Ac_clust_new,S_Ac_clust,true);
+
     Ac_clust_new.getBasicMatrixInfo();
+
+
+
+
 
 //    if (printMat)
         Ac_clust_new.printToFile("Ac_clust_new",folder,0,printCooOrDense);
@@ -314,9 +331,6 @@ bool printMat = bool (options.print_matrices);
            K_new[i].FinalizeSolve(i);
         }
     }
-
-
-
 }
 
 
@@ -378,6 +392,7 @@ void Cluster::create_GcTGc_clust_sparse(){
     vector<int>::iterator it;
     vector<int> overlap(n_interf_c_max);
     int ind_neigh;
+    GcTGc_sparse_clust.label = "GcTGc_sparse";
     GcTGc_sparse_clust.nnz = 0;
 
 
@@ -526,7 +541,7 @@ void Cluster::create_Ac_clust_new(bool Ac_nonsingular){
      *   where H = ker(GcTGc)
      */
 
-
+    Ac_clust_new.label = "Ac_clust";
     Ac_clust_new.symmetric = 2;
     Ac_clust_new.format = 0;
 

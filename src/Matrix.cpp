@@ -775,6 +775,7 @@ void Matrix::getBasicMatrixInfo(){
     printf("symmetric           %d (0: unsym, 1: sym. lower tr., 2: sym. upper tr.)\n", symmetric);
     printf("format              %d (0: coo, 1: csr, 2: dense)\n", format);
     printf("nnz:                %d \n", nnz);
+    printf("numel:              %d \n", numel);
     printf("n_row_cmprs:        %d \n", n_row_cmprs);
     printf("n_row:              %d \n", n_row);
     printf("n_col:              %d \n", n_col);
@@ -782,6 +783,7 @@ void Matrix::getBasicMatrixInfo(){
     printf("i_coo_cmpr.size():  %lu \n", i_coo_cmpr.size());
     printf("j_col.size():       %lu \n", j_col.size());
     printf("val.size():         %lu \n", val.size());
+    printf("dense.size():       %lu \n", dense.size());
 
     double density = 100 * nnz / (double)( n_row_cmprs * n_col );
 
@@ -1258,36 +1260,64 @@ void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,in
         }
     }
 
+
+
+}
+
+void Matrix::getSVD_DNS(Matrix A, Matrix &S, bool printThem){
+
+
+    if (A.n_row_cmprs > 2000){
+        cout << "Matrix is too big to get SVD" << endl;
+        return;
+    }
+    if (A.format != 2)
+        A.CSRorCOO2DNS(false,false);
+
+    A.getBasicMatrixInfo();
+
+
+    S.zero_dense(A.n_row_cmprs,1);
+    double *U     = new double[A.n_row_cmprs * A.n_row_cmprs];
+    double *Vt    = new double[A.n_col * A.n_col];
+    double *superb  = new double[A.n_col-1];
+    MKL_INT info;
+    MKL_INT lds = A.n_row_cmprs;
+    MKL_INT Srows = A.n_row_cmprs;
+    MKL_INT Scols= A.n_col;
+    info = LAPACKE_dgesvd( LAPACK_ROW_MAJOR, 'A', 'A', Scols, Srows, &(A.dense[0]), lds,
+                          &(S.dense)[0], U, lds, Vt, lds, superb );
+
+    if (printThem){
+        cout << "\n\n#######  Singular values of " << A.label << " #######\n";
+        for (int i = 0; i < A.n_row_cmprs;i++)
+            cout << A.label<< ": d("<< i << ")=  " << S.dense[i] << endl;
+    }
+    cout << endl;
+    delete [] U ;
+    delete [] Vt;
+    delete [] superb;
+
 }
 
 
 bool Matrix::test_of_Bc_constraints(Matrix &A){
 
 
-  Matrix BcTBc;
+  Matrix BcTBc,S_S;
   BcTBc.mat_mult_dense(A,"N",A,"T");
 
-  const int twenty = 20;
   double jump_in_eigenvalues_alerting_singularity = 1e-4;
   int  sc_size = BcTBc.n_row_cmprs;
   int ind_U_V;
   int defect_K_in = 0;
 
-
-  double *S_S     = new double[BcTBc.n_col];
-  double *U_S     = new double[BcTBc.n_col * BcTBc.n_col];
-  double *Vt_S    = new double[BcTBc.n_col * BcTBc.n_col];
-  double *superb  = new double[BcTBc.n_col-1];
-  MKL_INT info;
-  MKL_INT lds = BcTBc.n_col, Scols= BcTBc.n_col, Srows = BcTBc.n_row_cmprs;
-  info = LAPACKE_dgesvd( LAPACK_COL_MAJOR, 'A', 'A', Scols, Srows, &(BcTBc.dense[0]), lds,
-                        S_S, U_S, lds, Vt_S, lds, superb );
-
+  Matrix::getSVD_DNS(BcTBc, S_S, false);
 //  int itMax = twenty < BcTBc.n_row ? sc_size - twenty-1 : 0 ;
   double ratio;
 
   for (int i = 0; i < sc_size-1;i++){
-    ratio = fabs(S_S[i+1]/S_S[i]);
+    ratio = fabs(S_S.dense[i+1]/S_S.dense[i]);
     if (ratio < jump_in_eigenvalues_alerting_singularity){
       ind_U_V = i+1;
       defect_K_in=sc_size-(i+1);
@@ -1295,12 +1325,8 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
     }
   }
 //
-//  cout << " defect BcTBc = " << defect_K_in << endl;
+  cout << " defect BcTBc = " << defect_K_in << endl;
 
-  delete [] S_S ;
-  delete [] U_S ;
-  delete [] Vt_S;
-  delete [] superb;
 
   return defect_K_in == 0;
 

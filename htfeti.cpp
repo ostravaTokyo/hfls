@@ -25,7 +25,7 @@ int main(int argc, char *argv[]){
     int typeBc = 0;
 
                 /* dumping matrices in MatrixMarket format */
-    int print_matrices = 1;
+    int print_matrices = 0;
 
                 /* Ac matrix with or withour regularization */
     bool Ac_extended_by_kerGc = false;
