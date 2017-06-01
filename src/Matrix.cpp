@@ -1259,13 +1259,51 @@ void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,in
             }
         }
     }
+}
+
+void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, bool printThem){
+
+    if (A_.n_row_cmprs > 3000){
+        cout << "Matrix is too big to get SVD" << endl;
+        return;
+    }
+    if (A_.format != 2)
+        A_.CSRorCOO2DNS(false,false);
+
+    Matrix A;
+    int A_dim = int(1 + A_.n_row_cmprs) * A_.n_row_cmprs / 2;
+    A.zero_dense(1, A_dim);
+
+    int cnt = 0;
+    for (int j = 0; j < A_.n_col;j++){
+        for (int i = 0; i <= j; i++) {
+            A.dense[cnt] = A_.dense[i + j * A_.n_row_cmprs];
+            cnt++;
+        }
+    }
 
 
+    S.zero_dense(1,A_.n_col);
+
+    char JOBZ_ = 'V';
+    char UPLO_ = 'U';
+    double *ZK_modif = new double[A_.n_row_cmprs * A_.n_row_cmprs];
+    MKL_INT info;
+    MKL_INT ldzA = A_.n_row_cmprs;
+    info = LAPACKE_dspev (LAPACK_COL_MAJOR, JOBZ_, UPLO_,
+            A_.n_row_cmprs, &(A.dense[0]), &(S.dense[0]), ZK_modif, ldzA);
+
+    if (printThem){
+        cout << "\n\n#######  Eigen values of " << A.label << " #######\n";
+        for (int i = 0; i < A_.n_row_cmprs;i++)
+            cout << A_.label<< ": d("<< i << ")=  " << S.dense[i] << endl;
+    }
+    cout << endl;
+    delete [] ZK_modif;
 
 }
 
 void Matrix::getSVD_DNS(Matrix A, Matrix &S, bool printThem){
-
 
     if (A.n_row_cmprs > 2000){
         cout << "Matrix is too big to get SVD" << endl;
@@ -1273,8 +1311,6 @@ void Matrix::getSVD_DNS(Matrix A, Matrix &S, bool printThem){
     }
     if (A.format != 2)
         A.CSRorCOO2DNS(false,false);
-
-    A.getBasicMatrixInfo();
 
 
     S.zero_dense(A.n_row_cmprs,1);

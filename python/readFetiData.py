@@ -4,18 +4,14 @@ import scipy.sparse.linalg as spla
 import pylab as plt
 #
 #
-def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset): 
-    pathToFile = path+'/'+str(i)+'/'+str0+str(j)+'.txt' 
-    #tmp = np.loadtxt(pathToFile, ndmin=2)
 
-
-
+def load_matrix_basic(pathToFile,makeSparse,makeSymmetric, offset):
     f0 = open(pathToFile).readlines()
     firstLine = f0.pop(0) #removes the first line
-    tmp = np.zeros((len(f0),3))
+    tmp = np.zeros((len(f0),3), dtype = float)
     for i in range(len(f0)):
         line = f0[i]
-        k = line.rstrip('\n').split('\t')
+        k = line.split()
         tmp[i,0] = float(k[0])
         tmp[i,1] = float(k[1])
         tmp[i,2] = float(k[2])
@@ -32,7 +28,7 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
 #    
 #        print str0,i,j
         if (makeSymmetric):
-            logInd = J>I; 
+            logInd = J != I; 
             I = np.concatenate((I,J[logInd]))
             J = np.concatenate((J,I[logInd]))
             V = np.concatenate((V,V[logInd]))    
@@ -44,7 +40,11 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
                 tmp = V
             else:                
                 tmp = sparse.csc_matrix((V,(I,J)),shape=(n,m)).toarray()
-#
+    return tmp
+
+def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset): 
+    pathToFile = path+'/'+str(i)+'/'+str0+str(j)+'.txt' #
+    tmp = load_matrix_basic(pathToFile,makeSparse,makeSymmetric,offset) 
     return tmp
 
 path0 = "../data"
@@ -142,14 +142,29 @@ KpBcT0 = load_matrix(path0,"dump_KplusBcT_new_","",str(0),False,False,1)
 KpBcT1 = load_matrix(path0,"dump_KplusBcT_new_","",str(1),False,False,1) 
 
 
+
+
+
 plt.subplot(1,3,1)
-plt.spy(GcTGc, markersize=0.7)
+if GcTGc.shape[0] < 100:
+    markersize_ = 3
+else:
+    markersize_ = 0.7 
+plt.spy(GcTGc, markersize=markersize_)
 plt.xlabel("nnz = %d" % (GcTGc.nonzero()[0].shape[0]))
 plt.subplot(1,3,2)
-plt.spy(Fc_clust_new, markersize=0.7)
+if Fc_clust_new.shape[0] < 100:
+    markersize = 3
+else:
+    markersize = 0.7 
+plt.spy(Fc_clust_new, markersize=markersize_)
 plt.xlabel("nnz = %d" % (Fc_clust_new.nonzero()[0].shape[0]))
 plt.subplot(1,3,3)
-plt.spy(Ac_clust_new, markersize=0.7)
+if Ac_clust_new.shape[0] < 100:
+    markersize_ = 3
+else:          
+    markersize_ = 0.7 
+plt.spy(Ac_clust_new, markersize=markersize_)
 plt.xlabel("nnz = %d" % (Ac_clust_new.nonzero()[0].shape[0]))
 plt.show()
 

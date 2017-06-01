@@ -245,7 +245,8 @@ bool printMat = bool (options.print_matrices);
 
     Matrix S_Fc_clust;
 
-    Matrix::getSVD_DNS(Fc_clust_new,S_Fc_clust,true);
+//    Matrix::getSVD_DNS(Fc_clust_new,S_Fc_clust,true);
+    Matrix::getEigVal_DNS(Fc_clust_new,S_Fc_clust,true);
 
     cout << "Gc_clust is being created ... \n" ;
     create_Gc_clust_new();
@@ -265,7 +266,8 @@ bool printMat = bool (options.print_matrices);
     }
 
     Matrix S_GcTGc;
-    Matrix::getSVD_DNS(GcTGc_clust,S_GcTGc,true);
+//    Matrix::getSVD_DNS(GcTGc_clust,S_GcTGc,true);
+    Matrix::getEigVal_DNS(GcTGc_clust,S_GcTGc,true);
 
 
     GcTGc_sparse_clust.getBasicMatrixInfo();
@@ -287,7 +289,8 @@ bool printMat = bool (options.print_matrices);
     cout << "Ac_clust is being created ... \n" ;
     create_Ac_clust_new(options.solver_opt.Ac_extended_by_kerGc);
     Matrix S_Ac_clust;
-    Matrix::getSVD_DNS(Ac_clust_new,S_Ac_clust,true);
+//    Matrix::getSVD_DNS(Ac_clust_new,S_Ac_clust,true);
+    Matrix::getEigVal_DNS(Ac_clust_new,S_Ac_clust,true);
 
     Ac_clust_new.getBasicMatrixInfo();
 
@@ -300,7 +303,7 @@ bool printMat = bool (options.print_matrices);
 
     Ac_clust_new.order_number = 2000;
     Ac_clust_new.symbolic_factorization();
-    Ac_clust_new.diss_scaling = 2;
+    Ac_clust_new.diss_scaling = 1;
 
     if (options.solver_opt.Ac_extended_by_kerGc){
         if (options.solver_opt.solver == 0){

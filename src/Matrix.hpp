@@ -134,6 +134,7 @@ public:
 
     static bool test_of_Bc_constraints(Matrix &);
     static void getSVD_DNS(Matrix , Matrix &, bool);
+    static void getEigVal_DNS(Matrix , Matrix &, bool);
 
 
 
