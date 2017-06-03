@@ -23,9 +23,12 @@ int main(int argc, char *argv[]){
                  * 1: zero and first approx. (ker),
                  * 2: all nodes on interf.)*/
     int typeBc = 0;
-
                 /* dumping matrices in MatrixMarket format */
-    int print_matrices = 0;
+                /* print_matrices  = 0 : do nothing */
+                /* print_matrices  = 1 : clust. objects (GcTGc, Fc, Ac)*/
+                /* print_matrices  = 2 : print all previous + K, Bc, Fc_sub, Gc_sub ...  */
+                /* print_matrices  = 3 : print all previous + BcT_dense, BcT_dense_new, ...  */
+    int print_matrices = 1;
 
                 /* Ac matrix with or withour regularization */
     bool Ac_extended_by_kerGc = false;

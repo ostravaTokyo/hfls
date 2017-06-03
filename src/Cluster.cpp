@@ -14,7 +14,7 @@ int symmetric, format, offset;
 bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
 
 
-bool printMat = bool (options.print_matrices);
+int printMat = options.print_matrices;
 
 #if 0
 //    std::string path2matrix = options.path2data+"/testMat"+to_string(0)+".txt";
@@ -42,24 +42,24 @@ bool printMat = bool (options.print_matrices);
     mesh.createMesh(options);
     const int nSubClst = mesh.nSubClst;
 
-    Bc_new.resize(nSubClst);
-    BcT_dense_new.resize(nSubClst);
-    K_new.resize(nSubClst);
-    K_reg_new.resize(nSubClst);
-    Fc_new.resize(nSubClst);
-    Gc_new.resize(nSubClst);
-    R_new.resize(nSubClst);
-    Lumped_new.resize(nSubClst);
+    Bc.resize(nSubClst);
+    BcT_dense.resize(nSubClst);
+    K.resize(nSubClst);
+    K_reg.resize(nSubClst);
+    Fc.resize(nSubClst);
+    Gc.resize(nSubClst);
+    R.resize(nSubClst);
+    Lumped.resize(nSubClst);
 
     cout << "assembling of K, f ... \n" ;
     data.fe_assemb_local_K_f(mesh);
     cout << "symbolic factorization etc. ... \n" ;
-    data.feti_symbolic(mesh,K_new);
-    data.feti_numeric(mesh,K_new);
+    data.feti_symbolic(mesh,K);
+    data.feti_numeric(mesh,K);
     cout << "ker(K) is being created ... \n" ;
 
     if (options.solver_opt.solver == 0){
-        data.create_analytic_ker_K(mesh,R_new);
+        data.create_analytic_ker_K(mesh,R);
     }
 
     string folder = options.path2data;
@@ -69,21 +69,21 @@ bool printMat = bool (options.print_matrices);
 
 
 
-    for (int d = 0; d < K_new.size(); d++){
+    for (int d = 0; d < K.size(); d++){
         if (options.solver_opt.solver == 0){
-            vector < int > nullPivots_new;
-            R_new[d].getNullPivots(nullPivots_new);
-            K_reg_new[d] = K_new[d];
-            K_reg_new[d].factorization(nullPivots_new);
-            if (printMat){
-                K_reg_new[d].printToFile("K_reg_new",folder,d,printCooOrDense);
-                K_reg_new[d].getBasicMatrixInfo();
+            vector < int > nullPivots;
+            R[d].getNullPivots(nullPivots);
+            K_reg[d] = K[d];
+            K_reg[d].factorization(nullPivots);
+            if (printMat > 1){
+                K_reg[d].printToFile("K_reg",folder,d,printCooOrDense);
+                K_reg[d].getBasicMatrixInfo();
             }
         }
         else if (options.solver_opt.solver == 1){
-            K_new[d].symbolic_factorization();
-            R_new[d].label = "kerK";
-            K_new[d].numeric_factorization(R_new[d],checkOrthogonality);
+            K[d].symbolic_factorization();
+            R[d].label = "kerK";
+            K[d].numeric_factorization(R[d],checkOrthogonality);
         }
     }
 
@@ -94,35 +94,35 @@ bool printMat = bool (options.print_matrices);
 
 
     cout << "subdomain:  ";
-    for (int d = 0; d < K_new.size(); d++){
+    for (int d = 0; d < K.size(); d++){
     cout << d <<" ";
-        if (printMat){
-            K_new[d].printToFile("K_new",folder,d,printCooOrDense);
-            K_new[d].getBasicMatrixInfo();
+        if (printMat > 1){
+            K[d].printToFile("K",folder,d,printCooOrDense);
+            K[d].getBasicMatrixInfo();
         }
-        if (printMat){
-            Bc_new[d].printToFile("Bc_new",folder,d,printCooOrDense);
-            Bc_new[d].getBasicMatrixInfo();
+        if (printMat > 1){
+            Bc[d].printToFile("Bc",folder,d,printCooOrDense);
+            Bc[d].getBasicMatrixInfo();
         }
 //
 //
         Matrix Bc_tmp;
-        Bc_tmp = Bc_new[d];
+        Bc_tmp = Bc[d];
 
         reduceZeroRows = true;
         transpose = true;
         Bc_tmp.CSRorCOO2DNS(reduceZeroRows,transpose);
 
 
-        BcT_dense_new[d].zero_dense(Bc_tmp.n_col,Bc_tmp.n_row_cmprs);
-        BcT_dense_new[d].dense = Bc_tmp.dense;
-        BcT_dense_new[d].label = "BcT_dense_new";
+        BcT_dense[d].zero_dense(Bc_tmp.n_col,Bc_tmp.n_row_cmprs);
+        BcT_dense[d].dense = Bc_tmp.dense;
+        BcT_dense[d].label = "BcT_dense";
 
 
 
-        if (printMat){
-            BcT_dense_new[d].printToFile("BcT_dense_new",folder,d,printCooOrDense);
-            BcT_dense_new[d].getBasicMatrixInfo();
+        if (printMat > 2){
+            BcT_dense[d].printToFile("BcT_dense",folder,d,printCooOrDense);
+            BcT_dense[d].getBasicMatrixInfo();
         }
 //
 
@@ -131,7 +131,7 @@ bool printMat = bool (options.print_matrices);
 
         if (testGenInv){
             Matrix K_dense,Kplus_K,K_Kplus_K;
-            K_dense = K_new[d]; K_dense.label = "K_dense";
+            K_dense = K[d]; K_dense.label = "K_dense";
 
 
 
@@ -151,22 +151,22 @@ bool printMat = bool (options.print_matrices);
 
 
             if (options.solver_opt.solver == 0){
-                K_reg_new[d].solve(K_dense,Kplus_K);
+                K_reg[d].solve(K_dense,Kplus_K);
             }
             else if (options.solver_opt.solver == 1){
-                K_new[d].diss_solve(K_dense,Kplus_K);
+                K[d].diss_solve(K_dense,Kplus_K);
             }
 //
 //
             Kplus_K.printToFile("Kplus_K",folder,d,true);
 //
-            K_new[d].mult(Kplus_K,K_Kplus_K,true);
+            K[d].mult(Kplus_K,K_Kplus_K,true);
             K_Kplus_K.label = "K_Kplus_K";
 //
             K_Kplus_K.printToFile("K_Kplus_K",folder,d,true);
 
             double norm_Kplus_K = Kplus_K.norm2();
-            double norm_K = K_new[d].norm2();
+            double norm_K = K[d].norm2();
             double norm_K_Kplus_K = K_Kplus_K.norm2();
 
 
@@ -189,71 +189,68 @@ bool printMat = bool (options.print_matrices);
 
 
 
-        Matrix KplusBcT_dense_new;
-        KplusBcT_dense_new.zero_dense(BcT_dense_new[d].n_row_cmprs, BcT_dense_new[d].n_col);
+        Matrix KplusBcT_dense;
+        KplusBcT_dense.zero_dense(BcT_dense[d].n_row_cmprs, BcT_dense[d].n_col);
 
         if (d == 0)
             cout << "Fc[i] (for each subdom) is being created ... \n" ;
 
         if (options.solver_opt.solver == 0){
-            K_reg_new[d].solve(BcT_dense_new[d],KplusBcT_dense_new);
+            K_reg[d].solve(BcT_dense[d],KplusBcT_dense);
         }
         else if (options.solver_opt.solver == 1 ){
-            K_new[d].diss_solve(BcT_dense_new[d],KplusBcT_dense_new);
+            K[d].diss_solve(BcT_dense[d],KplusBcT_dense);
         }
-        if (printMat){
-            KplusBcT_dense_new.printToFile("KplusBcT_new",folder,d,printCooOrDense);
-            KplusBcT_dense_new.getBasicMatrixInfo();
+        if (printMat > 2){
+            KplusBcT_dense.printToFile("KplusBcT",folder,d,printCooOrDense);
+            KplusBcT_dense.getBasicMatrixInfo();
         }
 
 
-        Fc_new[d].zero_dense(Bc_new[d].n_row_cmprs,  Bc_new[d].n_row_cmprs);
-        Bc_new[d].mult(KplusBcT_dense_new,Fc_new[d],true);
-        if (printMat){
-            Fc_new[d].printToFile("Fc_new",folder,d,printCooOrDense);
-            Fc_new[d].getBasicMatrixInfo();
+        Fc[d].zero_dense(Bc[d].n_row_cmprs,  Bc[d].n_row_cmprs);
+        Bc[d].mult(KplusBcT_dense,Fc[d],true);
+        if (printMat > 1){
+            Fc[d].printToFile("Fc",folder,d,printCooOrDense);
+            Fc[d].getBasicMatrixInfo();
         }
-        Fc_new[d].l2g_i_coo = Bc_new[d].l2g_i_coo;
+        Fc[d].l2g_i_coo = Bc[d].l2g_i_coo;
 
         /* Gc - constraints matrix */
         if (d == 0)
             cout << "Gc[i] (for each subdom) is being created ... \n" ;
-        int n_rowGc = Bc_new[d].n_row_cmprs;
-        int n_colGc = R_new[d].n_col;
-        Gc_new[d].zero_dense(n_rowGc, n_colGc );
-        Bc_new[d].mult(R_new[d],Gc_new[d],true);
-        if (printMat){
-            Gc_new[d].printToFile("Gc_new",folder,d,printCooOrDense);
-            Gc_new[d].getBasicMatrixInfo();
+        int n_rowGc = Bc[d].n_row_cmprs;
+        int n_colGc = R[d].n_col;
+        Gc[d].zero_dense(n_rowGc, n_colGc );
+        Bc[d].mult(R[d],Gc[d],true);
+        if (printMat > 1){
+            Gc[d].printToFile("Gc",folder,d,printCooOrDense);
+            Gc[d].getBasicMatrixInfo();
         }
 
-        Gc_new[d].l2g_i_coo = Bc_new[d].l2g_i_coo;
-        Gc_new[d].g2l_i_coo = Bc_new[d].g2l_i_coo;
+        Gc[d].l2g_i_coo = Bc[d].l2g_i_coo;
+        Gc[d].g2l_i_coo = Bc[d].g2l_i_coo;
 
-        if (printMat){
-            R_new[d].printToFile("R_new",folder,d,printCooOrDense);
-            R_new[d].getBasicMatrixInfo();
+        if (printMat > 1){
+            R[d].printToFile("R",folder,d,printCooOrDense);
+            R[d].getBasicMatrixInfo();
         }
     }
     cout << endl;
 
     /* Fc_clust  */
     cout << "Fc_clust is being created ... \n" ;
-    create_Fc_clust_new();
-//    if (printMat)
-        Fc_clust_new.printToFile("Fc_clust_new",folder,0,printCooOrDense);
-
-
+    create_Fc_clust();
+    if (printMat > 0)
+        Fc_clust.printToFile("Fc_clust",folder,0,printCooOrDense);
 
     Matrix S_Fc_clust;
-    Matrix::getEigVal_DNS(Fc_clust_new,S_Fc_clust,10,5);
-    Matrix::getSingularVal_DNS(Fc_clust_new,S_Fc_clust,10,5);
+    Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,8,5);
 
     cout << "Gc_clust is being created ... \n" ;
-    create_Gc_clust_new();
+    create_Gc_clust();
     cout << "====================================================\n";
-    if (printMat)
-        Gc_clust_new.printToFile("Gc_clust_new",folder,0,printCooOrDense);
+    if (printMat > 0)
+        Gc_clust.printToFile("Gc_clust",folder,0,printCooOrDense);
 
     cout << "GcTGc is being created ... \n" ;
     if (options.solver_opt.GcTGc_assembl_block_by_block){
@@ -268,10 +265,11 @@ bool printMat = bool (options.print_matrices);
 
     Matrix S_GcTGc;
     Matrix::getEigVal_DNS(GcTGc_clust,S_GcTGc,8,4);
+    Matrix::getSingularVal_DNS(GcTGc_clust,S_GcTGc,4,8);
 
 
     GcTGc_sparse_clust.getBasicMatrixInfo();
-    //if (printMat)
+    if (printMat > 1)
         GcTGc_clust.printToFile("GcTGc_clust",folder,0,printCooOrDense);
 
 
@@ -283,41 +281,41 @@ bool printMat = bool (options.print_matrices);
     GcTGc_clust.numeric_factorization(kerGc,checkOrthogonality);
     fprintf(stderr, "%s %d : ## GcTGc_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, kerGc.n_col);
-    if (printMat)
+    if (printMat > 1)
         kerGc.printToFile("kerGc",folder,0,printCooOrDense);
 
     cout << "Ac_clust is being created ... \n" ;
-    create_Ac_clust_new(options.solver_opt.Ac_extended_by_kerGc);
+    create_Ac_clust(options.solver_opt.Ac_extended_by_kerGc);
     Matrix S_Ac_clust;
-    Matrix::getEigVal_DNS(Ac_clust_new,S_Ac_clust,10);
+    Matrix::getEigVal_DNS(Ac_clust,S_Ac_clust,10);
 
-    Ac_clust_new.getBasicMatrixInfo();
-
-
+    Ac_clust.getBasicMatrixInfo();
 
 
 
-//    if (printMat)
-        Ac_clust_new.printToFile("Ac_clust_new",folder,0,printCooOrDense);
 
-    Ac_clust_new.order_number = 2000;
-    Ac_clust_new.symbolic_factorization();
-    Ac_clust_new.diss_scaling = 1;
+
+    if (printMat > 1)
+        Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
+
+    Ac_clust.order_number = 2000;
+    Ac_clust.symbolic_factorization();
+    Ac_clust.diss_scaling = 1;
 
     if (options.solver_opt.Ac_extended_by_kerGc){
         if (options.solver_opt.solver == 0){
-            Ac_clust_new.msglvl = 0;
-            Ac_clust_new.factorization();
+            Ac_clust.msglvl = 0;
+            Ac_clust.factorization();
         }
         else if (options.solver_opt.solver == 0){
-            Ac_clust_new.diss_scaling = 1;
-            Ac_clust_new.numeric_factorization();
+            Ac_clust.diss_scaling = 1;
+            Ac_clust.numeric_factorization();
         }
     }
     else{
         Matrix ker_Ac;
         ker_Ac.label = "ker_Ac";
-        Ac_clust_new.numeric_factorization(ker_Ac,checkOrthogonality);
+        Ac_clust.numeric_factorization(ker_Ac,checkOrthogonality);
         fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, ker_Ac.n_col);
     }
@@ -325,12 +323,12 @@ bool printMat = bool (options.print_matrices);
 
     if (options.solver_opt.solver == 0){
         for (int i = 0 ; i < mesh.nSubClst; i++){
-           K_reg_new[i].FinalizeSolve(i);
+           K_reg[i].FinalizeSolve(i);
         }
     }
     else if (options.solver_opt.solver == 1){
         for (int i = 0 ; i < mesh.nSubClst; i++){
-           K_new[i].FinalizeSolve(i);
+           K[i].FinalizeSolve(i);
         }
     }
 }
@@ -340,17 +338,17 @@ void Cluster::create_GcTGc(){
     Matrix &GcTGc = GcTGc_clust;
     vector<int> GcTGcmask;
     vector<double> GcTGcdense;
-    const int nncol = Gc_clust_new.n_col;
+    const int nncol = Gc_clust.n_col;
     GcTGcmask.resize(nncol * nncol, 0);
     GcTGcdense.resize(nncol * nncol, 0.0);
-    vector<int> &i_ptr = Gc_clust_new.i_ptr;
-    vector<int> &j_col = Gc_clust_new.j_col;
-    for (int k = 0; k < Gc_clust_new.n_row; k++) {
+    vector<int> &i_ptr = Gc_clust.i_ptr;
+    vector<int> &j_col = Gc_clust.j_col;
+    for (int k = 0; k < Gc_clust.n_row; k++) {
       for (int l = i_ptr[k]; l < i_ptr[k + 1]; l++) {
     for (int m = l; m < i_ptr[k + 1]; m++) {
       int itmp = j_col[l] + j_col[m] * nncol;
       GcTGcmask[itmp] = 1;
-      GcTGcdense[itmp] += Gc_clust_new.val[l] * Gc_clust_new.val[m];
+      GcTGcdense[itmp] += Gc_clust.val[l] * Gc_clust.val[m];
     }
       }
     }
@@ -407,12 +405,12 @@ void Cluster::create_GcTGc_clust_sparse(){
     blockPointer.resize(mesh.nSubClst);
     blockPointer[0] = 0;
     for (int i = 1; i < mesh.nSubClst; i ++)
-        blockPointer[i] = blockPointer[i-1] + Gc_new[i-1].n_col;
+        blockPointer[i] = blockPointer[i-1] + Gc[i-1].n_col;
 
     for (int i = 0 ; i < mesh.nSubClst ; i++){
-        GcTGc_sparse_clust.nnz += (Gc_new[i].n_col + 1) * Gc_new[i].n_col;
+        GcTGc_sparse_clust.nnz += (Gc[i].n_col + 1) * Gc[i].n_col;
         Matrix Gii;
-        Matrix Gc_i = Gc_new[i];
+        Matrix Gc_i = Gc[i];
         Gc_i.CSRorCOO2DNS(true,false);
         Gii.mat_mult_dense(Gc_i,"T",Gc_i,"N");
         Gii.label = "Gii";
@@ -421,15 +419,15 @@ void Cluster::create_GcTGc_clust_sparse(){
         for (int j = 0 ; j < neighbours[i].size(); j++){
             ind_neigh = neighbours[i][j];
             overlap.resize( n_interf_c_max );
-            it=set_intersection (Gc_new[i].l2g_i_coo.begin(), Gc_new[i].l2g_i_coo.end(),
-                                 Gc_new[ind_neigh].l2g_i_coo.begin(), Gc_new[ind_neigh].l2g_i_coo.end(),
+            it=set_intersection (Gc[i].l2g_i_coo.begin(), Gc[i].l2g_i_coo.end(),
+                                 Gc[ind_neigh].l2g_i_coo.begin(), Gc[ind_neigh].l2g_i_coo.end(),
                                  overlap.begin());
             overlap.resize(it-overlap.begin());
             int n_overlap = overlap.size();
             if (n_overlap > 0){
                 Matrix G_i, G_j, GiTGj;
-                G_i.submatrix_row_selector(Gc_new[i],overlap);
-                G_j.submatrix_row_selector(Gc_new[ind_neigh],overlap);
+                G_i.submatrix_row_selector(Gc[i],overlap);
+                G_j.submatrix_row_selector(Gc[ind_neigh],overlap);
                 GiTGj.mat_mult_dense(G_i,"T",G_j,"N");
                 Matrix::updateCOOstructure( tmpVec,
                                             GiTGj,
@@ -437,7 +435,7 @@ void Cluster::create_GcTGc_clust_sparse(){
                                             blockPointer[ind_neigh]);
             }
             GcTGc_sparse_clust.nnz +=
-                Gc_new[i].n_col * Gc_new[ind_neigh].n_col;
+                Gc[i].n_col * Gc[ind_neigh].n_col;
         }
     }
     GcTGc_sparse_clust.sortAndUniqueCOO(tmpVec);
@@ -445,21 +443,21 @@ void Cluster::create_GcTGc_clust_sparse(){
     GcTGc_sparse_clust.COO2CSR();
 }
 
-void Cluster::create_Fc_clust_new(){
+void Cluster::create_Fc_clust(){
 
-    Fc_clust_new.label = "Fc_clust";
-    Matrix & A_clust = Fc_clust_new;
-    vector <Matrix> & A_i = Fc_new;
+    Fc_clust.label = "Fc_clust";
+    Matrix & A_clust = Fc_clust;
+    vector <Matrix> & A_i = Fc;
     A_clust.symmetric = 2;
     bool remapCols = true;
     create_clust_object(A_clust, A_i, remapCols);
 }
 
-void Cluster::create_Gc_clust_new(){
+void Cluster::create_Gc_clust(){
 
-    Gc_clust_new.label = "Gc_clust_new";
-    Matrix & A_clust = Gc_clust_new;
-    vector <Matrix> & A_i = Gc_new;
+    Gc_clust.label = "Gc_clust";
+    Matrix & A_clust = Gc_clust;
+    vector <Matrix> & A_i = Gc;
     A_clust.symmetric = 0;
     bool remapCols = false;
     create_clust_object(A_clust, A_i, remapCols);
@@ -526,7 +524,7 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
     A_clust.COO2CSR();
 }
 
-void Cluster::create_Ac_clust_new(bool Ac_nonsingular){
+void Cluster::create_Ac_clust(bool Ac_nonsingular){
 
 
     /* only upper triangular part of symmetric matrix
@@ -543,54 +541,54 @@ void Cluster::create_Ac_clust_new(bool Ac_nonsingular){
      *   where H = ker(GcTGc)
      */
 
-    Ac_clust_new.label = "Ac_clust";
-    Ac_clust_new.symmetric = 2;
-    Ac_clust_new.format = 0;
+    Ac_clust.label = "Ac_clust";
+    Ac_clust.symmetric = 2;
+    Ac_clust.format = 0;
 
 //    bool Ac_singular = false;
 
 
-    Ac_clust_new.nnz = Fc_clust_new.nnz + Gc_clust_new.nnz + Gc_clust_new.n_col;
+    Ac_clust.nnz = Fc_clust.nnz + Gc_clust.nnz + Gc_clust.n_col;
     if (Ac_nonsingular)
-        Ac_clust_new.nnz += kerGc.numel + kerGc.n_col;
+        Ac_clust.nnz += kerGc.numel + kerGc.n_col;
 
 //    if (Ac_nonsingular){
-//        Ac_clust_new.nnz = Fc_clust_new.nnz + Gc_clust_new.nnz + Gc_clust_new.n_col +
+//        Ac_clust.nnz = Fc_clust.nnz + Gc_clust.nnz + Gc_clust.n_col +
 //                                                            kerGc.numel + kerGc.n_col;
 //    }
 //    else
 //    {
-//        Ac_clust_new.nnz = Fc_clust_new.nnz + Gc_clust_new.nnz + Gc_clust_new.n_col;
+//        Ac_clust.nnz = Fc_clust.nnz + Gc_clust.nnz + Gc_clust.n_col;
 //    }
 
     vector < int_int_dbl > tmpVec;
-    tmpVec.resize(Ac_clust_new.nnz);
+    tmpVec.resize(Ac_clust.nnz);
 
     int cnt = 0;
 
 
     //  Ac[0,1]
-    for (int i = 0; i < Fc_clust_new.n_row; i++) {
-        for (int j = Fc_clust_new.i_ptr[i]; j < Fc_clust_new.i_ptr[i + 1]; j++) {
+    for (int i = 0; i < Fc_clust.n_row; i++) {
+        for (int j = Fc_clust.i_ptr[i]; j < Fc_clust.i_ptr[i + 1]; j++) {
             tmpVec[cnt].I = i;
-            tmpVec[cnt].J = Fc_clust_new.j_col[j];
-            tmpVec[cnt].V = Fc_clust_new.val[j];
+            tmpVec[cnt].J = Fc_clust.j_col[j];
+            tmpVec[cnt].V = Fc_clust.val[j];
             cnt++;
         }
     }
     //  Ac[0,1]
-    for (int i = 0; i < Gc_clust_new.n_row; i++) {
-        for (int j = Gc_clust_new.i_ptr[i]; j < Gc_clust_new.i_ptr[i + 1]; j++) {
+    for (int i = 0; i < Gc_clust.n_row; i++) {
+        for (int j = Gc_clust.i_ptr[i]; j < Gc_clust.i_ptr[i + 1]; j++) {
             tmpVec[cnt].I = i;
-            tmpVec[cnt].J = Gc_clust_new.j_col[j] + Fc_clust_new.n_col;
-            tmpVec[cnt].V = Gc_clust_new.val[j];
+            tmpVec[cnt].J = Gc_clust.j_col[j] + Fc_clust.n_col;
+            tmpVec[cnt].V = Gc_clust.val[j];
             cnt++;
         }
     }
     //  Ac[1,1]
-    for (int i = 0; i < Gc_clust_new.n_col; i++){
-        tmpVec[cnt].I = i + Fc_clust_new.n_row;
-        tmpVec[cnt].J = i + Fc_clust_new.n_row;
+    for (int i = 0; i < Gc_clust.n_col; i++){
+        tmpVec[cnt].I = i + Fc_clust.n_row;
+        tmpVec[cnt].J = i + Fc_clust.n_row;
         tmpVec[cnt].V = 0.0;
         cnt++;
     }
@@ -599,16 +597,16 @@ void Cluster::create_Ac_clust_new(bool Ac_nonsingular){
     //  Ac[1,2]
         for (int i = 0; i < kerGc.n_row; i++) {
             for (int j = 0; j < kerGc.n_col; j++) {
-                tmpVec[cnt].I = i + Fc_clust_new.n_row;
-                tmpVec[cnt].J = j + Fc_clust_new.n_col + Gc_clust_new.n_col;
+                tmpVec[cnt].I = i + Fc_clust.n_row;
+                tmpVec[cnt].J = j + Fc_clust.n_col + Gc_clust.n_col;
                 tmpVec[cnt].V = kerGc.dense[i + j * kerGc.n_row];
                 cnt++;
             }
         }
     //  Ac[2,2]
         for (int i = 0; i < kerGc.n_col; i++){
-            tmpVec[cnt].I = i + Fc_clust_new.n_row + Gc_clust_new.n_col;
-            tmpVec[cnt].J = i + Fc_clust_new.n_row + Gc_clust_new.n_col;
+            tmpVec[cnt].I = i + Fc_clust.n_row + Gc_clust.n_col;
+            tmpVec[cnt].J = i + Fc_clust.n_row + Gc_clust.n_col;
             tmpVec[cnt].V = 0.0;
             cnt++;
         }
@@ -616,42 +614,42 @@ void Cluster::create_Ac_clust_new(bool Ac_nonsingular){
     //else {
     //}
 
-    Ac_clust_new.sortAndUniqueCOO(tmpVec);
+    Ac_clust.sortAndUniqueCOO(tmpVec);
     tmpVec.clear();
     tmpVec.shrink_to_fit();
 
     if (Ac_nonsingular){
-        Ac_clust_new.n_row = Fc_clust_new.n_row_cmprs + Gc_clust_new.n_col + kerGc.n_col;
+        Ac_clust.n_row = Fc_clust.n_row_cmprs + Gc_clust.n_col + kerGc.n_col;
     }
     else{
-        Ac_clust_new.n_row = Fc_clust_new.n_row_cmprs + Gc_clust_new.n_col;
+        Ac_clust.n_row = Fc_clust.n_row_cmprs + Gc_clust.n_col;
     }
 
-    Ac_clust_new.n_row_cmprs = Ac_clust_new.n_row;
-    Ac_clust_new.n_col = Ac_clust_new.n_row;
+    Ac_clust.n_row_cmprs = Ac_clust.n_row;
+    Ac_clust.n_col = Ac_clust.n_row;
 
-    Ac_clust_new.COO2CSR();
+    Ac_clust.COO2CSR();
 #if 0
-    int init_nnz = Ac_clust_new.nnz;
-    int new_nnz = init_nnz + Gc_clust_new.n_col;
+    int init_nnz = Ac_clust.nnz;
+    int new_nnz = init_nnz + Gc_clust.n_col;
     /* n_row = n_row_cmprs = n_col */
-    Ac_clust_new.nnz = new_nnz;
-    Ac_clust_new.n_row = Ac_clust_new.n_col;
-    Ac_clust_new.n_row_cmprs = Ac_clust_new.n_col;
+    Ac_clust.nnz = new_nnz;
+    Ac_clust.n_row = Ac_clust.n_col;
+    Ac_clust.n_row_cmprs = Ac_clust.n_col;
     /* update sizes of sparse structures*/
-    Ac_clust_new.i_ptr.resize(Ac_clust_new.n_col + 1);
-    Ac_clust_new.j_col.resize(new_nnz);
-    Ac_clust_new.val.resize(new_nnz);
-    Ac_clust_new.l2g_i_coo.resize(Ac_clust_new.n_col);
+    Ac_clust.i_ptr.resize(Ac_clust.n_col + 1);
+    Ac_clust.j_col.resize(new_nnz);
+    Ac_clust.val.resize(new_nnz);
+    Ac_clust.l2g_i_coo.resize(Ac_clust.n_col);
 
 
-    for (int i = 0; i < Gc_clust_new.n_col; i++){
-        Ac_clust_new.i_ptr[Fc_clust_new.n_col + 1 + i] = init_nnz + 1 + i;
-        Ac_clust_new.j_col[init_nnz + i] = Fc_clust_new.n_row + i;
-        Ac_clust_new.val[init_nnz + i] = 0;
-        Ac_clust_new.l2g_i_coo[Fc_clust_new.n_row + i] = Fc_clust_new.n_row + i;
+    for (int i = 0; i < Gc_clust.n_col; i++){
+        Ac_clust.i_ptr[Fc_clust.n_col + 1 + i] = init_nnz + 1 + i;
+        Ac_clust.j_col[init_nnz + i] = Fc_clust.n_row + i;
+        Ac_clust.val[init_nnz + i] = 0;
+        Ac_clust.l2g_i_coo[Fc_clust.n_row + i] = Fc_clust.n_row + i;
     }
-    Ac_clust_new.i_ptr[Ac_clust_new.n_row] = new_nnz;
+    Ac_clust.i_ptr[Ac_clust.n_row] = new_nnz;
 #endif
 }
 
@@ -700,7 +698,7 @@ void Cluster::create_cluster_constraints(const Options &options){
                 // TODO !!! temporarly
                 Matrix Bc_from_Rt;
                 if (options.solver_opt.typeBc == 1){
-                   Bc_from_Rt.zero_dense(R_new[i].n_col,v.size());
+                   Bc_from_Rt.zero_dense(R[i].n_col,v.size());
                 }
 
 
@@ -710,10 +708,10 @@ void Cluster::create_cluster_constraints(const Options &options){
                     data.interface[j][v[k]].push_back(i);
 
                     if (options.solver_opt.typeBc == 1){
-                        for (int l = 0; l < R_new[i].n_col;l++){
+                        for (int l = 0; l < R[i].n_col;l++){
                             int g2ldof = data.g2l[i][v[k]];
                             Bc_from_Rt.dense[l + k * Bc_from_Rt.n_row_cmprs] =
-                                    R_new[i].dense[g2ldof + l * R_new[i].n_row_cmprs];
+                                    R[i].dense[g2ldof + l * R[i].n_row_cmprs];
                         }
                     }
                 }
@@ -732,14 +730,14 @@ void Cluster::create_cluster_constraints(const Options &options){
                                 // @! i_coo_cmpr is firstly filled by cluster global numbering
                                 //    and later remaped to local subdomain numbering
                                 j_col_Bc_curr = data.g2l[i][v[l]];
-                                Bc_new[i].i_coo_cmpr.push_back(cntLam);
-                                Bc_new[i].j_col.push_back(j_col_Bc_curr);
-                                Bc_new[i].val.push_back(Bc_from_Rt_lk);
+                                Bc[i].i_coo_cmpr.push_back(cntLam);
+                                Bc[i].j_col.push_back(j_col_Bc_curr);
+                                Bc[i].val.push_back(Bc_from_Rt_lk);
 
                                 j_col_Bc_neigh = data.g2l[j][v[l]];
-                                Bc_new[j].i_coo_cmpr.push_back(cntLam);
-                                Bc_new[j].j_col.push_back(j_col_Bc_neigh);
-                                Bc_new[j].val.push_back(-Bc_from_Rt_lk);
+                                Bc[j].i_coo_cmpr.push_back(cntLam);
+                                Bc[j].j_col.push_back(j_col_Bc_neigh);
+                                Bc[j].val.push_back(-Bc_from_Rt_lk);
                             }
                             cntLam++;
                         }
@@ -792,15 +790,15 @@ void Cluster::create_cluster_constraints(const Options &options){
                     if (ind_neigh_sub > d){
     //                if ( it1->second.size() == 1 || (d + 1) == ind_neigh_sub){
                         j_col_Bc_curr = data.g2l[d][global_DOF];
-                        Bc_new[d].l2g_i_coo.push_back(cntLam);
-                        Bc_new[d].j_col.push_back(j_col_Bc_curr);
-                        Bc_new[d].val.push_back(1);
+                        Bc[d].l2g_i_coo.push_back(cntLam);
+                        Bc[d].j_col.push_back(j_col_Bc_curr);
+                        Bc[d].val.push_back(1);
 
 
                         j_col_Bc_neigh = data.g2l[ind_neigh_sub][global_DOF];
-                        Bc_new[ind_neigh_sub].l2g_i_coo.push_back(cntLam);
-                        Bc_new[ind_neigh_sub].j_col.push_back(j_col_Bc_neigh);
-                        Bc_new[ind_neigh_sub].val.push_back(-1);
+                        Bc[ind_neigh_sub].l2g_i_coo.push_back(cntLam);
+                        Bc[ind_neigh_sub].j_col.push_back(j_col_Bc_neigh);
+                        Bc[ind_neigh_sub].val.push_back(-1);
 
                         //cout << j_col_Bc_curr <<" -------- " << j_col_Bc_neigh << endl;
 
@@ -818,53 +816,53 @@ void Cluster::create_cluster_constraints(const Options &options){
     int _nnz;
     n_interf_c_max = 0;
     for (int d = 0 ; d < nSubClst; d++){
-        _nnz = Bc_new[d].val.size();
-        Bc_new[d].nnz = _nnz;
-        Bc_new[d].n_row = cntLam;
-        Bc_new[d].n_col = data.l2g[d].size();
-        Bc_new[d].symmetric = 0;
-        Bc_new[d].format = 0;
+        _nnz = Bc[d].val.size();
+        Bc[d].nnz = _nnz;
+        Bc[d].n_row = cntLam;
+        Bc[d].n_col = data.l2g[d].size();
+        Bc[d].symmetric = 0;
+        Bc[d].format = 0;
 
 
         if (options.solver_opt.typeBc == 1){
             vector<int>::iterator it;
-            vector < int > l2g_(Bc_new[d].i_coo_cmpr);
+            vector < int > l2g_(Bc[d].i_coo_cmpr);
             sort(l2g_.begin(), l2g_.end());
             it = unique (l2g_.begin(), l2g_.end());
             l2g_.resize( distance(l2g_.begin(),it));
-            Bc_new[d].n_row_cmprs = l2g_.size();
+            Bc[d].n_row_cmprs = l2g_.size();
 
 
             for (int i = 0; i < l2g_.size(); i++){
-                Bc_new[d].g2l_i_coo.insert ( pair < int, int > ( l2g_[i] , i ));
+                Bc[d].g2l_i_coo.insert ( pair < int, int > ( l2g_[i] , i ));
             }
 
-            for (int i = 0; i < Bc_new[d].i_coo_cmpr.size(); i++){
-                Bc_new[d].i_coo_cmpr[i] =
-                        Bc_new[d].g2l_i_coo[ Bc_new[d].i_coo_cmpr[i] ];
+            for (int i = 0; i < Bc[d].i_coo_cmpr.size(); i++){
+                Bc[d].i_coo_cmpr[i] =
+                        Bc[d].g2l_i_coo[ Bc[d].i_coo_cmpr[i] ];
             }
-            Bc_new[d].l2g_i_coo = l2g_;
+            Bc[d].l2g_i_coo = l2g_;
 
         }
         else{
 
-            Bc_new[d].n_row_cmprs = Bc_new[d].l2g_i_coo.size();
-            Bc_new[d].i_coo_cmpr.resize(Bc_new[d].n_row_cmprs);
-            for (int i = 0; i < Bc_new[d].n_row_cmprs; i++){
-                Bc_new[d].i_coo_cmpr[i] = i;
-                Bc_new[d].g2l_i_coo.insert ( pair < int, int > ( Bc_new[d].l2g_i_coo[i] , i ));
+            Bc[d].n_row_cmprs = Bc[d].l2g_i_coo.size();
+            Bc[d].i_coo_cmpr.resize(Bc[d].n_row_cmprs);
+            for (int i = 0; i < Bc[d].n_row_cmprs; i++){
+                Bc[d].i_coo_cmpr[i] = i;
+                Bc[d].g2l_i_coo.insert ( pair < int, int > ( Bc[d].l2g_i_coo[i] , i ));
             }
         }
 
 
 
 
-        Bc_new[d].COO2CSR();
-//        Bc_new[d].getBasicMatrixInfo();
+        Bc[d].COO2CSR();
+//        Bc[d].getBasicMatrixInfo();
 
         // max number of 'c-type' constraints on one subdomain
-        if (Bc_new[d].n_row_cmprs > n_interf_c_max)
-            n_interf_c_max = Bc_new[d].n_row_cmprs;
+        if (Bc[d].n_row_cmprs > n_interf_c_max)
+            n_interf_c_max = Bc[d].n_row_cmprs;
 
     }
 }

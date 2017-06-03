@@ -21,35 +21,35 @@ public:
 
 
     /* 'new' data created inside the app */
-    std::vector< Matrix> K_new;
-    std::vector< Matrix> K_reg_new;
-    std::vector< Matrix> Lumped_new;
-    std::vector< Matrix> R_new;
-    std::vector< Matrix> Fc_new;
-    std::vector< Matrix> Bc_new;
-    std::vector< Matrix> BcT_dense_new;
-    std::vector< Matrix> Gc_new;
+    std::vector< Matrix> K;
+    std::vector< Matrix> K_reg;
+    std::vector< Matrix> Lumped;
+    std::vector< Matrix> R;
+    std::vector< Matrix> Fc;
+    std::vector< Matrix> Bc;
+    std::vector< Matrix> BcT_dense;
+    std::vector< Matrix> Gc;
 
 
     Mesh mesh;
     Data data;
 
-    Matrix Fc_clust_new;
-    Matrix Gc_clust_new;
-    Matrix Ac_clust_new;
+    Matrix Fc_clust;
+    Matrix Gc_clust;
+    Matrix Ac_clust;
     Matrix GcTGc_clust;
     Matrix kerGc;
 
     Matrix GcTGc_sparse_clust;
 
     /* FETI */
-    void create_Gf_clust_new();
+    void create_Gf_clust();
 
     /* HFETI */
     void create_clust_object(Matrix &, vector <Matrix> & , bool);
-    void create_Fc_clust_new();
-    void create_Gc_clust_new();
-    void create_Ac_clust_new(bool);
+    void create_Fc_clust();
+    void create_Gc_clust();
+    void create_Ac_clust(bool);
     void create_GcTGc();
     void create_GcTGc_clust_sparse();
 

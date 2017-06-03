@@ -798,52 +798,49 @@ int Matrix::ij(int i_, int j_){
 void Matrix::getNullPivots(vector < int > & null_pivots){
 
 
-  int cols = n_col;
-  int rows = n_row_cmprs;
+  int n_col_ = n_col;
+  int n_row_ = n_row_cmprs;
 
   vector <double> N(dense);
   vector <double>::iterator  it;
   int I,colInd,rowInd;
-  double *tmpV = new double[rows];
-  int *_nul_piv = new int [rows];
+  double *tmpV = new double[n_row_];
+  int *_nul_piv = new int [n_row_];
   double pivot;
   int tmp_int;
-  for (int i = 0;i<rows;i++){
+  for (int i = 0;i < n_row_;i++){
       _nul_piv[i]=i;
   }
 
-//  auto ij = [&]( int ii, int jj ) -> int {
-//      return ii + rows * jj;
-//  };
 
-  for (int j=0;j<cols;j++){
-    it = max_element(N.begin(),N.end()-j*rows, compareDouble);
+  for (int j=0;j<n_col_;j++){
+    it = max_element(N.begin(),N.end()-j*n_row_, compareDouble);
     I = it - N.begin();
-    colInd = I/rows;
-    rowInd = I-colInd*rows;
-    for (int k=0;k<cols-j;k++){
-      tmpV[k] = N[ij(rows-1-j,k)];
-      N[ij(rows-1-j,k)] = N[ij(rowInd,k)];
+    colInd = I/n_row_;
+    rowInd = I-colInd*n_row_;
+    for (int k=0;k<n_col_-j;k++){
+      tmpV[k] = N[ij(n_row_-1-j,k)];
+      N[ij(n_row_-1-j,k)] = N[ij(rowInd,k)];
       N[ij(rowInd,k)]= tmpV[k];
     }
     tmp_int = _nul_piv[rowInd];
-    _nul_piv[rowInd] = _nul_piv[rows-1-j];
-    _nul_piv[rows-1-j] = tmp_int;
-    if (cols - 1 - j != colInd) {
-        memcpy( tmpV, &(N[ij(0,cols-1-j)]) , sizeof( double ) * rows);
-        memcpy( &(N[ij(0, cols - 1 - j)]), &(N[ij(0, colInd)]), sizeof( double ) * rows);
-        memcpy( &(N[ij(0,colInd)]),tmpV , sizeof( double ) * rows);
+    _nul_piv[rowInd] = _nul_piv[n_row_-1-j];
+    _nul_piv[n_row_-1-j] = tmp_int;
+    if (n_col_ - 1 - j != colInd) {
+        memcpy( tmpV, &(N[ij(0,n_col_-1-j)]) , sizeof( double ) * n_row_);
+        memcpy( &(N[ij(0, n_col_- 1 - j)]), &(N[ij(0, colInd)]), sizeof( double ) * n_row_);
+        memcpy( &(N[ij(0,colInd)]),tmpV , sizeof( double ) * n_row_);
     }
-    pivot = N[ij(rows-1-j,cols-1-j)];
-    for (int J=0;J<cols-j-1;J++){
-      for (int I=0;I<rows-j;I++){
-        N[ij(I,J)] -= N[ij(I,cols-1-j)]*N[ij(rows-1-j,J)]/pivot;
+    pivot = N[ij(n_row_-1-j,n_col_-1-j)];
+    for (int J=0;J<n_col_-j-1;J++){
+      for (int I=0;I<n_row_-j;I++){
+        N[ij(I,J)] -= N[ij(I,n_col_-1-j)]*N[ij(n_row_-1-j,J)]/pivot;
       }
     }
   }
-  null_pivots.resize(cols);
-  for (int i = 0;i<cols;i++){
-    null_pivots[i] = _nul_piv[rows-1-i];
+  null_pivots.resize(n_col_);
+  for (int i = 0;i<n_col_;i++){
+    null_pivots[i] = _nul_piv[n_row_-1-i];
   }
   sort(null_pivots.begin(),null_pivots.end());
 //
@@ -1262,6 +1259,32 @@ void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,in
 }
 
 void Matrix::print_int_vector(vector <double> &dS, int print_first_n, int print_last_n){
+
+    if (print_first_n >0 || print_last_n > 0){
+        cout <<"Print ";
+    }
+
+    if (print_first_n > 0){
+        cout << "first " << print_first_n;
+    }
+
+    if (print_first_n >0 && print_last_n > 0){
+       cout <<" and " ;
+    }
+
+    if (print_last_n > 0){
+        cout << "last " << print_last_n;
+    }
+
+
+    if (print_first_n >0 || print_last_n > 0){
+        cout <<" entries";
+    }
+
+    cout << endl;
+
+
+
     int nPrint = print_first_n > dS.size() ? dS.size(): print_first_n;
     for (int i = 0; i < nPrint;i++){
         cout << "d("<< i << ")=  " << dS[i] << endl;
@@ -1274,8 +1297,8 @@ void Matrix::print_int_vector(vector <double> &dS, int print_first_n, int print_
 }
 
 
-void Matrix::getEigVal_DNS(Matrix &A_, Matrix &S, int print_first_n){
-    Matrix::getEigVal_DNS(A_, S, print_first_n, 0);
+void Matrix::getEigVal_DNS(Matrix &A, Matrix &S, int print_first_n){
+    Matrix::getEigVal_DNS(A, S, print_first_n, 0);
 }
 
 void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_last_n){
@@ -1309,7 +1332,7 @@ void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_la
     S.printToFile(A_.label,"../data",444,true);
     delete [] ZK_modif;
 
-    cout << "\n\n#######  Eigenvalues of " << A.label << " #######\n";
+    cout << "\n\n#######  Eigenvalues of " << A_.label << " #######\n";
     Matrix::print_int_vector(S.dense,print_first_n,print_last_n);
 }
 
