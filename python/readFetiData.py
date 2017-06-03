@@ -138,10 +138,14 @@ if 0:
 Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),True,True,1)
 Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
 GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
-KpBcT0 = load_matrix(path0,"dump_KplusBcT_new_","",str(0),False,False,1) 
-KpBcT1 = load_matrix(path0,"dump_KplusBcT_new_","",str(1),False,False,1) 
+#KpBcT0 = load_matrix(path0,"dump_KplusBcT_new_","",str(0),False,False,1) 
+#KpBcT1 = load_matrix(path0,"dump_KplusBcT_new_","",str(1),False,False,1) 
 
 
+dFc_eig = load_matrix(path0,"dump_Fc_clust_","",str(444),False,False,1)
+dFc_svd = load_matrix(path0,"dump_Fc_clust_","",str(555),False,False,1)
+dAc_eig = load_matrix(path0,"dump_Ac_clust_","",str(444),False,False,1)
+dAc_svd = load_matrix(path0,"dump_Ac_clust_","",str(555),False,False,1)
 
 
 

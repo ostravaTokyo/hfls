@@ -93,8 +93,9 @@ bool printMat = bool (options.print_matrices);
 
 
 
+    cout << "subdomain:  ";
     for (int d = 0; d < K_new.size(); d++){
-        cout << "d = " << d << endl;
+    cout << d <<" ";
         if (printMat){
             K_new[d].printToFile("K_new",folder,d,printCooOrDense);
             K_new[d].getBasicMatrixInfo();
@@ -234,6 +235,7 @@ bool printMat = bool (options.print_matrices);
             R_new[d].getBasicMatrixInfo();
         }
     }
+    cout << endl;
 
     /* Fc_clust  */
     cout << "Fc_clust is being created ... \n" ;
@@ -244,9 +246,8 @@ bool printMat = bool (options.print_matrices);
 
 
     Matrix S_Fc_clust;
-
-//    Matrix::getSVD_DNS(Fc_clust_new,S_Fc_clust,true);
-    Matrix::getEigVal_DNS(Fc_clust_new,S_Fc_clust,true);
+    Matrix::getEigVal_DNS(Fc_clust_new,S_Fc_clust,10,5);
+    Matrix::getSingularVal_DNS(Fc_clust_new,S_Fc_clust,10,5);
 
     cout << "Gc_clust is being created ... \n" ;
     create_Gc_clust_new();
@@ -266,8 +267,7 @@ bool printMat = bool (options.print_matrices);
     }
 
     Matrix S_GcTGc;
-//    Matrix::getSVD_DNS(GcTGc_clust,S_GcTGc,true);
-    Matrix::getEigVal_DNS(GcTGc_clust,S_GcTGc,true);
+    Matrix::getEigVal_DNS(GcTGc_clust,S_GcTGc,8,4);
 
 
     GcTGc_sparse_clust.getBasicMatrixInfo();
@@ -289,8 +289,7 @@ bool printMat = bool (options.print_matrices);
     cout << "Ac_clust is being created ... \n" ;
     create_Ac_clust_new(options.solver_opt.Ac_extended_by_kerGc);
     Matrix S_Ac_clust;
-//    Matrix::getSVD_DNS(Ac_clust_new,S_Ac_clust,true);
-    Matrix::getEigVal_DNS(Ac_clust_new,S_Ac_clust,true);
+    Matrix::getEigVal_DNS(Ac_clust_new,S_Ac_clust,10);
 
     Ac_clust_new.getBasicMatrixInfo();
 
@@ -458,7 +457,7 @@ void Cluster::create_Fc_clust_new(){
 
 void Cluster::create_Gc_clust_new(){
 
-    Gc_clust_new.label = "Gc_clust";
+    Gc_clust_new.label = "Gc_clust_new";
     Matrix & A_clust = Gc_clust_new;
     vector <Matrix> & A_i = Gc_new;
     A_clust.symmetric = 0;

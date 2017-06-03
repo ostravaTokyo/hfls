@@ -133,8 +133,14 @@ public:
     static void updateCOOstructure(vector <int_int_dbl > &, Matrix &, int, int);
 
     static bool test_of_Bc_constraints(Matrix &);
-    static void getSVD_DNS(Matrix , Matrix &, bool);
-    static void getEigVal_DNS(Matrix , Matrix &, bool);
+
+    static void print_int_vector(vector <double> &, int, int);
+
+    static void getSingularVal_DNS(Matrix &, Matrix &, int);
+    static void getSingularVal_DNS(Matrix , Matrix &, int, int);
+
+    static void getEigVal_DNS(Matrix &, Matrix &, int );
+    static void getEigVal_DNS(Matrix  , Matrix &, int, int);
 
 
 

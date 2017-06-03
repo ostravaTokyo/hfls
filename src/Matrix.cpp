@@ -1261,7 +1261,24 @@ void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,in
     }
 }
 
-void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, bool printThem){
+void Matrix::print_int_vector(vector <double> &dS, int print_first_n, int print_last_n){
+    int nPrint = print_first_n > dS.size() ? dS.size(): print_first_n;
+    for (int i = 0; i < nPrint;i++){
+        cout << "d("<< i << ")=  " << dS[i] << endl;
+    }
+    nPrint = print_last_n > dS.size() ? dS.size() : print_last_n;
+    for (int i = dS.size() - nPrint; i < dS.size() ;i++){
+        cout << "d("<< i << ")=  " << dS[i] << endl;
+    }
+    cout << "-- end --" << endl;
+}
+
+
+void Matrix::getEigVal_DNS(Matrix &A_, Matrix &S, int print_first_n){
+    Matrix::getEigVal_DNS(A_, S, print_first_n, 0);
+}
+
+void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_last_n){
 
     if (A_.n_row_cmprs > 3000){
         cout << "Matrix is too big to get SVD" << endl;
@@ -1281,10 +1298,7 @@ void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, bool printThem){
             cnt++;
         }
     }
-
-
-    S.zero_dense(1,A_.n_col);
-
+    S.zero_dense(A_.n_row_cmprs,1);
     char JOBZ_ = 'V';
     char UPLO_ = 'U';
     double *ZK_modif = new double[A_.n_row_cmprs * A_.n_row_cmprs];
@@ -1292,18 +1306,18 @@ void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, bool printThem){
     MKL_INT ldzA = A_.n_row_cmprs;
     info = LAPACKE_dspev (LAPACK_COL_MAJOR, JOBZ_, UPLO_,
             A_.n_row_cmprs, &(A.dense[0]), &(S.dense[0]), ZK_modif, ldzA);
-
-    if (printThem){
-        cout << "\n\n#######  Eigen values of " << A.label << " #######\n";
-        for (int i = 0; i < A_.n_row_cmprs;i++)
-            cout << A_.label<< ": d("<< i << ")=  " << S.dense[i] << endl;
-    }
-    cout << endl;
+    S.printToFile(A_.label,"../data",444,true);
     delete [] ZK_modif;
 
+    cout << "\n\n#######  Eigenvalues of " << A.label << " #######\n";
+    Matrix::print_int_vector(S.dense,print_first_n,print_last_n);
 }
 
-void Matrix::getSVD_DNS(Matrix A, Matrix &S, bool printThem){
+void Matrix::getSingularVal_DNS(Matrix &A, Matrix &S, int print_first_n){
+    Matrix::getSingularVal_DNS(A, S, print_first_n, 0);
+}
+
+void Matrix::getSingularVal_DNS(Matrix A, Matrix &S, int print_first_n, int print_last_n){
 
     if (A.n_row_cmprs > 2000){
         cout << "Matrix is too big to get SVD" << endl;
@@ -1311,8 +1325,6 @@ void Matrix::getSVD_DNS(Matrix A, Matrix &S, bool printThem){
     }
     if (A.format != 2)
         A.CSRorCOO2DNS(false,false);
-
-
     S.zero_dense(A.n_row_cmprs,1);
     double *U     = new double[A.n_row_cmprs * A.n_row_cmprs];
     double *Vt    = new double[A.n_col * A.n_col];
@@ -1323,17 +1335,11 @@ void Matrix::getSVD_DNS(Matrix A, Matrix &S, bool printThem){
     MKL_INT Scols= A.n_col;
     info = LAPACKE_dgesvd( LAPACK_ROW_MAJOR, 'A', 'A', Scols, Srows, &(A.dense[0]), lds,
                           &(S.dense)[0], U, lds, Vt, lds, superb );
+    S.printToFile(A.label,"../data",555,true);
+    delete [] U ; delete [] Vt; delete [] superb;
 
-    if (printThem){
-        cout << "\n\n#######  Singular values of " << A.label << " #######\n";
-        for (int i = 0; i < A.n_row_cmprs;i++)
-            cout << A.label<< ": d("<< i << ")=  " << S.dense[i] << endl;
-    }
-    cout << endl;
-    delete [] U ;
-    delete [] Vt;
-    delete [] superb;
-
+    cout << "\n\n#######  Singular values of " << A.label << " #######\n";
+    Matrix::print_int_vector(S.dense,print_first_n,print_last_n);
 }
 
 
@@ -1343,18 +1349,17 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
   Matrix BcTBc,S_S;
   BcTBc.mat_mult_dense(A,"N",A,"T");
 
-  double jump_in_eigenvalues_alerting_singularity = 1e-4;
+  double jump_in_sing_values_alerting_singularity = 1e-4;
   int  sc_size = BcTBc.n_row_cmprs;
   int ind_U_V;
   int defect_K_in = 0;
 
-  Matrix::getSVD_DNS(BcTBc, S_S, false);
-//  int itMax = twenty < BcTBc.n_row ? sc_size - twenty-1 : 0 ;
+  Matrix::getSingularVal_DNS(BcTBc, S_S, false);
   double ratio;
 
   for (int i = 0; i < sc_size-1;i++){
     ratio = fabs(S_S.dense[i+1]/S_S.dense[i]);
-    if (ratio < jump_in_eigenvalues_alerting_singularity){
+    if (ratio < jump_in_sing_values_alerting_singularity){
       ind_U_V = i+1;
       defect_K_in=sc_size-(i+1);
       break;
