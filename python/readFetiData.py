@@ -53,99 +53,105 @@ nSub = 8
 
 
 
-if 0:
+if 1:
 
-    K_new = []
-    K_reg_new = []
-    Fc_new = []
-    R_new = []
-    Bc_new = []
-    Bc_dense_new = []
-    Gc_new = []
+    K = []
+    K_reg = []
+    Fc = []
+    R = []
+    Bc = []
+    BcT_dense = []
+    Gc = []
 
     Gc = []
     Fc = []
 
 
-    Bc_new_nonzRow = []
+    Bc_nonzRow = []
                  
-    BcKplus_new = []
+    BcKplus = []
     BcKplus = []
     BcKplus_tmp = []
 
-    BcK_dense_new = []
-    BcK_dense = []
+#    BcK_dense = []
 
-    K_new_UT = []
+    K_UT = []
 
-    Lumped_new = []
-    Lumped = []
+#    Lumped = []
+#    Lumped = []
 
 
 
 
     for i in range(nSub):
 
-        K_new.append(load_matrix(path0,"dump_K_new_","",str(i),False,True,1)) 
-        K_new_UT.append(load_matrix(path0,"dump_K_new_","",str(i),False,False,1)) 
-        K_reg_new.append(load_matrix(path0,"dump_K_reg_new_","",str(i),False,True,1)) 
-        Fc_new.append(load_matrix(path0,"dump_Fc_new_","",str(i),False,False,1))
-        R_new.append(load_matrix(path0,"dump_R_new_","",str(i),False,False,1)) 
-        Bc_new.append(load_matrix(path0,"dump_Bc_new_","",str(i),False,False,1))
-        Lumped_new.append(load_matrix(path0,"dump_Lumped_new_","",str(i),False,False,1))
-        Bc_dense_new.append(load_matrix(path0,"dump_Bc_dense_new_","",str(i),False,False,1))
-        Gc_new.append(load_matrix(path0,"dump_Gc_new_","",str(i),False,False,1))
+        K.append(load_matrix(path0,"dump_K_","",str(i),False,True,1)) 
+        K_UT.append(load_matrix(path0,"dump_K_","",str(i),False,False,1)) 
+        K_reg.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
+        Fc.append(load_matrix(path0,"dump_Fc_","",str(i),False,False,1))
+        R.append(load_matrix(path0,"dump_R_","",str(i),False,False,1)) 
+        Bc.append(load_matrix(path0,"dump_Bc_","",str(i),False,False,1))
+#        Lumped.append(load_matrix(path0,"dump_Lumped_","",str(i),False,False,1))
+        BcT_dense.append(load_matrix(path0,"dump_BcT_dense_","",str(i),False,False,1))
+        Gc.append(load_matrix(path0,"dump_Gc_","",str(i),False,False,1))
 
-        indBc = np.abs(Bc_new[i]).sum(axis=1)>0
-        Bc_new_nonzRow.append( Bc_new[i][indBc,:])
-        Fc.append( np.dot(Bc_new_nonzRow[i], np.linalg.solve(K_reg_new[i],Bc_new_nonzRow[i].T)))
-        Lumped.append( np.dot(Bc_new_nonzRow[i], np.dot(K_new[i],Bc_new_nonzRow[i].T)))
+        indBc = np.abs(Bc[i]).sum(axis=1)>0
+        Bc_nonzRow.append( Bc[i][indBc,:])
+        Fc.append( np.dot(Bc_nonzRow[i], np.linalg.solve(K_reg[i],Bc_nonzRow[i].T)))
+#        Lumped.append( np.dot(Bc_nonzRow[i], np.dot(K[i],Bc_nonzRow[i].T)))
 
 
 
     #    BcKplus = BcKplus_List[i]
 
-        BcK_dense_new.append(load_matrix(path0,"dump_BcK_dense_new_","",str(i),False,False,1))
-        BcK_dense.append(np.dot(K_new[i],Bc_new_nonzRow[i].T).T)
+#        BcK_dense.append(load_matrix(path0,"dump_BcK_dense_","",str(i),False,False,1))
+#        BcK_dense.append(np.dot(K[i],Bc_nonzRow[i].T).T)
         
-        Gc.append(np.dot(Bc_new[i], R_new[i]))
+        Gc.append(np.dot(Bc[i], R[i]))
 
-        BcKplus_new.append(load_matrix(path0,"dump_BcKplus_new_","",str(i),False,False,1))
-        BcKplus.append(np.linalg.solve(K_reg_new[i],Bc_new_nonzRow[i].T).T)
-        BcKplus_tmp.append(np.linalg.solve(K_reg_new[i],Bc_new[i].T).T)
+#        BcKplus.append(load_matrix(path0,"dump_BcKplus_","",str(i),False,False,1))
+        BcKplus.append(np.linalg.solve(K_reg[i],Bc_nonzRow[i].T).T)
+        BcKplus_tmp.append(np.linalg.solve(K_reg[i],Bc[i].T).T)
 
-#        iK_K = np.linalg.solve(K_reg_new[i],K_new[i])
-#        K_iK_K = np.dot(K_new[i],iK_K)
-#        del_ = np.linalg.norm(K_iK_K - K_new[i]  ) / np.linalg.norm(K_new[i])
+#        iK_K = np.linalg.solve(K_reg[i],K[i])
+#        K_iK_K = np.dot(K[i],iK_K)
+#        del_ = np.linalg.norm(K_iK_K - K[i]  ) / np.linalg.norm(K[i])
 #        print(del_)
 #
         print(' ...%d '%(i))
-    Gc_clust_new = load_matrix(path0,"dump_Gc_clust_new_","",str(0),False,False,1)
-    Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),False,True,1)
-    Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),False,True,1)
+    Gc_clust = load_matrix(path0,"dump_Gc_clust_","",str(0),False,False,1)
+    Ac_clust = load_matrix(path0,"dump_Ac_clust_","",str(0),False,True,1)
+    Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),False,True,1)
 
-    Ac_clust_python = np.hstack((Fc_clust_new,Gc_clust_new))
+    Ac_clust_python = np.hstack((Fc_clust,Gc_clust))
 
-    Z = np.zeros((Gc_clust_new.shape[1],Ac_clust_python.shape[1]))
+    Z = np.zeros((Gc_clust.shape[1],Ac_clust_python.shape[1]))
     print ( Z.shape)
     Ac_clust_python = np.vstack((Ac_clust_python,Z))
 
 
-#Bc_g = np.hstack((Bc_new[0],Bc_new[1]))
-#Bc_g = np.hstack((Bc_g,Bc_new[2]))
-#Bc_g = np.hstack((Bc_g,Bc_new[2])) 
-#BcT_dense = load_matrix(path0,"dump_BcT_dense_new_","",str(0),True,True,1) 
-Fc_clust_new = load_matrix(path0,"dump_Fc_clust_new_","",str(0),True,True,1)
-Ac_clust_new = load_matrix(path0,"dump_Ac_clust_new_","",str(0),True,True,1)
+for i in range(nSub - 1):
+    if (i == 0):
+        Bc_g = np.hstack((Bc[0],Bc[1]))
+    else:
+        Bc_g = np.hstack((Bc_g,Bc[i+1]))
+
+
+
+#Bc_g = np.hstack((Bc_g,Bc[2]))
+#Bc_g = np.hstack((Bc_g,Bc[2])) 
+#BcT_dense = load_matrix(path0,"dump_BcT_dense_","",str(0),True,True,1) 
+Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),True,True,1)
+Ac_clust = load_matrix(path0,"dump_Ac_clust_","",str(0),True,True,1)
 GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
-#KpBcT0 = load_matrix(path0,"dump_KplusBcT_new_","",str(0),False,False,1) 
-#KpBcT1 = load_matrix(path0,"dump_KplusBcT_new_","",str(1),False,False,1) 
+#KpBcT0 = load_matrix(path0,"dump_KplusBcT_","",str(0),False,False,1) 
+#KpBcT1 = load_matrix(path0,"dump_KplusBcT_","",str(1),False,False,1) 
 
 
 dFc_eig = load_matrix(path0,"dump_Fc_clust_","",str(444),False,False,1)
-dFc_svd = load_matrix(path0,"dump_Fc_clust_","",str(555),False,False,1)
+#dFc_svd = load_matrix(path0,"dump_Fc_clust_","",str(555),False,False,1)
 dAc_eig = load_matrix(path0,"dump_Ac_clust_","",str(444),False,False,1)
-dAc_svd = load_matrix(path0,"dump_Ac_clust_","",str(555),False,False,1)
+#dAc_svd = load_matrix(path0,"dump_Ac_clust_","",str(555),False,False,1)
 
 
 
@@ -157,19 +163,19 @@ else:
 plt.spy(GcTGc, markersize=markersize_)
 plt.xlabel("nnz = %d" % (GcTGc.nonzero()[0].shape[0]))
 plt.subplot(1,3,2)
-if Fc_clust_new.shape[0] < 100:
+if Fc_clust.shape[0] < 100:
     markersize = 3
 else:
     markersize = 0.7 
-plt.spy(Fc_clust_new, markersize=markersize_)
-plt.xlabel("nnz = %d" % (Fc_clust_new.nonzero()[0].shape[0]))
+plt.spy(Fc_clust, markersize=markersize_)
+plt.xlabel("nnz = %d" % (Fc_clust.nonzero()[0].shape[0]))
 plt.subplot(1,3,3)
-if Ac_clust_new.shape[0] < 100:
+if Ac_clust.shape[0] < 100:
     markersize_ = 3
 else:          
     markersize_ = 0.7 
-plt.spy(Ac_clust_new, markersize=markersize_)
-plt.xlabel("nnz = %d" % (Ac_clust_new.nonzero()[0].shape[0]))
+plt.spy(Ac_clust, markersize=markersize_) 
+plt.xlabel("nnz = %d" % (Ac_clust.nonzero()[0].shape[0]))
 plt.show()
 
 #Bc_from_Rt = []
@@ -182,35 +188,68 @@ plt.show()
 
 
 
-#BcT_dense = load_matrix(path0,"dump_BcT_dense_new_","",str(0),True,True,1) 
+#BcT_dense = load_matrix(path0,"dump_BcT_dense_","",str(0),True,True,1) 
 
 
-#K = []
-#Kplus_K = []
-#K_Kplus_K = []
-#K_reg = []
-#for i in range(2): 
-#    K.append(load_matrix(path0,"dump_K_dense_","",str(i),False,False,1))
-#    K_reg.append(load_matrix(path0,"dump_K_reg_new_","",str(i),False,True,1)) 
-#    Kplus_K.append(load_matrix(path0,"dump_Kplus_K_","",str(i),False,False,1))
-#    K_Kplus_K.append(load_matrix(path0,"dump_K_Kplus_K_","",str(i),False,False,1))
-#
-#plt.spy(Fc_clust_new,markersize = .8);plt.show()
+K_test= []
+Kplus_K_test = []
+K_Kplus_K_test = []
+K_reg_test = []
+for i in range(2): 
+    K_test.append(load_matrix(path0,"dump_K_dense_","",str(i),False,False,1))
+    K_reg_test.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
+    Kplus_K_test.append(load_matrix(path0,"dump_Kplus_K_","",str(i),False,False,1))
+    K_Kplus_K_test.append(load_matrix(path0,"dump_K_Kplus_K_","",str(i),False,False,1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#plt.spy(Fc_clust,markersize = .8);plt.show()
 
 #Gc_ = load_matrix(path0,"dump_Gc_i_","",str(0),True,True,1)
 
 
 
-#r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
-#Ac_clust_new = Ac_clust_new.toarray() 
+#r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust.tocsr(), symmetric_mode=True)
+#Ac_clust = Ac_clust.toarray() 
 ##
-#P,L,U= scipy.linalg.lu(Ac_clust_new)
+#P,L,U= scipy.linalg.lu(Ac_clust)
 #nnz0 = L.nonzero()[0].shape[0] +  U.nonzero()[0].shape[0]
 #
 #
 ##
 ##
-#AcR = Ac_clust_new[np.ix_(r,r)]
+#AcR = Ac_clust[np.ix_(r,r)]
 #PR,LR,UR = scipy.linalg.lu(AcR)
 #nnzR = LR.nonzero()[0].shape[0] +  UR.nonzero()[0].shape[0]
 ##
@@ -229,16 +268,16 @@ plt.show()
 
 #plt.show()
 
-#ker_Ac_new = load_matrix(path0,"dump_ker_Ac_","",str(0),False,True,1) 
+#ker_Ac = load_matrix(path0,"dump_ker_Ac_","",str(0),False,True,1) 
 #ker_GcTGc = load_matrix(path0,"dump_ker_GcTGc_","",str(0),False,True,1) 
-#R0_new = load_matrix(path0,"dump_R_new_","",str(0),False,True,1) 
+#R0 = load_matrix(path0,"dump_R_","",str(0),False,True,1) 
 
 #Gc_H = np.dot(GcTGc.toarray(),ker_GcTGc)
 
-#r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust_new.tocsr(), symmetric_mode=True)
-#Ac = Ac_clust_new.toarray()[np.ix_(r,r)]
+#r = sparse.csgraph.reverse_cuthill_mckee(Ac_clust.tocsr(), symmetric_mode=True)
+#Ac = Ac_clust.toarray()[np.ix_(r,r)]
 #plt.subplot(1,2,1)
-#plt.spy(Ac_clust_new ,markersize = 2.0)
+#plt.spy(Ac_clust ,markersize = 2.0)
 #plt.subplot(1,2,2)
 #plt.spy(Ac,markersize = 0.125)
 
@@ -258,7 +297,7 @@ plt.show()
 #        indBf = np.abs(Bf).sum(axis=1)>0
 #        Bf_red = Bf[indBf,:]
 #
-#        Rc = R_newList[i].toarray()
+#        Rc = RList[i].toarray()
 #        
 #        
 #
@@ -278,7 +317,7 @@ plt.show()
 #
 #    for ii in range(nSub):
 #     
-#        ttt = Gc_List[ii][np.abs(Gc_List[ii]).sum(axis=1)>0,:] - Gc_newList[ii]
+#        ttt = Gc_List[ii][np.abs(Gc_List[ii]).sum(axis=1)>0,:] - GcList[ii]
 #        print np.linalg.norm(ttt)
 #
 #
@@ -315,7 +354,7 @@ plt.show()
 #    ddd1 = np.linalg.norm(Ac_clust)
 #    print "|Ac_clust_python - Ac_clust_myAp|/|Ac_clust_python|",ddd0 / ddd1  
 #
-#K_new = []
+#K = []
 
 
 

@@ -60,6 +60,8 @@ public:
 
     /* constraints */
     void create_cluster_constraints(const Options &);
+    void create_B_matrix(vector <Matrix> &, int);
+    void matrix_B_COO2CSR(vector <Matrix> &, int);
     vector < vector < int > > neighbours;
 };
 

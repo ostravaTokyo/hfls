@@ -811,8 +811,6 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
   for (int i = 0;i < n_row_;i++){
       _nul_piv[i]=i;
   }
-
-
   for (int j=0;j<n_col_;j++){
     it = max_element(N.begin(),N.end()-j*n_row_, compareDouble);
     I = it - N.begin();
@@ -843,7 +841,6 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
     null_pivots[i] = _nul_piv[n_row_-1-i];
   }
   sort(null_pivots.begin(),null_pivots.end());
-//
   delete [] _nul_piv;
   delete [] tmpV;
 //
@@ -949,13 +946,16 @@ void Matrix::factorization(vector <int> & _nullPivots){
 #ifdef USE_PARDISO
     // regularization:
     int j, cnt = 0;
+    cout << "null_pivot: ";
     for (int i = 0; i < n_row_cmprs; i++) {
         j = i_ptr[i];
         if (i == _nullPivots[cnt]){
-            val[j] *= 100;
+            cout << i << ", ";
+            val[j] *= 2;
             cnt++;
         }
     }
+    cout << endl;
     factorization();
 #endif
 }
@@ -1358,26 +1358,29 @@ void Matrix::getSingularVal_DNS(Matrix A, Matrix &S, int print_first_n, int prin
     MKL_INT Scols= A.n_col;
     info = LAPACKE_dgesvd( LAPACK_ROW_MAJOR, 'A', 'A', Scols, Srows, &(A.dense[0]), lds,
                           &(S.dense)[0], U, lds, Vt, lds, superb );
-    S.printToFile(A.label,"../data",555,true);
+
+    if (print_first_n != 0 && print_last_n != 0){
+        cout << "\n\n#######  Singular values of " << A.label << " #######\n";
+        Matrix::print_int_vector(S.dense,print_first_n,print_last_n);
+        S.printToFile(A.label,"../data",555,true);
+    }
     delete [] U ; delete [] Vt; delete [] superb;
 
-    cout << "\n\n#######  Singular values of " << A.label << " #######\n";
-    Matrix::print_int_vector(S.dense,print_first_n,print_last_n);
 }
 
 
 bool Matrix::test_of_Bc_constraints(Matrix &A){
 
 
-  Matrix BcTBc,S_S;
-  BcTBc.mat_mult_dense(A,"N",A,"T");
+  Matrix ATA,S_S;
+  ATA.mat_mult_dense(A,"N",A,"T");
 
   double jump_in_sing_values_alerting_singularity = 1e-4;
-  int  sc_size = BcTBc.n_row_cmprs;
+  int  sc_size = ATA.n_row_cmprs;
   int ind_U_V;
   int defect_K_in = 0;
 
-  Matrix::getSingularVal_DNS(BcTBc, S_S, false);
+  Matrix::getSingularVal_DNS(ATA, S_S, 0);
   double ratio;
 
   for (int i = 0; i < sc_size-1;i++){
@@ -1388,9 +1391,14 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
       break;
     }
   }
-//
-  cout << " defect BcTBc = " << defect_K_in << endl;
 
+  cout << " defect BcTBc = " << defect_K_in;
+
+  cout << "\t\t";
+  for (int i = 0; i < sc_size; i++){
+      cout << S_S.dense[i] << ", " ;
+  }
+  cout << endl;
 
   return defect_K_in == 0;
 
