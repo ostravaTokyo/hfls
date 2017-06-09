@@ -290,7 +290,7 @@ int printMat = options.print_matrices;
     GcTGc_clust.numeric_factorization(kerGc,checkOrthogonality);
     fprintf(stderr, "%s %d : ## GcTGc_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, kerGc.n_col);
-    if (printMat > 1)
+    if (printMat > 0)
         kerGc.printToFile("kerGc",folder,0,printCooOrDense);
 
     cout << "Ac_clust is being created ... \n" ;
@@ -327,6 +327,12 @@ int printMat = options.print_matrices;
         Ac_clust.numeric_factorization(ker_Ac,checkOrthogonality);
         fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, ker_Ac.n_col);
+
+
+        if (printMat > 0)
+            ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
+
+
     }
 
 
@@ -396,6 +402,17 @@ void Cluster::create_GcTGc(){
 
 void Cluster::create_GcTGc_clust_sparse(){
 //
+
+    // max number of 'c-type' constraints on one subdomain
+    int n_interf_c_max = 0;
+
+    for (int d = 0; d < nSubClst;d++){
+        if (Bc[d].n_row_cmprs > n_interf_c_max)
+            n_interf_c_max = Bc[d].n_row_cmprs;
+
+    }
+
+
     vector<int>::iterator it;
     vector<int> overlap(n_interf_c_max);
     int ind_neigh;
@@ -690,7 +707,6 @@ void Cluster::create_cluster_constraints(const Options &options){
 
     vector<int> v(2 * maxSize);
     neighbours.resize(nSubClst);
-    bool print2cmd = false;
 
     for (int i = 0; i < nSubClst - 1 ; i++){
         int cnt_j = 0;
@@ -702,17 +718,6 @@ void Cluster::create_cluster_constraints(const Options &options){
 
             if (v.size() > 0){
 
-                // TODO !!! temporarly
-// -                Matrix Bc_from_Rt;
-// -                if (options.solver_opt.typeBc == 1){
-// -                   Bc_from_Rt.zero_dense(R[i].n_col,v.size());
-// -                }
-
-
-//                vector < map < int, int > > interface_i;
-//                vector < map < int, int > > interface_j;
-//                data.interfaces[i].push_back(interface_i);
-//                data.interfaces[j].push_back(interface_j);
                 Interfaces interfaces_;
                 data.interfaces[i].push_back(interfaces_);
                 data.interfaces[i].back().IdNeighSub = j;
@@ -722,86 +727,40 @@ void Cluster::create_cluster_constraints(const Options &options){
                 for (int k = 0 ; k < v.size(); k++){
                     data.interface[i][v[k]].push_back(j);
                     data.interface[j][v[k]].push_back(i);
-
                     data.interfaces[i].back().dofs[k] = v[k];
-
-// -                    if (options.solver_opt.typeBc == 1){
-// -                        for (int l = 0; l < R[i].n_col;l++){
-// -                            int g2ldof = data.g2l[i][v[k]];
-// -                            Bc_from_Rt.dense[l + k * Bc_from_Rt.n_row_cmprs] =
-// -                                    R[i].dense[g2ldof + l * R[i].n_row_cmprs];
-// -                        }
-// -                    }
                 }
-// -                if (options.solver_opt.typeBc == 1){
-// -
-// -                    bool is_full_column_rank =
-// -                            Matrix::test_of_Bc_constraints(Bc_from_Rt);
-// -
-// -                    if (is_full_column_rank){
-// -                        for (int k = 0; k < Bc_from_Rt.n_row_cmprs;k++){
-// -                            for (int l = 0; l < Bc_from_Rt.n_col;l++){
-// -                                double Bc_from_Rt_lk = Bc_from_Rt.dense[k + l * Bc_from_Rt.n_row_cmprs];
-// -                                // @! i_coo_cmpr is firstly filled by cluster global numbering
-// -                                //    and later remaped to local subdomain numbering
-// -                                j_col_Bc_curr = data.g2l[i][v[l]];
-// -                                Bc[i].i_coo_cmpr.push_back(cntLam);
-// -                                Bc[i].j_col.push_back(j_col_Bc_curr);
-// -                                Bc[i].val.push_back(Bc_from_Rt_lk);
-// -                                //
-// -                                j_col_Bc_neigh = data.g2l[j][v[l]];
-// -                                Bc[j].i_coo_cmpr.push_back(cntLam);
-// -                                Bc[j].j_col.push_back(j_col_Bc_neigh);
-// -                                Bc[j].val.push_back(-Bc_from_Rt_lk);
-// -                            }
-// -                            cntLam++;
-// -                        }
-// -                    }
-// -                }
             }
-            if (print2cmd){
-                cout << "(" << i << ":"  << j << ")[" << v.size()<< "]\t";
-                for (int k = 0 ; k < v.size(); k++)
-                    cout << v[k] << " ";
-                cout << endl;
-            }
+//            if (print2cmd){
+//                cout << "(" << i << ":"  << j << ")[" << v.size()<< "]\t";
+//                for (int k = 0 ; k < v.size(); k++)
+//                    cout << v[k] << " ";
+//                cout << endl;
+//            }
             cnt_j++;
         }
-        if (print2cmd){
-            cout << "\n";
-        }
+//        if (print2cmd){
+//            cout << "\n";
+//        }
     }
-
-// -    if (options.solver_opt.typeBc == 1 ){
-// -        matrix_Bx_COO2CSR(Bc,cntLam);
-// -    }
-// -    else{
-//        create_Bc_or_Bf(Bc,options.solver_opt.typeBc);
-// -    }
-
 
 
     if (options.solver_opt.typeBc == 1 ){
-        create_Bc_weightedAverages(Bc);
+        create_Bc_weightedAverages_in_COO(Bc,options.solver_opt.Bc_fullRank);
     }
     else{
-      create_Bc_or_Bf(Bc,options.solver_opt.typeBc);
+        bool cornersOnlyOrAllDof;
+        if (options.solver_opt.typeBc == 0)
+            cornersOnlyOrAllDof = true;
+        else
+            cornersOnlyOrAllDof = false;
+
+        create_Bc_or_Bf_in_COO(Bc,options.solver_opt.Bc_fullRank, cornersOnlyOrAllDof);
     }
 
-        // max number of 'c-type' constraints on one subdomain
-
-
-    n_interf_c_max = 0;
-
-    for (int d = 0; d < nSubClst;d++){
-        if (Bc[d].n_row_cmprs > n_interf_c_max)
-            n_interf_c_max = Bc[d].n_row_cmprs;
-
-    }
 }
 
 
-void Cluster::create_Bc_weightedAverages(vector <Matrix> &Bc_){
+void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fullRank){
 
 
     int cntLam = 0;
@@ -826,10 +785,10 @@ void Cluster::create_Bc_weightedAverages(vector <Matrix> &Bc_){
 
 
 
-            bool is_full_column_rank =
+            bool is_local_Bc_full_column_rank =
                     Matrix::test_of_Bc_constraints(Bc_from_Rt);
 
-            if (is_full_column_rank){
+            if (!Bc_fullRank || is_local_Bc_full_column_rank){
                 for (int k = 0; k < Bc_from_Rt.n_row_cmprs;k++){
                     for (int l = 0; l < Bc_from_Rt.n_col;l++){
                         int dofs_l = data.interfaces[i][j].dofs[l];
@@ -844,7 +803,7 @@ void Cluster::create_Bc_weightedAverages(vector <Matrix> &Bc_){
                         j_col_Bc_neigh = data.g2l[IdNeighSub][dofs_l];
                         Bc_[IdNeighSub].i_coo_cmpr.push_back(cntLam);
                         Bc_[IdNeighSub].j_col.push_back(j_col_Bc_neigh);
-                        Bc_rIdNeighSub].val.push_back(-Bc_from_Rt_lk);
+                        Bc_[IdNeighSub].val.push_back(-Bc_from_Rt_lk);
                     }
                     cntLam++;
                 }
@@ -852,24 +811,16 @@ void Cluster::create_Bc_weightedAverages(vector <Matrix> &Bc_){
         }
     }
 
-
     matrix_Bx_COO2CSR(Bc_,cntLam);
-
-
-//    for (int i = 0; i < nSubClst - 1 ; i++){
-//        for (int j = 0; j < neighbours[i].size();j++){
-//
-//        }
-//    }
 
 }
 
-void Cluster::create_Bc_or_Bf(vector < Matrix > &Bc_, int typeBc){
+void Cluster::create_Bc_or_Bf_in_COO(vector < Matrix > &Bc_, bool full_rank_or_redundant, bool cornersOnlyOrAllDof){
 
     int global_DOF;
     int ind_neigh_sub;
     int cntLam = 0;
-    bool print2cmd = false;
+//    bool print2cmd = false;
     int j_col_Bc_curr;
     int j_col_Bc_neigh;
 
@@ -878,12 +829,8 @@ void Cluster::create_Bc_or_Bf(vector < Matrix > &Bc_, int typeBc){
     for (int d = 0; d < Bc_.size(); d++){
         for ( auto it1 = data.interface[d].begin(); it1 != data.interface[d].end(); ++it1  ){
             global_DOF = it1->first;
-            if (print2cmd){
-                cout << "["  << d << "]: ";
-                cout << global_DOF << " ";
-            }
 
-            if (typeBc == 0){
+            if (cornersOnlyOrAllDof){
                 it = find (mesh.cornerDOFs.begin(), mesh.cornerDOFs.end(), global_DOF);
                 if (it == mesh.cornerDOFs.end())
                     continue;
@@ -893,9 +840,6 @@ void Cluster::create_Bc_or_Bf(vector < Matrix > &Bc_, int typeBc){
 
             for (int k = 0; k < it1->second.size(); k++){
                 ind_neigh_sub = it1->second[k];
-                if (print2cmd){
-                    cout << ind_neigh_sub << " ";
-                }
                 if (ind_neigh_sub > d){
                     j_col_Bc_curr = data.g2l[d][global_DOF];
                       Bc_[d].l2g_i_coo.push_back(cntLam);
@@ -903,20 +847,16 @@ void Cluster::create_Bc_or_Bf(vector < Matrix > &Bc_, int typeBc){
                     Bc_[d].j_col.push_back(j_col_Bc_curr);
                     Bc_[d].val.push_back(1);
 
-
                     j_col_Bc_neigh = data.g2l[ind_neigh_sub][global_DOF];
                       Bc_[ind_neigh_sub].l2g_i_coo.push_back(cntLam);
                     Bc_[ind_neigh_sub].i_coo_cmpr.push_back(cntLam);
                     Bc_[ind_neigh_sub].j_col.push_back(j_col_Bc_neigh);
                     Bc_[ind_neigh_sub].val.push_back(-1);
-
-
                     cntLam++;
-                    break;
+
+                    if (full_rank_or_redundant)
+                        break;
                 }
-            }
-            if (print2cmd){
-                cout << endl;
             }
         }
     }

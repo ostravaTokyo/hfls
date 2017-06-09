@@ -17,12 +17,15 @@ int main(int argc, char *argv[]){
 
                 /* linear solver */
     double pardiso_0_dissection_1 = 1;
-
                 /* type of Bc matrix
                  * 0: corners,
                  * 1: zero and first approx. (ker),
                  * 2: all nodes on interf.)*/
-    int typeBc = 1;
+    int typeBc = 0;
+                /* if true, matrix Bc (corners) is full column rank */
+                /*          matrix Bc (zero and first approx.) is full column rank matrix if
+                 *          each subdomain consists of at least two or more elements */
+    bool Bc_fullRank = false;
                 /* dumping matrices in MatrixMarket format */
                 /* print_matrices  = 0 : do nothing */
                 /* print_matrices  = 1 : clust. objects (GcTGc, Fc, Ac)*/
@@ -44,7 +47,8 @@ int main(int argc, char *argv[]){
     options.set_values(path2data, argc, argv,
                         young_modulus, poissons_ratio,
                         pardiso_0_dissection_1,print_matrices,
-                       typeBc, Ac_extended_by_kerGc, GcTGc_assembl_block_by_block);
+                       typeBc, Ac_extended_by_kerGc, GcTGc_assembl_block_by_block,
+                       Bc_fullRank);
     Cluster cluster(options);
     cout << "----------------- done -----------------\n" ;
     return 0;

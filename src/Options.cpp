@@ -6,7 +6,8 @@
 void Options::set_values(std::string path2data_, int argc, char * argv[],
                            double young_modulus_, double poissons_ratio_,
                          int pardiso_0_dissection_1, int printMat_, int typeBc_,
-                         bool Ac_extended_by_kerGc_, bool GcTGc_assembl_block_by_block_)
+                         bool Ac_extended_by_kerGc_, bool GcTGc_assembl_block_by_block_,
+                         bool Bc_fullRank_)
 {
     path2data = path2data_;
 
@@ -25,6 +26,7 @@ void Options::set_values(std::string path2data_, int argc, char * argv[],
     solver_opt.typeBc = typeBc_;
     solver_opt.Ac_extended_by_kerGc = Ac_extended_by_kerGc_;
     solver_opt.GcTGc_assembl_block_by_block = GcTGc_assembl_block_by_block_;
+    solver_opt.Bc_fullRank = Bc_fullRank_;
 
 
     if (argc > 1) {

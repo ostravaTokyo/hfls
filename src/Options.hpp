@@ -7,6 +7,7 @@ class SolverOptions{
 public:
     int solver; // 0 - pardiso, 1 - dissection
     int typeBc; // 0 - corners, 1 - kernels (not implemented, 2 - all nodes from interface
+    bool Bc_fullRank;
     bool Ac_extended_by_kerGc;
     bool GcTGc_assembl_block_by_block;
 };
@@ -22,7 +23,7 @@ class Options {
     public:
         int print_matrices;
         std::string  path2data;
-        void set_values(std::string, int, char*[], double, double, int,int,int,bool,bool);
+        void set_values(std::string, int, char*[], double, double, int,int,int,bool,bool,bool);
         CubeMesh meshSetting;
         double young_modulus;
         double poissons_ratio;

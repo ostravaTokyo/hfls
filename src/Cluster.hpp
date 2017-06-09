@@ -59,13 +59,13 @@ public:
 
     /* dual */
 //    int n_inerf_c;
-    int n_interf_c_max;
+//    int n_interf_c_max;
 
     /* constraints */
     void create_cluster_constraints(const Options &);
 
-    void create_Bc_or_Bf(vector <Matrix> &, int);
-    void create_Bc_weightedAverages(vector <Matrix> &);
+    void create_Bc_or_Bf_in_COO(vector <Matrix> &, bool , bool);
+    void create_Bc_weightedAverages_in_COO(vector <Matrix> &, bool);
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
     vector < vector < int > > neighbours;

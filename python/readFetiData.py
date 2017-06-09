@@ -53,7 +53,7 @@ nSub = 8
 
 
 
-if 1:
+if 0:
 
     K = []
     K_reg = []
@@ -130,11 +130,11 @@ if 1:
     Ac_clust_python = np.vstack((Ac_clust_python,Z))
 
 
-for i in range(nSub - 1):
-    if (i == 0):
-        Bc_g = np.hstack((Bc[0],Bc[1]))
-    else:
-        Bc_g = np.hstack((Bc_g,Bc[i+1]))
+#for i in range(nSub - 1):
+#    if (i == 0):
+#        Bc_g = np.hstack((Bc[0],Bc[1]))
+#    else:
+#        Bc_g = np.hstack((Bc_g,Bc[i+1]))
 
 
 
@@ -144,6 +144,8 @@ for i in range(nSub - 1):
 Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),True,True,1)
 Ac_clust = load_matrix(path0,"dump_Ac_clust_","",str(0),True,True,1)
 GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
+ker_GcTGc = load_matrix(path0,"dump_kerGc_","",str(0),False,False,1) 
+ker_Ac = load_matrix(path0,"dump_ker_Ac_","",str(0),False,False,1) 
 #KpBcT0 = load_matrix(path0,"dump_KplusBcT_","",str(0),False,False,1) 
 #KpBcT1 = load_matrix(path0,"dump_KplusBcT_","",str(1),False,False,1) 
 
@@ -191,16 +193,16 @@ plt.show()
 #BcT_dense = load_matrix(path0,"dump_BcT_dense_","",str(0),True,True,1) 
 
 
-K_test= []
-Kplus_K_test = []
-K_Kplus_K_test = []
-K_reg_test = []
-for i in range(2): 
-    K_test.append(load_matrix(path0,"dump_K_dense_","",str(i),False,False,1))
-    K_reg_test.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
-    Kplus_K_test.append(load_matrix(path0,"dump_Kplus_K_","",str(i),False,False,1))
-    K_Kplus_K_test.append(load_matrix(path0,"dump_K_Kplus_K_","",str(i),False,False,1))
-
+#K_test= []
+#Kplus_K_test = []
+#K_Kplus_K_test = []
+#K_reg_test = []
+#for i in range(2): 
+#    K_test.append(load_matrix(path0,"dump_K_dense_","",str(i),False,False,1))
+#    K_reg_test.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
+#    Kplus_K_test.append(load_matrix(path0,"dump_Kplus_K_","",str(i),False,False,1))
+#    K_Kplus_K_test.append(load_matrix(path0,"dump_K_Kplus_K_","",str(i),False,False,1))
+#
 
 
 
