@@ -4,6 +4,7 @@
 #include "Matrix.hpp"
 #include <map>
 
+
 class local_K_f
 {
 public:
@@ -11,6 +12,14 @@ public:
    double val_f[24];
    int    ieq[24];
    int    nDOF;
+};
+
+
+class Interfaces
+{
+public:
+    int IdNeighSub;
+    vector <int> dofs;
 };
 
 
@@ -34,6 +43,8 @@ public:
     vector < map<int,int> > g2l;
     vector < vector <int> > selectorOfElemPartitId;
     vector < map < int,vector < int > > > interface;
+    vector < vector < Interfaces > > interfaces;
+
 
 
 

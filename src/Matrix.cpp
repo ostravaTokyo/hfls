@@ -946,16 +946,16 @@ void Matrix::factorization(vector <int> & _nullPivots){
 #ifdef USE_PARDISO
     // regularization:
     int j, cnt = 0;
-    cout << "null_pivot: ";
+//    cout << "null_pivot: ";
     for (int i = 0; i < n_row_cmprs; i++) {
         j = i_ptr[i];
         if (i == _nullPivots[cnt]){
-            cout << i << ", ";
+//            cout << i << ", ";
             val[j] *= 2;
             cnt++;
         }
     }
-    cout << endl;
+//    cout << endl;
     factorization();
 #endif
 }
@@ -1392,13 +1392,13 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
     }
   }
 
-  cout << " defect BcTBc = " << defect_K_in;
-
-  cout << "\t\t";
-  for (int i = 0; i < sc_size; i++){
-      cout << S_S.dense[i] << ", " ;
-  }
-  cout << endl;
+//  cout << " defect BcTBc = " << defect_K_in;
+//
+//  cout << "\t\t";
+//  for (int i = 0; i < sc_size; i++){
+//      cout << S_S.dense[i] << ", " ;
+//  }
+//  cout << endl;
 
   return defect_K_in == 0;
 
