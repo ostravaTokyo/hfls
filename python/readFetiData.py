@@ -53,10 +53,10 @@ nSub = 8
 
 
 
-if 0:
+if 1:
 
     K = []
-    K_reg = []
+#    K_reg = []
     Fc = []
     R = []
     Bc = []
@@ -87,7 +87,7 @@ if 0:
 
         K.append(load_matrix(path0,"dump_K_","",str(i),False,True,1)) 
         K_UT.append(load_matrix(path0,"dump_K_","",str(i),False,False,1)) 
-        K_reg.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
+#        K_reg.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
         Fc.append(load_matrix(path0,"dump_Fc_","",str(i),False,False,1))
         R.append(load_matrix(path0,"dump_R_","",str(i),False,False,1)) 
         Bc.append(load_matrix(path0,"dump_Bc_","",str(i),False,False,1))
@@ -97,7 +97,7 @@ if 0:
 
         indBc = np.abs(Bc[i]).sum(axis=1)>0
         Bc_nonzRow.append( Bc[i][indBc,:])
-        Fc.append( np.dot(Bc_nonzRow[i], np.linalg.solve(K_reg[i],Bc_nonzRow[i].T)))
+#        Fc.append( np.dot(Bc_nonzRow[i], np.linalg.solve(K_reg[i],Bc_nonzRow[i].T)))
 #        Lumped.append( np.dot(Bc_nonzRow[i], np.dot(K[i],Bc_nonzRow[i].T)))
 
 
@@ -110,8 +110,8 @@ if 0:
         Gc.append(np.dot(Bc[i], R[i]))
 
 #        BcKplus.append(load_matrix(path0,"dump_BcKplus_","",str(i),False,False,1))
-        BcKplus.append(np.linalg.solve(K_reg[i],Bc_nonzRow[i].T).T)
-        BcKplus_tmp.append(np.linalg.solve(K_reg[i],Bc[i].T).T)
+#        BcKplus.append(np.linalg.solve(K_reg[i],Bc_nonzRow[i].T).T)
+#        BcKplus_tmp.append(np.linalg.solve(K_reg[i],Bc[i].T).T)
 
 #        iK_K = np.linalg.solve(K_reg[i],K[i])
 #        K_iK_K = np.dot(K[i],iK_K)
@@ -130,11 +130,11 @@ if 0:
     Ac_clust_python = np.vstack((Ac_clust_python,Z))
 
 
-#for i in range(nSub - 1):
-#    if (i == 0):
-#        Bc_g = np.hstack((Bc[0],Bc[1]))
-#    else:
-#        Bc_g = np.hstack((Bc_g,Bc[i+1]))
+for i in range(nSub - 1):
+    if (i == 0):
+        Bc_g = np.hstack((Bc[0],Bc[1]))
+    else:
+        Bc_g = np.hstack((Bc_g,Bc[i+1]))
 
 
 

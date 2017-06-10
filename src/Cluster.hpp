@@ -23,6 +23,9 @@ public:
 
     /* 'new' data created inside the app */
     int nSubClst;
+    int neqClst;
+    int nLam_c;
+    string folder;
 
     std::vector< Matrix> K;
     std::vector< Matrix> K_reg;
@@ -30,6 +33,8 @@ public:
     std::vector< Matrix> R;
     std::vector< Matrix> Fc;
     std::vector< Matrix> Bc;
+    std::vector< Matrix> KplusBcT;
+    std::vector< Matrix> Bf;
     std::vector< Matrix> BcT_dense;
     std::vector< Matrix> Gc;
 
@@ -69,6 +74,7 @@ public:
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
     vector < vector < int > > neighbours;
+    void mult_Kplus_H(vector < Matrix > & , vector < Matrix > &);
 };
 
 #endif

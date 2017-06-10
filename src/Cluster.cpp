@@ -43,6 +43,8 @@ int printMat = options.print_matrices;
     nSubClst = mesh.nSubClst;
 
     Bc.resize(nSubClst);
+    KplusBcT.resize(nSubClst);
+    Bf.resize(nSubClst);
     BcT_dense.resize(nSubClst);
     K.resize(nSubClst);
     K_reg.resize(nSubClst);
@@ -62,10 +64,16 @@ int printMat = options.print_matrices;
         data.create_analytic_ker_K(mesh,R);
     }
 
-    string folder = options.path2data;
+//    string
+
+    folder = options.path2data;
     printCooOrDense = true;
     checkOrthogonality = false;
 
+    neqClst = 0;
+    for (int d = 0; d < K.size(); d++){
+        neqClst += K[d].n_row_cmprs;
+    }
 
 
 
@@ -210,6 +218,12 @@ int printMat = options.print_matrices;
         else if (options.solver_opt.solver == 1 ){
             K[d].diss_solve(BcT_dense[d],KplusBcT_dense);
         }
+
+        // TODO KplusBcT_dense will be replaced by KplusBct[d]
+        KplusBcT[d] = KplusBcT_dense;
+        KplusBcT[d].symmetric = 0;
+
+
         if (printMat > 2){
             KplusBcT_dense.printToFile("KplusBcT",folder,d,printCooOrDense);
             KplusBcT_dense.getBasicMatrixInfo();
@@ -249,11 +263,12 @@ int printMat = options.print_matrices;
     /* Fc_clust  */
     cout << "Fc_clust is being created ... \n" ;
     create_Fc_clust();
+    Fc_clust.getBasicMatrixInfo();
     if (printMat > 0)
         Fc_clust.printToFile("Fc_clust",folder,0,printCooOrDense);
 
     Matrix S_Fc_clust;
-    Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,10,3);
+    Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
 
     cout << "Gc_clust is being created ... \n" ;
     create_Gc_clust();
@@ -331,10 +346,33 @@ int printMat = options.print_matrices;
 
         if (printMat > 0)
             ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
-
-
     }
 
+
+
+    if (options.solver_opt.solver == 1){
+
+        vector < Matrix > x_in;
+        vector < Matrix > x_out;
+
+        x_in.resize(nSubClst);
+        x_out.resize(nSubClst);
+
+        for (int d = 0 ; d < nSubClst ; d ++){
+            x_in[d].zero_dense(K[d].n_row_cmprs,1);
+            x_out[d].zero_dense(K[d].n_row_cmprs,1);
+            for (int i = 0 ; i < K[d].n_row_cmprs;i++){
+                x_in[d].dense[i] = ( (double) i) / neqClst;
+            }
+        }
+        mult_Kplus_H(x_in,x_out);
+    }
+
+
+
+/* ################################################################################### */
+/* ########################### FINALIZING ############################################ */
+/* ################################################################################### */
 
     for (int i = 0 ; i < nSubClst; i++){
         if (options.solver_opt.solver == 0){
@@ -686,10 +724,9 @@ void Cluster::create_cluster_constraints(const Options &options){
     subDOFset.resize(nSubClst);
     data.interface.resize(nSubClst);
     data.interfaces.resize(nSubClst);
-    int cntLam = 0;
-    int j_col_Bc_curr;
-    int j_col_Bc_neigh;
-
+//    int cntLam = 0;
+//    int j_col_Bc_curr;
+//    int j_col_Bc_neigh;
 
 
     /* filling subDOFset be DOF set over each subdomain */
@@ -709,7 +746,6 @@ void Cluster::create_cluster_constraints(const Options &options){
     neighbours.resize(nSubClst);
 
     for (int i = 0; i < nSubClst - 1 ; i++){
-        int cnt_j = 0;
         for (int j = i + 1; j < nSubClst ; j++){
             v.resize( 2 * maxSize );
             it=set_intersection (subDOFset[i].begin(), subDOFset[i].end(),
@@ -717,12 +753,10 @@ void Cluster::create_cluster_constraints(const Options &options){
             v.resize(it-v.begin());
 
             if (v.size() > 0){
-
                 Interfaces interfaces_;
                 data.interfaces[i].push_back(interfaces_);
                 data.interfaces[i].back().IdNeighSub = j;
                 data.interfaces[i].back().dofs.resize(v.size());
-
                 neighbours[i].push_back(j);
                 for (int k = 0 ; k < v.size(); k++){
                     data.interface[i][v[k]].push_back(j);
@@ -730,17 +764,7 @@ void Cluster::create_cluster_constraints(const Options &options){
                     data.interfaces[i].back().dofs[k] = v[k];
                 }
             }
-//            if (print2cmd){
-//                cout << "(" << i << ":"  << j << ")[" << v.size()<< "]\t";
-//                for (int k = 0 ; k < v.size(); k++)
-//                    cout << v[k] << " ";
-//                cout << endl;
-//            }
-            cnt_j++;
         }
-//        if (print2cmd){
-//            cout << "\n";
-//        }
     }
 
 
@@ -756,6 +780,8 @@ void Cluster::create_cluster_constraints(const Options &options){
 
         create_Bc_or_Bf_in_COO(Bc,options.solver_opt.Bc_fullRank, cornersOnlyOrAllDof);
     }
+
+    create_Bc_weightedAverages_in_COO(Bf,false);
 
 }
 
@@ -782,8 +808,6 @@ void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fu
                             R[i].dense[g2ldof + l * R[i].n_row_cmprs];
                 }
             }
-
-
 
             bool is_local_Bc_full_column_rank =
                     Matrix::test_of_Bc_constraints(Bc_from_Rt);
@@ -874,14 +898,12 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
         Bc_[d].symmetric = 0;
         Bc_[d].format = 0;
 
-
         vector<int>::iterator it;
         vector < int > l2g_(Bc_[d].i_coo_cmpr);
         sort(l2g_.begin(), l2g_.end());
         it = unique (l2g_.begin(), l2g_.end());
         l2g_.resize( distance(l2g_.begin(),it));
         Bc_[d].n_row_cmprs = l2g_.size();
-
 
         for (int i = 0; i < l2g_.size(); i++){
             Bc_[d].g2l_i_coo.insert ( pair < int, int > ( l2g_[i] , i ));
@@ -894,5 +916,65 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
         Bc_[d].l2g_i_coo = l2g_;
         Bc_[d].COO2CSR();
     }
+}
+
+void Cluster::mult_Kplus_H(vector < Matrix > & x_in , vector < Matrix > & x_out){
+
+    // gc will be allocated onece at the beginning of Cluster.cpp //
+    Matrix gc;
+    int n_row_lamc= Bc[0].n_row;
+    int n_row_alphac = GcTGc_sparse_clust.n_row_cmprs;
+    gc.zero_dense(n_row_lamc + n_row_alphac, 1);
+
+    for (int d = 0; d < nSubClst; d++){
+        Matrix BcKplusfc;
+        BcKplusfc.mat_mult_dense(KplusBcT[d],"T",x_in[d],"N");
+
+        for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
+            gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
+        }
+    }
+
+
+    int cntR = 0;
+    for (int d = 0; d < nSubClst; d++){
+        Matrix Rtfc;
+        Rtfc.mat_mult_dense(R[d],"T",x_in[d],"N");
+        for (int i = 0 ; i < R[d].n_col; i++){
+            gc.dense[n_row_lamc + cntR + i] = -Rtfc.dense[i];
+        }
+        cntR += R[d].n_col;
+    }
+//    gc.printToFile("gc",folder,0,true);
+    cntR = 0;
+    for (int d = 0; d < nSubClst ; d++){
+        Matrix lamc;
+        lamc.zero_dense(Bc[d].n_row_cmprs,1);
+        for (int i = 0; i < Bc[d].n_row_cmprs;i++){
+           lamc.dense[i] = gc.dense[Bc[d].g2l_i_coo[i]];
+        }
+//        Matrix BcTlamc;
+//        BcTlamc.zero_dense(K[d].n_row_cmprs,1);
+//        Bc[d].mult(lamc,BcTlamc,false);
+//        BcTlamc.printToFile("BcTlamc",folder,d,true);
+        Matrix KplusBcTlamc;
+        KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
+        Matrix Kplusfc;
+        K[d].diss_solve(x_in[d],Kplusfc);
+
+        Matrix Ralphac;
+        Matrix alphac_d; alphac_d.zero_dense(R[d].n_col,1);
+        for (int i = 0; i < R[d].n_col; i++){
+            alphac_d.dense[i] = gc.dense[n_row_lamc + cntR + i];
+        }
+        Ralphac.mat_mult_dense(R[d],"N",alphac_d,"N");
+        cntR += R[d].n_col;
+
+        for (int i = 0; i < x_out[d].n_row_cmprs; i++){
+            x_out[d].dense[i] = Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
+        }
+//        x_out[d].printToFile("x_out",folder,d,true);
+    }
+
 
 }

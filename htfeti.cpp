@@ -25,7 +25,7 @@ int main(int argc, char *argv[]){
                 /* if true, matrix Bc (corners) is full column rank */
                 /*          matrix Bc (zero and first approx.) is full column rank matrix if
                  *          each subdomain consists of at least two or more elements */
-    bool Bc_fullRank = false;
+    bool Bc_fullRank = true;
                 /* dumping matrices in MatrixMarket format */
                 /* print_matrices  = 0 : do nothing */
                 /* print_matrices  = 1 : clust. objects (GcTGc, Fc, Ac)*/

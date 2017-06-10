@@ -44,13 +44,13 @@ int compareInt(const void * a, const void * b) {
     return ( *(int*)a - *(int*)b );
 }
 
-void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_new){
+void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_){
 
     int nSubClst = mesh.nSubClst;
 
 
     for (int d = 0; d < nSubClst; d++){
-        Matrix &R = R_new[d];
+        Matrix &R = R_[d];
         int n = l2g[d].size();
         R.zero_dense(n,6);
         double x,y,z;
@@ -95,7 +95,7 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_new){
 }
 
 
-void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_new)
+void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
 {
 
     //
@@ -176,7 +176,7 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_new)
 
 
         int neqSub = l2g[d].size();
-        Matrix &_K = K_new[d];
+        Matrix &_K = K_[d];
         _K.label = "stiffness matrix";
         _K.order_number = d;
 
@@ -239,12 +239,12 @@ void Data::feti_numeric_element(Matrix &Ksub, local_K_f &Kelem){
 
 
 
-void Data::feti_numeric(Mesh &mesh, vector <Matrix> & K_new)
+void Data::feti_numeric(Mesh &mesh, vector <Matrix> & K_)
 {
     for (int d = 0 ; d < mesh.nSubClst; d++){
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
-            feti_numeric_element(K_new[d], i_loc_K_f);
+            feti_numeric_element(K_[d], i_loc_K_f);
         }
     }
 }

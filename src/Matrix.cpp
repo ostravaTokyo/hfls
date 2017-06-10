@@ -1332,7 +1332,14 @@ void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_la
     S.printToFile(A_.label,"../data",444,true);
     delete [] ZK_modif;
 
-    cout << "\n\n#######  Eigenvalues of " << A_.label << " #######\n";
+    for (int i = 0; i < S.n_row_cmprs; i++){
+        S.dense[i] =  fabs(S.dense[i]);
+    }
+
+    sort(S.dense.begin(),S.dense.end());
+
+
+    cout << "\n\n#######  Sorted Abs val of Eigenvalues of " << A_.label << " #######\n";
     Matrix::print_int_vector(S.dense,print_first_n,print_last_n);
 }
 
