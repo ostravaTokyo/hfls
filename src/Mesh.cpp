@@ -151,6 +151,14 @@ void Mesh::createMesh(const Options &options){
             }
         }
     }
+
+
+    int nDirDOFs =  (nElSubXYZ[0] * nSubXYZ[0] + 1) * (nElSubXYZ[1] * nSubXYZ[1] + 1);
+
+    DirichletDOFs.resize(nDirDOFs);
+
+    for (int i = 0; i < nDirDOFs; i++)
+        DirichletDOFs[i] = 1;
 //    cout << "==========" << endl;
 
 

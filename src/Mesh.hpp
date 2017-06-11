@@ -54,6 +54,7 @@ public:
     vector < Point  > points;
     vector < int > cornerNodes;
     vector < int > cornerDOFs;
+    vector < int > DirichletDOFs;
     void createMesh(const Options &);
     Material material;
 };
