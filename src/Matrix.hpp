@@ -77,7 +77,7 @@ public:
 
 
     void mult(const Matrix &, Matrix &, bool);
-    void mult(const double[], double [] , bool, int);
+    void mult(const double[], double [] , bool, int,int);
     void CsrElementByElement();
     void COO2CSR();
     void CSR2COO();

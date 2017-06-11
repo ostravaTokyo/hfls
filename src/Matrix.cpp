@@ -689,6 +689,10 @@ void Matrix::mat_mult_dense(Matrix&A, string A_NorT, Matrix&B, string B_NorT){
 
 void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
 
+    if (format !=1)
+        fprintf(stderr, "%s %d : matrix is not in CSR format .\n",__FILE__,__LINE__);
+
+    int dbg_flag = -1;
     int _n_col_rhs;
     int _n_rws;
 
@@ -709,12 +713,11 @@ void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
        X_out.zero_dense(_n_rws,_n_col_rhs);
     }
 
-
-    mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, _n_col_rhs);
+    mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, _n_col_rhs, dbg_flag);
 }
 
 
-void Matrix::mult(const double x_in[], double  x_out[], bool NorT, int n_rhs){
+void Matrix::mult(const double x_in[], double  x_out[], bool NorT, int n_rhs, int dbg_flag){
 
 
 //    if (label == "K_")
