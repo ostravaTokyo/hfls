@@ -25,6 +25,7 @@ public:
     int nSubClst;
     int neqClst;
     int nLam_c;
+    int nLam_f;
     string folder;
 
     std::vector< Matrix> K;
@@ -38,6 +39,9 @@ public:
     std::vector< Matrix> BcT_dense;
     std::vector< Matrix> Gc;
 
+    std::vector< Matrix > Rf;
+    std::vector< Matrix > Gf;
+
 
     Mesh mesh;
     Data data;
@@ -49,6 +53,9 @@ public:
     Matrix kerGc;
 
     Matrix GcTGc_sparse_clust;
+    Matrix GfTGf;
+
+    Matrix invGfTGf;
 
     /* FETI */
     void create_Gf_clust();
@@ -60,6 +67,8 @@ public:
     void create_Ac_clust(bool);
     void create_GcTGc();
     void create_GcTGc_clust_sparse();
+    void create_GfTGf();
+    void compute_invGfTGf();
 
 
     /* dual */
@@ -74,7 +83,8 @@ public:
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
     vector < vector < int > > neighbours;
-    void mult_Kplus_H(vector < Matrix > & , vector < Matrix > &);
+    void mult_Kplus_f(vector < Matrix > & , vector < Matrix > &);
+    void mult_BfT(Matrix &, vector < Matrix > &);
 };
 
 #endif

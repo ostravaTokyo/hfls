@@ -51,6 +51,8 @@ int printMat = options.print_matrices;
     Fc.resize(nSubClst);
     Gc.resize(nSubClst);
     R.resize(nSubClst);
+    Rf.resize(nSubClst);
+    Gf.resize(nSubClst);
     Lumped.resize(nSubClst);
 
     cout << "assembling of K, f ... \n" ;
@@ -64,8 +66,6 @@ int printMat = options.print_matrices;
         data.create_analytic_ker_K(mesh,R);
     }
 
-//    string
-
     folder = options.path2data;
     printCooOrDense = true;
     checkOrthogonality = false;
@@ -74,8 +74,6 @@ int printMat = options.print_matrices;
     for (int d = 0; d < K.size(); d++){
         neqClst += K[d].n_row_cmprs;
     }
-
-
 
     for (int d = 0; d < K.size(); d++){
         if (options.solver_opt.solver == 0){
@@ -99,8 +97,6 @@ int printMat = options.print_matrices;
     cout << "boolean matrix is being created. ... \n" ;
     create_cluster_constraints(options);
 
-
-
     cout << "subdomain:  ";
     for (int d = 0; d < K.size(); d++){
     cout << d <<" ";
@@ -111,6 +107,8 @@ int printMat = options.print_matrices;
         if (printMat > 1){
             Bc[d].printToFile("Bc",folder,d,printCooOrDense);
             Bc[d].getBasicMatrixInfo();
+            Bf[d].printToFile("Bf",folder,d,printCooOrDense);
+            Bf[d].getBasicMatrixInfo();
         }
 //
 //
@@ -351,21 +349,57 @@ int printMat = options.print_matrices;
 
 
     if (options.solver_opt.solver == 1){
-
-        vector < Matrix > x_in;
+        //kerGc;
+        int cntR = 0;
+        for (int d = 0; d < nSubClst; d++){
+            Matrix Hd;
+            Hd.zero_dense(R[d].n_col,kerGc.n_col);
+            for (int j = 0; j < kerGc.n_col;j++){
+                for (int i = 0; i < R[d].n_col;i++){
+                    Hd.dense[i + j * R[d].n_col] = kerGc.dense[cntR + i + j * kerGc.n_row_cmprs];
+                }
+            }
+            cntR += R[d].n_col;
+            Rf[d].mat_mult_dense(R[d],"N",Hd,"N");
+            Rf[d].printToFile("Rf",folder,d,true);
+            int n_rowGf = Bf[d].n_row_cmprs;
+            int n_colGf = Rf[d].n_col;
+            Gf[d].zero_dense(n_rowGf, n_colGf );
+            Bf[d].mult(Rf[d],Gf[d],true);
+            Gf[d].printToFile("Gf",folder,d,true);
+        }
         vector < Matrix > x_out;
-
-        x_in.resize(nSubClst);
+        vector < Matrix > BfTlambda_i;
+//        f_in.resize(nSubClst);
         x_out.resize(nSubClst);
+        BfTlambda_i.resize(nSubClst);
 
         for (int d = 0 ; d < nSubClst ; d ++){
-            x_in[d].zero_dense(K[d].n_row_cmprs,1);
-            x_out[d].zero_dense(K[d].n_row_cmprs,1);
-            for (int i = 0 ; i < K[d].n_row_cmprs;i++){
-                x_in[d].dense[i] = ( (double) i) / neqClst;
+            BfTlambda_i[d].zero_dense(K[d].n_row_cmprs,1);
+            for(int i = 0; i < BfTlambda_i[d].n_row_cmprs;i++){
+                BfTlambda_i[d].dense[i] = 1;
             }
         }
-        mult_Kplus_H(x_in,x_out);
+
+        Matrix lambda_i;
+        lambda_i.zero_dense(Bf[0].n_row,1);
+        for (int i = 0; i < lambda_i.n_row_cmprs;i++)
+            lambda_i.dense[i] = 1;
+
+
+        mult_BfT(lambda_i, BfTlambda_i);
+
+
+
+        for (int d = 0 ; d < nSubClst ; d ++){
+            x_out[d].zero_dense(K[d].n_row_cmprs,1);
+        }
+        mult_Kplus_f(BfTlambda_i,x_out);
+
+        create_GfTGf();
+        GfTGf.printToFile("GfTGf",folder,0,true);
+        compute_invGfTGf();
+        invGfTGf.printToFile("iGfTGf",folder,0,true);
     }
 
 
@@ -447,21 +481,15 @@ void Cluster::create_GcTGc_clust_sparse(){
     for (int d = 0; d < nSubClst;d++){
         if (Bc[d].n_row_cmprs > n_interf_c_max)
             n_interf_c_max = Bc[d].n_row_cmprs;
-
     }
-
 
     vector<int>::iterator it;
     vector<int> overlap(n_interf_c_max);
     int ind_neigh;
     GcTGc_sparse_clust.label = "GcTGc_sparse";
     GcTGc_sparse_clust.nnz = 0;
-
-
     GcTGc_sparse_clust.symmetric = 2;
     GcTGc_sparse_clust.format= 0;
-
-
     vector < int_int_dbl > tmpVec;
     vector < int > blockPointer;
     blockPointer.resize(nSubClst);
@@ -724,10 +752,6 @@ void Cluster::create_cluster_constraints(const Options &options){
     subDOFset.resize(nSubClst);
     data.interface.resize(nSubClst);
     data.interfaces.resize(nSubClst);
-//    int cntLam = 0;
-//    int j_col_Bc_curr;
-//    int j_col_Bc_neigh;
-
 
     /* filling subDOFset be DOF set over each subdomain */
     for (int d = 0 ; d <  nSubClst; d++){
@@ -781,7 +805,11 @@ void Cluster::create_cluster_constraints(const Options &options){
         create_Bc_or_Bf_in_COO(Bc,options.solver_opt.Bc_fullRank, cornersOnlyOrAllDof);
     }
 
-    create_Bc_weightedAverages_in_COO(Bf,false);
+    create_Bc_or_Bf_in_COO(Bf,false,false);
+
+
+    nLam_c = Bc[0].n_row;
+    nLam_f = Bf[0].n_row;
 
 }
 
@@ -918,7 +946,7 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
     }
 }
 
-void Cluster::mult_Kplus_H(vector < Matrix > & x_in , vector < Matrix > & x_out){
+void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out){
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
     Matrix gc;
@@ -928,7 +956,7 @@ void Cluster::mult_Kplus_H(vector < Matrix > & x_in , vector < Matrix > & x_out)
 
     for (int d = 0; d < nSubClst; d++){
         Matrix BcKplusfc;
-        BcKplusfc.mat_mult_dense(KplusBcT[d],"T",x_in[d],"N");
+        BcKplusfc.mat_mult_dense(KplusBcT[d],"T",f_in[d],"N");
 
         for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
             gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
@@ -939,7 +967,7 @@ void Cluster::mult_Kplus_H(vector < Matrix > & x_in , vector < Matrix > & x_out)
     int cntR = 0;
     for (int d = 0; d < nSubClst; d++){
         Matrix Rtfc;
-        Rtfc.mat_mult_dense(R[d],"T",x_in[d],"N");
+        Rtfc.mat_mult_dense(R[d],"T",f_in[d],"N");
         for (int i = 0 ; i < R[d].n_col; i++){
             gc.dense[n_row_lamc + cntR + i] = -Rtfc.dense[i];
         }
@@ -953,14 +981,10 @@ void Cluster::mult_Kplus_H(vector < Matrix > & x_in , vector < Matrix > & x_out)
         for (int i = 0; i < Bc[d].n_row_cmprs;i++){
            lamc.dense[i] = gc.dense[Bc[d].g2l_i_coo[i]];
         }
-//        Matrix BcTlamc;
-//        BcTlamc.zero_dense(K[d].n_row_cmprs,1);
-//        Bc[d].mult(lamc,BcTlamc,false);
-//        BcTlamc.printToFile("BcTlamc",folder,d,true);
         Matrix KplusBcTlamc;
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
         Matrix Kplusfc;
-        K[d].diss_solve(x_in[d],Kplusfc);
+        K[d].diss_solve(f_in[d],Kplusfc);
 
         Matrix Ralphac;
         Matrix alphac_d; alphac_d.zero_dense(R[d].n_col,1);
@@ -973,8 +997,86 @@ void Cluster::mult_Kplus_H(vector < Matrix > & x_in , vector < Matrix > & x_out)
         for (int i = 0; i < x_out[d].n_row_cmprs; i++){
             x_out[d].dense[i] = Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
         }
-//        x_out[d].printToFile("x_out",folder,d,true);
     }
+}
+
+void Cluster::mult_BfT(Matrix &lambda, vector < Matrix > &x_out){
+
+    for (int d = 0; d < nSubClst; d++){
+        Matrix lam_;
+        lam_.zero_dense(Bf[d].n_row_cmprs,1);
+        for (int i = 0; i < Bf[d].n_row_cmprs;i++){
+            lam_.dense[i] = lambda.dense[Bf[d].l2g_i_coo[i]];
+        }
+        Bf[d].mult(lam_,x_out[d],false);
+    }
+}
+
+
+void Cluster::create_GfTGf(){
+
+    GfTGf.zero_dense(Gf[0].n_col, Gf[0].n_col);
+    GfTGf.label = "GfTGf";
+//
+//    Matrix GfTGf_d;
+//    GfTGf_d.zero_dense(Gf[0].n_col, Gf[0].n_col);
+
+    Matrix Gftmp;
+    Gftmp.zero_dense(nLam_f,Rf[0].n_col);
+
+    for (int d = 0; d < nSubClst; d++){
+        for (int j = 0 ; j < Gf[d].n_col; j ++){
+            for (int i = 0 ; i < Gf[d].n_row_cmprs; i ++){
+                Gftmp.dense[Bf[d].l2g_i_coo[i] + j * Gftmp.n_row_cmprs] +=
+                        Gf[d].dense[i + j * Gf[d].n_row_cmprs];
+            }
+        }
+    }
+    GfTGf.mat_mult_dense(Gftmp,"T",Gftmp,"N");
+//
+}
+
+void Cluster::compute_invGfTGf(){
+
+    char uplo = 'L';
+    int n = GfTGf.n_row_cmprs;
+    int lda = GfTGf.n_row_cmprs;
+    int info;
+
+    invGfTGf = GfTGf;
+    info = LAPACKE_dpotrf (LAPACK_COL_MAJOR , uplo , n ,&(invGfTGf.dense[0]) , lda );
+
+    if (info != 0)
+        fprintf(stderr, "factorized matrix GfTGf failed. \n");
+
+
+
+    info = LAPACKE_dpotri (LAPACK_COL_MAJOR, uplo , n , &(invGfTGf.dense[0]) , lda );
+
+    if (info != 0)
+        fprintf(stderr, "inverse of GfTGf failed. \n");
+
+
+    for (int j = 0 ; j < invGfTGf.n_col - 1; j++) {
+        for (int i = j ; i < invGfTGf.n_row_cmprs; i++) {
+            invGfTGf.dense[j + i * invGfTGf.n_row_cmprs] =
+                     invGfTGf.dense[i + j * invGfTGf.n_row_cmprs];
+        }
+    }
+
+}
+
+void mult_Gf(Matrix & alpha, Matrix & lambda){
+//
+//    if (lambda.nnz == 0)
+//        lambda.zero_dense();
+//
+//    for (int i = 0 ; i < )
+//
+
+
+
+
 
 
 }
