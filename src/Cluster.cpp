@@ -997,7 +997,7 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
     }
 }
 
-void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out){
+void Cluster::mult_Kplus_f(vector < Matrix > const & f_in , vector < Matrix > & x_out){
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
     Matrix gc;
@@ -1008,7 +1008,6 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
     for (int d = 0; d < nSubClst; d++){
         Matrix BcKplusfc;
         BcKplusfc.mat_mult_dense(KplusBcT[d],"T",f_in[d],"N");
-
         for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
             gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
         }
@@ -1045,15 +1044,45 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         Ralphac.mat_mult_dense(R[d],"N",alphac_d,"N");
         cntR += R[d].n_col;
 
+        if (x_out[d].numel == 0)
+            x_out[d].zero_dense(K[d].n_row_cmprs);
+
+
         for (int i = 0; i < x_out[d].n_row_cmprs; i++){
             x_out[d].dense[i] = Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
         }
     }
 }
 
-void Cluster::mult_BfT(Matrix &lambda, vector < Matrix > &x_out){
+
+void Cluster::mult_Bf(vector < Matrix > const &x_in, Matrix &lambda ){
+
+    if (lambda.label == "w"){
+        cout << "chachacha  \n\n\n\n\n\n" ;
+    }
+
+    if (lambda.numel == 0)
+        lambda.zero_dense(nLam_f);
+    else
+        lambda.setZero();
+
+    for (int d = 0; d < nSubClst; d++ ){
+        Matrix Bf_x_d;
+        Bf[d].mult(x_in[d],Bf_x_d, true);
+        for (int i = 0; i < Bf_x_d.n_row_cmprs; i++){
+            lambda.dense[Bf[d].l2g_i_coo[i]] =  Bf_x_d.dense[i];
+        }
+    }
+
+}
+
+void Cluster::mult_BfT(Matrix const &lambda, vector < Matrix > &x_out){
 
     for (int d = 0; d < nSubClst; d++){
+        if (x_out[d].numel == 0)
+            x_out[d].zero_dense(K[d].n_row_cmprs);
+        else
+            x_out[d].setZero();
         Matrix lam_;
         lam_.zero_dense(Bf[d].n_row_cmprs,1);
         for (int i = 0; i < Bf[d].n_row_cmprs;i++){
@@ -1115,7 +1144,7 @@ void Cluster::compute_invGfTGf(){
 
 }
 
-void Cluster::mult_Gf(Matrix & alpha, Matrix & lambda){
+void Cluster::mult_Gf(Matrix const & alpha, Matrix & lambda){
 
     if (lambda.numel == 0){
         lambda.zero_dense(nRBM_f,1);
@@ -1126,7 +1155,7 @@ void Cluster::mult_Gf(Matrix & alpha, Matrix & lambda){
     lambda.mat_mult_dense(Gf_clust,"N",alpha,"N");
 }
 
-void Cluster::mult_GfT(Matrix & lambda, Matrix & alpha){
+void Cluster::mult_GfT(Matrix const & lambda, Matrix & alpha){
     if (alpha.numel == 0){
         alpha.zero_dense(nRBM_f,1);
     }
@@ -1136,18 +1165,109 @@ void Cluster::mult_GfT(Matrix & lambda, Matrix & alpha){
     alpha.mat_mult_dense(Gf_clust,"T",lambda,"N");
 }
 
-void Cluster::Project(Matrix & lambda){
-    Matrix lam_;
-    lam_ = lambda;
+void Cluster::mult_RfT(vector < Matrix > const &x_in, Matrix & alpha){
+
+    if (alpha.numel == 0){
+        alpha.zero_dense(nRBM_f,1);
+    }
+    else{
+        alpha.setZero();
+    }
+
+    for (int d = 0 ; d < nSubClst; d++){
+        Matrix alpha_d;
+        alpha_d.mat_mult_dense(Rf[d],"T",x_in[d],"N");
+        for (int i = 0; i < alpha_d.n_row_cmprs; i++){
+            alpha.dense[i] = alpha_d.dense[i];
+        }
+    }
+}
+
+
+
+void Cluster::Project(Matrix const & lambda, Matrix & Plambda){
+
+    Plambda = lambda;
     Matrix alpha;
-    mult_GfT(lam_,alpha);
+    mult_GfT(lambda,alpha);
     Matrix invGfTGf_alpha;
     invGfTGf_alpha.mat_mult_dense(invGfTGf,"N",alpha,"N");
-    Matrix Gf_invGfTGf_alpha;
-    mult_Gf(Gf_invGfTGf_alpha,lam_);
+    mult_Gf(invGfTGf_alpha,Plambda);
+
+    for (int i = 0; i < lambda.n_row_cmprs; i++)
+        Plambda.dense[i] = lambda.dense[i] - Plambda.dense[i];
+
 
 }
 
 void Cluster::htfeti_solver(){
 
+    double gPg, wFw, rho, gamma, wFPg;
+    Matrix g0, d, e, iGTG_e, lambda0;
+    Matrix Fw, Pg, g, g_prev, w, w_prev;
+    vector < Matrix > xx, yy;
+
+    xx.resize(nSubClst); yy.resize(nSubClst);
+
+    // d = B * Kplus * f
+    mult_Kplus_f(rhs,xx);
+    mult_Bf(rhs,d);
+    // e = Rt * f
+    mult_RfT(rhs,e);
+    // lambda0 = G * inv(GtG) * e
+    iGTG_e.mat_mult_dense(invGfTGf,"N",e,"N");
+    mult_Gf(iGTG_e, lambda0);
+    // F * lambda0
+    mult_BfT(lambda0,xx);
+    mult_Kplus_f(xx,yy);
+    mult_Bf(yy,g0);
+    // g0 = F * lambda0 - d
+    g0.add(d,-1);
+
+    g = g0;
+    // Pg0
+    Project(g,Pg);
+    // initial conjugate vector
+    w = Pg;
+
+    int max_it = 100;
+
+    for (int it = 0; it < max_it; it++){
+
+
+        gPg = Matrix::dot(Pg,Pg);
+        printf("|Pg| = %3.5e \n", sqrt(gPg));
+        // F * w
+        mult_BfT(w,xx);
+        mult_Kplus_f(xx,yy);
+        mult_Bf(yy,Fw);
+
+        wFw = Matrix::dot(w,Fw);
+
+        rho = -gPg / wFw;
+        g_prev = g;
+
+        // new gradient
+        g.add(Fw,rho);
+
+        // P * g    where P = I - G * inv(GtG) *Gt
+        Project(g,Pg);
+
+        wFPg = Matrix::dot(Fw,Pg);
+
+        gamma = - wFPg / wFw;
+
+        w_prev = w;
+
+        w = Pg;
+        w.add(w_prev,gamma);
+
+
+    }
+
 }
+
+
+
+
+

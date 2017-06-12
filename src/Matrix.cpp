@@ -31,6 +31,13 @@ bool Matrix::cmp_int_int_J(int_int_dbl a,int_int_dbl b)
 bool Matrix::compareDouble(double i, double j)
 { return fabs(i)<=fabs(j); }
 
+
+void Matrix::zero_dense(int n_row){
+    bool NorT = true;
+    n_col = 1;
+    zero_dense(n_row, n_col, NorT);
+}
+
 void Matrix::zero_dense(int n_row,int n_col){
     bool NorT = true;
     zero_dense(n_row, n_col, NorT);
@@ -594,7 +601,7 @@ void Matrix::submatrix_row_selector(Matrix &A_, vector <int> &v){
 }
 
 
-void Matrix::mat_mult_dense(Matrix&A, string A_NorT, Matrix&B, string B_NorT){
+void Matrix::mat_mult_dense(Matrix const &A, string A_NorT, Matrix const &B, string B_NorT){
 
     int n_k;
     if (A_NorT == "N"){
@@ -858,7 +865,7 @@ void Matrix::numeric_factorization(Matrix &R,bool checkOrthogonality){
 
 }
 
-void Matrix::diss_solve(Matrix &B, Matrix &X){
+void Matrix::diss_solve(Matrix const &B, Matrix &X){
 
 #ifdef DISSECTION
     int _n_row,_n_col;
@@ -1357,5 +1364,23 @@ bool Matrix::test_of_Bc_constraints(Matrix &A){
 //  cout << endl;
 
   return defect_K_in == 0;
+
+}
+
+
+
+double Matrix::dot(Matrix const &x, Matrix const &y){
+    double xy = 0;
+    for (int i = 0; i < x.n_row_cmprs; i++)
+        xy += x.dense[i] * y.dense[i];
+    return xy;
+}
+
+
+
+void Matrix::add(Matrix &v, double a){
+
+    for (int i = 0; i < n_row_cmprs; i++)
+        dense[i] += v.dense[i] * a;
 
 }

@@ -45,6 +45,7 @@ public:
     Matrix();
     Matrix(string );
     ~Matrix();
+    void zero_dense(int);
     void zero_dense(int,int);
     void zero_dense(int,int,bool);
     vector < double >  val;
@@ -120,9 +121,9 @@ public:
     void symbolic_factorization();
     void numeric_factorization();
     void numeric_factorization(Matrix &,bool);
-    void diss_solve(Matrix &, Matrix &);
+    void diss_solve(Matrix const &, Matrix &);
 
-    void mat_mult_dense(Matrix&, string, Matrix&, string);
+    void mat_mult_dense(Matrix const &, string, Matrix const &, string);
 
 
     double norm2();
@@ -142,8 +143,8 @@ public:
     static void getEigVal_DNS(Matrix &, Matrix &, int );
     static void getEigVal_DNS(Matrix  , Matrix &, int, int);
 
-
-
+    static double dot(Matrix const &, Matrix const &);
+    void add(Matrix &,double);
 
 };
 #endif

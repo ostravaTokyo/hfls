@@ -80,14 +80,19 @@ public:
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
 
-    void mult_Kplus_f(vector < Matrix > & , vector < Matrix > &);
-    void mult_BfT(Matrix &, vector < Matrix > &);
-    void mult_Gf(Matrix &, Matrix &);
-    void mult_GfT(Matrix &, Matrix &);
-    void Project(Matrix & );
+    void mult_Kplus_f(vector < Matrix > const & , vector < Matrix > &);
+    void mult_Bf(vector < Matrix > const &, Matrix &);
+    void mult_BfT(Matrix const &, vector < Matrix > &);
+    void mult_Gf(Matrix const &, Matrix &);
+    void mult_GfT(Matrix const &, Matrix &);
+    void mult_RfT(vector < Matrix > const &, Matrix &);
+    void Project(Matrix const & , Matrix &);
 
 
     void htfeti_solver();
+
+//    static double dot(Matrix &, Matrix &);
+//    static double apb(Matrix &, Matrix &, double, double);
 
 
 };
