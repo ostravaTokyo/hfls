@@ -12,23 +12,20 @@
 #include "Array1d_double64.hpp"
 #include "Data.hpp"
 
-
-
 class Cluster 
 {
 
 public:
     Cluster(Options options);
-
-
     /* 'new' data created inside the app */
     int nSubClst;
     int neqClst;
     int nLam_c;
     int nLam_f;
+    int nRBM_f;
     string folder;
-
     std::vector< Matrix> K;
+    std::vector< Matrix> rhs;
     std::vector< Matrix> K_reg;
     std::vector< Matrix> Lumped;
     std::vector< Matrix> R;
@@ -38,7 +35,6 @@ public:
     std::vector< Matrix> Bf;
     std::vector< Matrix> BcT_dense;
     std::vector< Matrix> Gc;
-
     std::vector< Matrix > Rf;
     std::vector< Matrix > Gf;
 
@@ -49,6 +45,7 @@ public:
     Matrix Fc_clust;
     Matrix Gc_clust;
     Matrix Ac_clust;
+    Matrix Gf_clust;
     Matrix GcTGc_clust;
     Matrix kerGc;
 
@@ -72,19 +69,27 @@ public:
 
 
     /* dual */
-//    int n_inerf_c;
-//    int n_interf_c_max;
 
     /* constraints */
-    void create_cluster_constraints(const Options &);
+    vector < vector < int > > neighbours;
 
-    void create_Bc_or_Bf_in_COO(vector <Matrix> &, bool , bool);
+    void create_cluster_constraints(const Options &);
+    void create_Bc_or_Bf_in_CSR(vector <Matrix> &, bool , bool);
+    void create_Bc_or_Bf_in_CSR(vector <Matrix> &, bool , bool, bool);
     void create_Bc_weightedAverages_in_COO(vector <Matrix> &, bool);
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
-    vector < vector < int > > neighbours;
+
     void mult_Kplus_f(vector < Matrix > & , vector < Matrix > &);
     void mult_BfT(Matrix &, vector < Matrix > &);
+    void mult_Gf(Matrix &, Matrix &);
+    void mult_GfT(Matrix &, Matrix &);
+    void Project(Matrix & );
+
+
+    void htfeti_solver();
+
+
 };
 
 #endif

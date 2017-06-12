@@ -47,6 +47,7 @@ int printMat = options.print_matrices;
     Bf.resize(nSubClst);
     BcT_dense.resize(nSubClst);
     K.resize(nSubClst);
+    rhs.resize(nSubClst);
     K_reg.resize(nSubClst);
     Fc.resize(nSubClst);
     Gc.resize(nSubClst);
@@ -59,7 +60,7 @@ int printMat = options.print_matrices;
     data.fe_assemb_local_K_f(mesh);
     cout << "symbolic factorization etc. ... \n" ;
     data.feti_symbolic(mesh,K);
-    data.feti_numeric(mesh,K);
+    data.feti_numeric(mesh,K,rhs);
     cout << "ker(K) is being created ... \n" ;
 
     if (options.solver_opt.solver == 0){
@@ -103,6 +104,10 @@ int printMat = options.print_matrices;
         if (printMat > 1){
             K[d].printToFile("K",folder,d,printCooOrDense);
             K[d].getBasicMatrixInfo();
+
+            rhs[d].printToFile("rhs",folder,d,printCooOrDense);
+            rhs[d].label = "rhs";
+            rhs[d].getBasicMatrixInfo();
         }
         if (printMat > 1){
             Bc[d].printToFile("Bc",folder,d,printCooOrDense);
@@ -301,6 +306,7 @@ int printMat = options.print_matrices;
     GcTGc_clust.symbolic_factorization();
     checkOrthogonality = true;
     GcTGc_clust.numeric_factorization(kerGc,checkOrthogonality);
+    nRBM_f = kerGc.n_col;
     fprintf(stderr, "%s %d : ## GcTGc_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, kerGc.n_col);
     if (printMat > 0)
@@ -400,6 +406,14 @@ int printMat = options.print_matrices;
         GfTGf.printToFile("GfTGf",folder,0,true);
         compute_invGfTGf();
         invGfTGf.printToFile("iGfTGf",folder,0,true);
+
+        // conjugate gradient //
+
+        htfeti_solver();
+
+
+
+
     }
 
 
@@ -802,10 +816,14 @@ void Cluster::create_cluster_constraints(const Options &options){
         else
             cornersOnlyOrAllDof = false;
 
-        create_Bc_or_Bf_in_COO(Bc,options.solver_opt.Bc_fullRank, cornersOnlyOrAllDof);
+        create_Bc_or_Bf_in_CSR(Bc,options.solver_opt.Bc_fullRank, cornersOnlyOrAllDof);
     }
 
-    create_Bc_or_Bf_in_COO(Bf,false,false);
+
+    bool Bf_full_rank           = false;
+    bool Bf_cornersOnlyOrAllDof = true;
+    bool Bf_addDirConstr        = true;
+    create_Bc_or_Bf_in_CSR(Bf,Bf_full_rank,Bf_cornersOnlyOrAllDof,Bf_addDirConstr);
 
 
     nLam_c = Bc[0].n_row;
@@ -867,7 +885,20 @@ void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fu
 
 }
 
-void Cluster::create_Bc_or_Bf_in_COO(vector < Matrix > &Bc_, bool full_rank_or_redundant, bool cornersOnlyOrAllDof){
+void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc,
+                                     bool full_rank_or_redundant,
+                                     bool cornersOnlyOrAllDof)
+{
+    bool addDirConstr = false;
+    create_Bc_or_Bf_in_CSR(Bc, full_rank_or_redundant,cornersOnlyOrAllDof, addDirConstr);
+}
+
+
+void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
+                                     bool full_rank_or_redundant,
+                                     bool cornersOnlyOrAllDof,
+                                     bool addDirConstr)
+{
 
     int global_DOF;
     int ind_neigh_sub;
@@ -887,6 +918,24 @@ void Cluster::create_Bc_or_Bf_in_COO(vector < Matrix > &Bc_, bool full_rank_or_r
                 if (it == mesh.cornerDOFs.end())
                     continue;
             }
+
+            if (addDirConstr){
+                it = find (mesh.DirichletDOFs.begin(), mesh.DirichletDOFs.end(), global_DOF);
+                if (it != mesh.DirichletDOFs.end()){
+
+                    j_col_Bc_curr = data.g2l[d][global_DOF];
+                    Bc_[d].l2g_i_coo.push_back(cntLam);
+                    Bc_[d].i_coo_cmpr.push_back(cntLam);
+                    Bc_[d].j_col.push_back(j_col_Bc_curr);
+                    Bc_[d].val.push_back(1);
+                    cntLam++;
+
+                    *it = -(*it);
+                    continue;
+                }
+            }
+
+
             //TODO: if 'global_DOF' is found in vector 'cornerDOFs', the entry
             //                                                      should be deleted.
 
@@ -894,13 +943,13 @@ void Cluster::create_Bc_or_Bf_in_COO(vector < Matrix > &Bc_, bool full_rank_or_r
                 ind_neigh_sub = it1->second[k];
                 if (ind_neigh_sub > d){
                     j_col_Bc_curr = data.g2l[d][global_DOF];
-                      Bc_[d].l2g_i_coo.push_back(cntLam);
+                    Bc_[d].l2g_i_coo.push_back(cntLam);
                     Bc_[d].i_coo_cmpr.push_back(cntLam);
                     Bc_[d].j_col.push_back(j_col_Bc_curr);
                     Bc_[d].val.push_back(1);
 
                     j_col_Bc_neigh = data.g2l[ind_neigh_sub][global_DOF];
-                      Bc_[ind_neigh_sub].l2g_i_coo.push_back(cntLam);
+                    Bc_[ind_neigh_sub].l2g_i_coo.push_back(cntLam);
                     Bc_[ind_neigh_sub].i_coo_cmpr.push_back(cntLam);
                     Bc_[ind_neigh_sub].j_col.push_back(j_col_Bc_neigh);
                     Bc_[ind_neigh_sub].val.push_back(-1);
@@ -912,7 +961,9 @@ void Cluster::create_Bc_or_Bf_in_COO(vector < Matrix > &Bc_, bool full_rank_or_r
             }
         }
     }
+
     matrix_Bx_COO2CSR(Bc_,cntLam);
+
 }
 
 
@@ -1015,24 +1066,22 @@ void Cluster::mult_BfT(Matrix &lambda, vector < Matrix > &x_out){
 
 void Cluster::create_GfTGf(){
 
+
+    //TODO Gf as vector is no need to keep in the memory
     GfTGf.zero_dense(Gf[0].n_col, Gf[0].n_col);
     GfTGf.label = "GfTGf";
-//
-//    Matrix GfTGf_d;
-//    GfTGf_d.zero_dense(Gf[0].n_col, Gf[0].n_col);
 
-    Matrix Gftmp;
-    Gftmp.zero_dense(nLam_f,Rf[0].n_col);
+    Gf_clust.zero_dense(nLam_f,Rf[0].n_col);
 
     for (int d = 0; d < nSubClst; d++){
         for (int j = 0 ; j < Gf[d].n_col; j ++){
             for (int i = 0 ; i < Gf[d].n_row_cmprs; i ++){
-                Gftmp.dense[Bf[d].l2g_i_coo[i] + j * Gftmp.n_row_cmprs] +=
+                Gf_clust.dense[Bf[d].l2g_i_coo[i] + j * Gf_clust.n_row_cmprs] +=
                         Gf[d].dense[i + j * Gf[d].n_row_cmprs];
             }
         }
     }
-    GfTGf.mat_mult_dense(Gftmp,"T",Gftmp,"N");
+    GfTGf.mat_mult_dense(Gf_clust,"T",Gf_clust,"N");
 //
 }
 
@@ -1066,17 +1115,39 @@ void Cluster::compute_invGfTGf(){
 
 }
 
-void mult_Gf(Matrix & alpha, Matrix & lambda){
-//
-//    if (lambda.nnz == 0)
-//        lambda.zero_dense();
-//
-//    for (int i = 0 ; i < )
-//
+void Cluster::mult_Gf(Matrix & alpha, Matrix & lambda){
 
+    if (lambda.numel == 0){
+        lambda.zero_dense(nRBM_f,1);
+    }
+    else{
+        lambda.setZero();
+    }
+    lambda.mat_mult_dense(Gf_clust,"N",alpha,"N");
+}
 
+void Cluster::mult_GfT(Matrix & lambda, Matrix & alpha){
+    if (alpha.numel == 0){
+        alpha.zero_dense(nRBM_f,1);
+    }
+    else{
+        alpha.setZero();
+    }
+    alpha.mat_mult_dense(Gf_clust,"T",lambda,"N");
+}
 
+void Cluster::Project(Matrix & lambda){
+    Matrix lam_;
+    lam_ = lambda;
+    Matrix alpha;
+    mult_GfT(lam_,alpha);
+    Matrix invGfTGf_alpha;
+    invGfTGf_alpha.mat_mult_dense(invGfTGf,"N",alpha,"N");
+    Matrix Gf_invGfTGf_alpha;
+    mult_Gf(Gf_invGfTGf_alpha,lam_);
 
+}
 
+void Cluster::htfeti_solver(){
 
 }

@@ -210,13 +210,16 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
 }
 
 
-void Data::feti_numeric_element(Matrix &Ksub, local_K_f &Kelem){
+void Data::feti_numeric_element(Matrix &Ksub, Matrix & rhs_sub, local_K_f &Kelem){
       //
 
     double K_ij;
     int i_ind, j_ind;
     int nDOF = Kelem.nDOF;
     for (int i = 0; i < nDOF; i++) {
+
+        rhs_sub.dense[Kelem.ieq[i]] += Kelem.val_f[i];
+
         for (int j = i; j < nDOF; j++) {
             j_ind = Kelem.ieq[j];
             K_ij = Kelem.val_K[i * nDOF + j];
@@ -239,12 +242,13 @@ void Data::feti_numeric_element(Matrix &Ksub, local_K_f &Kelem){
 
 
 
-void Data::feti_numeric(Mesh &mesh, vector <Matrix> & K_)
+void Data::feti_numeric(Mesh &mesh, vector <Matrix> & K_,  vector <Matrix>& rhs_)
 {
     for (int d = 0 ; d < mesh.nSubClst; d++){
+        rhs_[d].zero_dense(K_[d].n_row_cmprs,1);
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
-            feti_numeric_element(K_[d], i_loc_K_f);
+            feti_numeric_element(K_[d],rhs_[d], i_loc_K_f);
         }
     }
 }

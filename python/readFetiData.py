@@ -59,9 +59,13 @@ if 1:
 #    K_reg = []
     Fc = []
     R = []
+    Rf = []
     Bc = []
+    Bf = []
     BcT_dense = []
     Gc = []
+    Gf = []
+    Gf_p = []
 
     Gc = []
     Fc = []
@@ -90,10 +94,14 @@ if 1:
 #        K_reg.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
         Fc.append(load_matrix(path0,"dump_Fc_","",str(i),False,False,1))
         R.append(load_matrix(path0,"dump_R_","",str(i),False,False,1)) 
+        Rf.append(load_matrix(path0,"dump_Rf_","",str(i),False,False,1)) 
         Bc.append(load_matrix(path0,"dump_Bc_","",str(i),False,False,1))
+        Bf.append(load_matrix(path0,"dump_Bf_","",str(i),False,False,1))
+        Gf_p.append(np.dot(Bf[i],Rf[i]))
 #        Lumped.append(load_matrix(path0,"dump_Lumped_","",str(i),False,False,1))
         BcT_dense.append(load_matrix(path0,"dump_BcT_dense_","",str(i),False,False,1))
         Gc.append(load_matrix(path0,"dump_Gc_","",str(i),False,False,1))
+        Gf.append(load_matrix(path0,"dump_Gf_","",str(i),False,False,1))
 
         indBc = np.abs(Bc[i]).sum(axis=1)>0
         Bc_nonzRow.append( Bc[i][indBc,:])
@@ -136,7 +144,17 @@ for i in range(nSub - 1):
     else:
         Bc_g = np.hstack((Bc_g,Bc[i+1]))
 
+for i in range(nSub - 1):
+    if (i == 0):
+        Bf_g = np.hstack((Bf[0],Bf[1]))
+    else:
+        Bf_g = np.hstack((Bf_g,Bf[i+1]))
 
+for i in range(nSub - 1):
+    if (i == 0):
+        Gf_g = Gf_p[0]+ Gf_p[1]
+    else:
+        Gf_g += Gf_p[i+1]
 
 #Bc_g = np.hstack((Bc_g,Bc[2]))
 #Bc_g = np.hstack((Bc_g,Bc[2])) 
@@ -144,6 +162,8 @@ for i in range(nSub - 1):
 Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),True,True,1)
 Ac_clust = load_matrix(path0,"dump_Ac_clust_","",str(0),True,True,1)
 GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
+GfTGf = load_matrix(path0,"dump_GfTGf_","",str(0),False,False,1) 
+iGfTGf = load_matrix(path0,"dump_iGfTGf_","",str(0),False,False,1) 
 ker_GcTGc = load_matrix(path0,"dump_kerGc_","",str(0),False,False,1) 
 ker_Ac = load_matrix(path0,"dump_ker_Ac_","",str(0),False,False,1) 
 #KpBcT0 = load_matrix(path0,"dump_KplusBcT_","",str(0),False,False,1) 
@@ -154,6 +174,14 @@ dFc_eig = load_matrix(path0,"dump_Fc_clust_","",str(444),False,False,1)
 #dFc_svd = load_matrix(path0,"dump_Fc_clust_","",str(555),False,False,1)
 dAc_eig = load_matrix(path0,"dump_Ac_clust_","",str(444),False,False,1)
 #dAc_svd = load_matrix(path0,"dump_Ac_clust_","",str(555),False,False,1)
+
+
+GfTGf_  = np.zeros((GfTGf.shape[0],GfTGf.shape[0]))
+
+
+for d in range(nSub):
+    GfTGf_ += np.dot(Gf[d].T,Gf[d])
+
 
 
 

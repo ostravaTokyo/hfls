@@ -154,7 +154,6 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
             val.shrink_to_fit();
         }
 /* Sorting [I, J, V]  --------------------------------------------------------*/
-//        if (format_ != 2){
         vector < int_int_dbl > tmpVec;
         tmpVec.resize(i_coo_cmpr.size());
         for (int i = 0; i < i_coo_cmpr.size();i++){
@@ -162,13 +161,10 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
             tmpVec[i].J = j_col[i];
             tmpVec[i].V = val[i];
         }
-/*AAA*/
         sortAndUniqueCOO(tmpVec);
-/*BBB*/
         tmpVec.clear();
         tmpVec.shrink_to_fit();
 
-        //}
         if (format_ == 1){
             COO2CSR();
         }
@@ -182,20 +178,7 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
     sort(tmpVec.begin(),tmpVec.end(),Matrix::cmp_int_int_I);
 /* partial sorting according to index J (per sets with same I)----------------*/
 
-
-
-//    if (label == "Fc_clust"){
-//        cout << "A ===========================================\n";
-//        for (int i = 0; i < tmpVec.size();i++){
-//           cout << i << ":::  "
-//                << tmpVec[i].I << " "
-//                <<  tmpVec[i].J  << " "
-//                <<  tmpVec[i].V  << "\n";
-//        }
-//    }
-
-
-    nnz = tmpVec.size();
+  nnz = tmpVec.size();
 
     int startInd = 0, endInd = 1;
     int tmpVecIprev = tmpVec[0].I;
@@ -213,18 +196,6 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
         }
         tmpVecIprev = tmpVec[i].I;
     }
-
-
-
-//    if (label == "Fc_clust"){
-//        cout << "B ===========================================\n";
-//        for (int i = 0; i < tmpVec.size();i++){
-//           cout << i << ":::  "
-//                <<  tmpVec[i].I << " "
-//                <<  tmpVec[i].J  << " "
-//                <<  tmpVec[i].V  << "\n";
-//        }
-//    }
 
 
 /* Cumulating duplicated A[I,J] elements--------------------------------------*/
@@ -266,23 +237,6 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
         prevInd_I = tmpVec[i].I;
         prevInd_J = tmpVec[i].J;
     }
-
-
-//    if (label == "Fc_clust"){
-//        cout << "C ===========================================\n";
-//        for (int i = 0; i < init_nnz;i++){
-//           cout << i << ":::  "
-//                <<  i_coo_cmpr[i]  << " "
-//                <<  j_col[i]  << " "
-//                <<  val[i]  << "\n";
-//        }
-//    }
-
-
-
-
-
-
 
     l2g_i_coo.resize(counter );
     l2g_i_coo.shrink_to_fit();
@@ -473,7 +427,6 @@ void Matrix::DNS2COO(){
     val.resize(nnz);
     double _val;
     int cnt = 0;
-//    cout << "_n_row " << _n_row << "\n";
     for (int i = 0; i < _n_row; i++) {
         for (int j = 0; j < n_col; j++) {
             if (DNS_transposed){
@@ -720,22 +673,15 @@ void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
 void Matrix::mult(const double x_in[], double  x_out[], bool NorT, int n_rhs, int dbg_flag){
 
 
-//    if (label == "K_")
-//        cout << "KpKpKpKKpKpKpKpKpKpKpKpKpKKKKKKKKKKKKpK" << endl;
-
     for (int i = 0; i < n_row_cmprs; i++) {
         for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
             if (symmetric > 0 ){
                 for (int k = 0; k < n_rhs; k++){
                     x_out[i + k * n_row_cmprs] +=
                             val[j] * x_in[j_col[j] + k * n_col];
-//                    if (label == "K_")
-//                        cout << val[j] * x_in[j_col[j] + k * n_col];
                     if (j_col[j] != i){
                         x_out[j_col[j] + k * n_row_cmprs] +=
                                       val[j] * x_in[i + k * n_col];
-//                    if (label == "K_")
-//                        cout << val[j] * x_in[i + k * n_col];
                     }
                 }
             }

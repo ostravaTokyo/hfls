@@ -33,8 +33,8 @@ public:
     void fe_assemb_local_K_f(Mesh &);
 
     void feti_symbolic(Mesh &, vector <Matrix> &);
-    void feti_numeric(Mesh &, vector <Matrix> &);
-    void feti_numeric_element(Matrix &, local_K_f &);
+    void feti_numeric(Mesh &, vector <Matrix> &, vector <Matrix> &);
+    void feti_numeric_element(Matrix &, Matrix &, local_K_f &);
     void stf_mtrx_solid45(local_K_f &, Point *, double ,double);
     static double inverse_matrix_3x3(double *, double *);
 
