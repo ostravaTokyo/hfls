@@ -23,6 +23,7 @@ public:
     int nLam_c;
     int nLam_f;
     int nRBM_f;
+    int nRBM_c;
     string folder;
     std::vector< Matrix> K;
     std::vector< Matrix> rhs;
@@ -77,6 +78,7 @@ public:
     void create_Bc_or_Bf_in_CSR(vector <Matrix> &, bool , bool);
     void create_Bc_or_Bf_in_CSR(vector <Matrix> &, bool , bool, bool);
     void create_Bc_weightedAverages_in_COO(vector <Matrix> &, bool);
+    void create_Rf_and_Gf();
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
 
@@ -89,7 +91,7 @@ public:
     void Project(Matrix const & , Matrix &);
 
 
-    void htfeti_solver();
+    void pcpg();
 
 //    static double dot(Matrix &, Matrix &);
 //    static double apb(Matrix &, Matrix &, double, double);
