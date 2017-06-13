@@ -2,6 +2,7 @@ import numpy as np
 from scipy import sparse
 import scipy.sparse.linalg as spla
 import pylab as plt
+from scipy.linalg import block_diag
 #
 #
 
@@ -48,7 +49,8 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
     return tmp
 
 path0 = "../data"
-nSub = 6
+nSub = 8
+
 
 
 
@@ -56,7 +58,7 @@ nSub = 6
 if 1:
 
     K = []
-#    K_reg = []
+    K_reg = []
     Fc = []
     R = []
     Rf = []
@@ -69,6 +71,10 @@ if 1:
 
     Gc = []
     Fc = []
+
+    rhs = []
+    xx = []
+    Kplus_f_test = []
 
 
     Bc_nonzRow = []
@@ -91,7 +97,7 @@ if 1:
 
         K.append(load_matrix(path0,"dump_K_","",str(i),False,True,1)) 
         K_UT.append(load_matrix(path0,"dump_K_","",str(i),False,False,1)) 
-#        K_reg.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
+        K_reg.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
         Fc.append(load_matrix(path0,"dump_Fc_","",str(i),False,False,1))
         R.append(load_matrix(path0,"dump_R_","",str(i),False,False,1)) 
         Rf.append(load_matrix(path0,"dump_Rf_","",str(i),False,False,1)) 
@@ -108,9 +114,12 @@ if 1:
 #        Fc.append( np.dot(Bc_nonzRow[i], np.linalg.solve(K_reg[i],Bc_nonzRow[i].T)))
 #        Lumped.append( np.dot(Bc_nonzRow[i], np.dot(K[i],Bc_nonzRow[i].T)))
 
+        rhs.append(load_matrix(path0,"dump_rhsTest_","",str(i),False,False,1))
+        xx.append(load_matrix(path0,"dump_xxTest_","",str(i),False,False,1))
+        Kplus_f_test.append(load_matrix(path0,"dump_Kplus_f_test_","",str(i),False,False,1))
 
 
-    #    BcKplus = BcKplus_List[i]
+#        BcKplus = BcKplus_List[i]
 
 #        BcK_dense.append(load_matrix(path0,"dump_BcK_dense_","",str(i),False,False,1))
 #        BcK_dense.append(np.dot(K[i],Bc_nonzRow[i].T).T)
@@ -130,12 +139,24 @@ if 1:
     Gc_clust = load_matrix(path0,"dump_Gc_clust_","",str(0),False,False,1)
     Ac_clust = load_matrix(path0,"dump_Ac_clust_","",str(0),False,True,1)
     Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),False,True,1)
+    gc_clust = load_matrix(path0,"dump_gc_","",str(0),False,False,1)
 
     Ac_clust_python = np.hstack((Fc_clust,Gc_clust))
 
     Z = np.zeros((Gc_clust.shape[1],Ac_clust_python.shape[1]))
     print ( Z.shape)
     Ac_clust_python = np.vstack((Ac_clust_python,Z))
+
+
+K_regD = K_reg[0]
+frhs = rhs[0]
+xxD = xx[0]
+RD = R[0]
+for i in range(1,nSub):
+    K_regD = block_diag(K_regD,K_reg[i]);
+    RD = block_diag(RD,R[i]);
+    frhs = np.concatenate((frhs,rhs[i]))
+    xxD = np.concatenate((xxD,xx[i]))
 
 
 for i in range(nSub - 1):
@@ -156,6 +177,55 @@ for i in range(nSub - 1):
     else:
         Gf_g += Gf_p[i+1]
 
+Fc__ = np.dot(Bc_g,np.linalg.solve(K_regD,Bc_g.T))
+
+
+gc__ = np.dot(Bc_g,np.linalg.solve(K_regD,frhs))
+ec__ = - np.dot(RD.T,frhs)
+
+gc__ = np.concatenate((gc__,ec__))
+
+
+
+
+#H = ker_GcTGc
+#AA0 = np.hstack((Fc__,Gc_clust))
+#AB1 = 
+#
+#
+#ZZ1 = np.zeros((Gc_clust.shape[0], H.shape[1]))
+#AA1 = np.vstack((ZZ1,H))
+#AA01 = np.hstack((AA0,AA1))
+
+
+
+
+
+
+
+
+
+
+
+A0 = np.hstack((K_regD,Bc_g.T))
+
+nB = Bc_g.shape[0]
+Bc_Z = np.hstack((Bc_g,np.zeros((nB,nB))))
+
+crhs = np.zeros(nB);
+
+A = np.vstack((A0,Bc_Z))
+
+b = np.concatenate((frhs,crhs))
+
+x = np.linalg.solve(A,b)
+
+xxD = np.concatenate((xxD,crhs))
+
+
+
+
+    
 #Bc_g = np.hstack((Bc_g,Bc[2]))
 #Bc_g = np.hstack((Bc_g,Bc[2])) 
 #BcT_dense = load_matrix(path0,"dump_BcT_dense_","",str(0),True,True,1) 
@@ -185,28 +255,29 @@ for d in range(nSub):
 
 
 
-plt.subplot(1,3,1)
-if GcTGc.shape[0] < 100:
-    markersize_ = 3
-else:
-    markersize_ = 0.7 
-plt.spy(GcTGc, markersize=markersize_)
-plt.xlabel("nnz = %d" % (GcTGc.nonzero()[0].shape[0]))
-plt.subplot(1,3,2)
-if Fc_clust.shape[0] < 100:
-    markersize = 3
-else:
-    markersize = 0.7 
-plt.spy(Fc_clust, markersize=markersize_)
-plt.xlabel("nnz = %d" % (Fc_clust.nonzero()[0].shape[0]))
-plt.subplot(1,3,3)
-if Ac_clust.shape[0] < 100:
-    markersize_ = 3
-else:          
-    markersize_ = 0.7 
-plt.spy(Ac_clust, markersize=markersize_) 
-plt.xlabel("nnz = %d" % (Ac_clust.nonzero()[0].shape[0]))
-plt.show()
+if False:
+    plt.subplot(1,3,1)
+    if GcTGc.shape[0] < 100:
+        markersize_ = 3
+    else:
+        markersize_ = 0.7 
+    plt.spy(GcTGc, markersize=markersize_)
+    plt.xlabel("nnz = %d" % (GcTGc.nonzero()[0].shape[0]))
+    plt.subplot(1,3,2)
+    if Fc_clust.shape[0] < 100:
+        markersize = 3
+    else:
+        markersize = 0.7 
+    plt.spy(Fc_clust, markersize=markersize_)
+    plt.xlabel("nnz = %d" % (Fc_clust.nonzero()[0].shape[0]))
+    plt.subplot(1,3,3)
+    if Ac_clust.shape[0] < 100:
+        markersize_ = 3
+    else:          
+        markersize_ = 0.7 
+    plt.spy(Ac_clust, markersize=markersize_) 
+    plt.xlabel("nnz = %d" % (Ac_clust.nonzero()[0].shape[0]))
+    plt.show()
 
 #Bc_from_Rt = []
 #for i in range(1,14):

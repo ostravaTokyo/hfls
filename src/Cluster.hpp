@@ -55,6 +55,8 @@ public:
 
     Matrix invGfTGf;
 
+    Options options;
+
     /* FETI */
     void create_Gf_clust();
 
@@ -82,7 +84,7 @@ public:
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
 
-    void mult_Kplus_f(vector < Matrix > const & , vector < Matrix > &);
+    void mult_Kplus_f(vector < Matrix > & , vector < Matrix > &);
     void mult_Bf(vector < Matrix > const &, Matrix &);
     void mult_BfT(Matrix const &, vector < Matrix > &);
     void mult_Gf(Matrix const &, Matrix &);
