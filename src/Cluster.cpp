@@ -1211,16 +1211,7 @@ void Cluster::pcpg(){
     // d_rhs = B * Kplus * f
     xx[0].label = "test";
     mult_Kplus_f(rhs,xx);
-    // -----
-//    bool printCooOrDense = true;
-//    for (int d = 0 ; d < nSubClst; d++){
-//        rhs[d].printToFile("rhsTest",folder,d,printCooOrDense);
-//        xx[d].printToFile("xxTest",folder,d,printCooOrDense);
-//    }
-
-
-    // -----
-    mult_Bf(rhs,d_rhs);
+    mult_Bf(xx,d_rhs);
     // e = Rt * f
     mult_RfT(rhs,e);
     // lambda0 = G * inv(GtG) * e

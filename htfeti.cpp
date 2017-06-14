@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     double poissons_ratio = 0.3;
 
                 /* linear solver */
-    double pardiso_0_dissection_1 = 0;
+    double pardiso_0_dissection_1 = 1;
                 /* type of Bc matrix
                  * 0: corners,
                  * 1: zero and first approx. (ker),
