@@ -15,11 +15,13 @@
 #include <cstdlib>
 #include <cstring>
 #include "map"
-
 #include <unistd.h>
 #ifdef DISSECTION
 #include "Dissection.hpp"
 #endif
+
+#include "Options.hpp"
+
 
 
 
@@ -66,6 +68,9 @@ public:
     bool DNS_transposed;
     string label;
     int order_number;
+    Options options;
+    bool printed;
+
 
     int ij(int, int);
 
@@ -89,8 +94,6 @@ public:
     void compresRows();
     void readCooFromFile(string, int,int,int);
     void printToFile(string,string,int,bool);
-    void InitializeSolve();
-    void solve(Matrix&, Matrix&);
     void FinalizeSolve(int);
     void setZero();
     void getNullPivots(vector < int > & );
@@ -105,9 +108,13 @@ public:
     MKL_INT n;
     void *pt[64];
     MKL_INT maxfct, mnum, phase, error, msglvl;
-    static void testPardiso(string);
-    void factorization(vector < int > &);
-    void factorization();
+
+    double  ddum;            /* Double dummy */
+    MKL_INT idum;           /* Integer dummy. */
+
+    static void testSolver(string,int);
+//    void factorization(vector < int > &);
+//    void factorization();
 
     uint64_t *diss_dslv;
     int diss_num_threads;
@@ -118,10 +125,35 @@ public:
     int diss_int0;
     int solver;
     double diss_eps_pivot;
-    void symbolic_factorization();
+
+
+    void sym_factor();
     void numeric_factorization();
+    void numeric_factorization(Matrix &);
     void numeric_factorization(Matrix &,bool);
-    void diss_solve(Matrix const &, Matrix &);
+
+
+    void sym_factor_pardiso();
+    void num_factor_pardiso();
+
+    void sym_factor_dissection();
+    void num_factor_dissection();
+    void num_factor_dissection(Matrix &);
+    void num_factor_dissection(Matrix &, bool);
+
+
+    void sym_factor(int);
+    void num_factor();
+    void num_factor(Matrix&);
+    void num_factor(Matrix&, bool);
+    void solve_system_pardiso(Matrix&, Matrix&);
+
+
+    void solve_system(Matrix &, Matrix &);
+
+    void solve_system_dissection(Matrix const &, Matrix &);
+    vector <int> nullPivots;
+
 
     void mat_mult_dense(Matrix const &, string, Matrix const &, string);
 
@@ -145,6 +177,7 @@ public:
 
     static double dot(Matrix const &, Matrix const &);
     void add(Matrix &,double);
+    void test_K_Kp_K_condition();
 
 };
 #endif

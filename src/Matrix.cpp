@@ -15,6 +15,8 @@ Matrix::Matrix(){
     DNS_transposed = false;
     diss_scaling = -1;
     msglvl = -1;
+    solver = -1;
+    printed = false;
 }
 
 Matrix::~Matrix()
@@ -429,6 +431,13 @@ void Matrix::DNS2COO(){
            nnz++;
        }
     }
+
+    if (symmetric){
+        nnz = (nnz - n_row_cmprs) * 0.5 + n_row_cmprs;
+    }
+
+
+
     i_coo_cmpr.resize(nnz);
     j_col.resize(nnz);
     val.resize(nnz);
@@ -443,10 +452,16 @@ void Matrix::DNS2COO(){
                 _val = dense[i + j * _n_row];
             }
             if (KEEP_ZERO_ENTRIES || _val != 0){
+                if (symmetric == 1 && j > i)
+                    continue;
+                if (symmetric == 2 && i > j)
+                    continue;
+
                 i_coo_cmpr[cnt] = i;
                 j_col[cnt] = j;
                 val[cnt] = _val;
                 cnt++;
+
             }
         }
     }
@@ -740,10 +755,11 @@ void Matrix::getBasicMatrixInfo(){
     printf("j_col.size():       %lu \n", j_col.size());
     printf("val.size():         %lu \n", val.size());
     printf("dense.size():       %lu \n", dense.size());
+    printf("solver:             %d (-1: None, 0: pardiso, 1: dissection)\n", solver);
 
     double density = 100 * nnz / (double)( n_row_cmprs * n_col );
 
-    printf("sparsity:           %1.2f %% \n", density);
+    printf("density:            %1.2f %% \n", density);
 }
 
 int Matrix::ij(int i_, int j_){
@@ -751,7 +767,7 @@ int Matrix::ij(int i_, int j_){
 }
 
 
-void Matrix::getNullPivots(vector < int > & null_pivots){
+void Matrix::getNullPivots(vector < int > & null_pivots_){
 
 
   int n_col_ = n_col;
@@ -792,17 +808,17 @@ void Matrix::getNullPivots(vector < int > & null_pivots){
       }
     }
   }
-  null_pivots.resize(n_col_);
+  null_pivots_.resize(n_col_);
   for (int i = 0;i<n_col_;i++){
-    null_pivots[i] = _nul_piv[n_row_-1-i];
+    null_pivots_[i] = _nul_piv[n_row_-1-i];
   }
-  sort(null_pivots.begin(),null_pivots.end());
+  sort(null_pivots_.begin(),null_pivots_.end());
   delete [] _nul_piv;
   delete [] tmpV;
 //
 }
 
-void Matrix::symbolic_factorization(){
+void Matrix::sym_factor_dissection(){
 
 #ifdef DISSECTION
       //diss_dslv = new uint64_t;
@@ -823,7 +839,7 @@ void Matrix::symbolic_factorization(){
 
 }
 
-void Matrix::numeric_factorization(){
+void Matrix::num_factor_dissection(){
 #ifdef DISSECTION
     diss_indefinite_flag = 1;
     if (diss_scaling < 0){
@@ -835,37 +851,24 @@ void Matrix::numeric_factorization(){
 #endif
 }
 
-void Matrix::numeric_factorization(Matrix &R,bool checkOrthogonality){
+
+
+void Matrix::num_factor_dissection(Matrix &R){
 //
+
+
 #ifdef DISSECTION
-    numeric_factorization();
+    num_factor_dissection();
     int n0;
     diss_get_kern_dim(*diss_dslv, &n0);
     R.zero_dense(n_row,n0);
     diss_get_kern_vecs(*diss_dslv, &R.dense[0]);
-    if (checkOrthogonality){
-        Matrix Y;
-        Y.zero_dense(n_row_cmprs , R.n_col);
-        mult(R,Y,true);
-
-        double normK = norm2();
-        double normR = R.norm2();
-        double normKR = Y.norm2();
-
-        printf("=========    %s    =========\n",R.label.c_str());
-        printf("|A| = %.3e, ", normK);
-        printf("|N| = %.3e, ", normR);
-        printf("|A*N|/(|A|*|N|) = %.3e \n", normKR / (normK*normR));
-    }
-
-
-
 
 #endif
 
 }
 
-void Matrix::diss_solve(Matrix const &B, Matrix &X){
+void Matrix::solve_system_dissection(Matrix const &B, Matrix &X){
 
 #ifdef DISSECTION
     int _n_row,_n_col;
@@ -892,29 +895,126 @@ void Matrix::diss_solve(Matrix const &B, Matrix &X){
 #endif
 }
 
-void Matrix::factorization(){
-#ifdef USE_PARDISO
-    InitializeSolve();
-#endif
+void Matrix::sym_factor(int pardiso_0_dissection_1){
+    solver = pardiso_0_dissection_1;
+    if (solver == 0){
+        sym_factor_pardiso();
+    }
+    else{
+        sym_factor_dissection();
+    }
 }
 
-void Matrix::factorization(vector <int> & _nullPivots){
-#ifdef USE_PARDISO
-    // regularization:
-    int j, cnt = 0;
-//    cout << "null_pivot: ";
-    for (int i = 0; i < n_row_cmprs; i++) {
-        j = i_ptr[i];
-        if (i == _nullPivots[cnt]){
-//            cout << i << ", ";
-            val[j] *= 2;
-            cnt++;
+
+void Matrix::num_factor(){
+
+    if (solver == 0){
+        num_factor_pardiso();
+    }
+    else{
+        num_factor_dissection();
+    }
+}
+
+void Matrix::num_factor(Matrix &R, bool checkOrthogonality_){
+
+    // use R to regularize matrix then call factorization
+    if (R.numel != 0){
+        R.getNullPivots(nullPivots);
+        int j, cnt = 0;
+    //    cout << "null_pivot: ";
+        vector <int > tmp;
+        tmp.resize(nullPivots.size());
+        for (int i = 0; i < n_row_cmprs; i++) {
+            j = i_ptr[i];
+            if (i == nullPivots[cnt]){
+    //            cout << i << ", ";
+                val[j] *= 2;
+                tmp[cnt] = j;
+                cnt++;
+            }
+        }
+
+        num_factor();
+
+        bool printCooOrDense = true;
+        if (!printed && options.print_matrices > 1){
+            printToFile("K_reg",options.path2data,order_number,printCooOrDense);
+            printed = true;
+        }
+
+        for (int i = 0 ; i < nullPivots.size();i++)
+            val[tmp[i]] *= 0.5;
+
+
+//        cnt = 0;
+//        for (int i = 0; i < n_row_cmprs; i++) {
+//            j = i_ptr[i];
+//            if (i == nullPivots[cnt]){
+////                cout << i << ", ";
+//                val[j] *= 0.5;
+//                cnt++;
+//            }
+//        }
+    }
+    else{
+        if (solver == 0){
+            num_factor_pardiso();
+        }
+        else{
+            num_factor_dissection(R);
         }
     }
-//    cout << endl;
-    factorization();
-#endif
+
+    if (R.numel !=0 && checkOrthogonality_){
+
+        Matrix Y;
+        Y.zero_dense(n_row_cmprs , R.n_col);
+        mult(R,Y,true);
+
+        double normK = norm2();
+        double normR = R.norm2();
+        double normKR = Y.norm2();
+
+        printf("=========    %s    =========\n",R.label.c_str());
+        printf("|A| = %.3e, ", normK);
+        printf("|N| = %.3e, ", normR);
+        printf("|A*N|/(|A|*|N|) = %.3e \n", normKR / (normK*normR));
+
+    }
+
 }
+
+void Matrix::num_factor(Matrix &R){
+    bool checkOrthogonality_ = false;
+    num_factor(R,checkOrthogonality_);
+}
+
+
+//void Matrix::factorization(){
+//#ifdef USE_PARDISO
+//    sym_factor_pardiso();
+//    num_factor_pardiso();
+//#endif
+//}
+
+//void Matrix::factorization(vector <int> & _nullPivots){
+//#ifdef USE_PARDISO
+//    // regularization:
+//    int j, cnt = 0;
+////    cout << "null_pivot: ";
+//    for (int i = 0; i < n_row_cmprs; i++) {
+//        j = i_ptr[i];
+//        if (i == _nullPivots[cnt]){
+////            cout << i << ", ";
+//            val[j] *= 2;
+//            cnt++;
+//        }
+//    }
+////    cout << endl;
+//    factorization();
+//#endif
+//}
 
 
 
@@ -947,10 +1047,8 @@ void Matrix::CsrElementByElement(){
 #endif
 }
 
+void Matrix::sym_factor_pardiso(){
 
-
-void Matrix::InitializeSolve()
-{
 
 #ifdef USE_PARDISO
     if (msglvl<0)
@@ -958,8 +1056,6 @@ void Matrix::InitializeSolve()
     mtype = -2;              /* Real symmetric matrix */
     nrhs = 1;               /* Number of right hand sides. */
     MKL_INT i;
-    double ddum;            /* Double dummy */
-    MKL_INT idum;           /* Integer dummy. */
     /* -------------------------------------------------------------------- */
     /* .. Setup Pardiso control parameters. */
     /* -------------------------------------------------------------------- */
@@ -967,26 +1063,6 @@ void Matrix::InitializeSolve()
     {
         iparm[i] = 0;
     }
-
-//    iparm[0] = 1;         /* No solver default */
-//    iparm[1] = 2;         /* Fill-in reordering from METIS */
-//    iparm[3] = 0;         /* No iterative-direct algorithm */
-//    iparm[4] = 0;         /* No user fill-in reducing permutation */
-//    iparm[5] = 0;         /* Write solution into x */
-//    iparm[7] = 2;         /* Max numbers of iterative refinement steps */
-//    iparm[9] = 13;        /* Perturb the pivot elements with 1E-13 */
-//    iparm[10] = 1;        /* Use nonsymmetric permutation and scaling MPS */
-//    iparm[12] = 0;        /* Maximum weighted matching algorithm is switched-off (default for symmetric). Try iparm[12] = 1 in case of inappropriate accuracy */
-//    iparm[13] = 0;        /* Output: Number of perturbed pivots */
-//    iparm[17] = -1;       /* Output: Number of nonzeros in the factor LU */
-//    iparm[18] = -1;       /* Output: Mflops for LU factorization */
-//    iparm[19] = 0;        /* Output: Numbers of CG Iterations */
-//    iparm[34] = 1;        /* PARDISO use C-style indexing for ia and ja arrays */
-//    maxfct = 1;           /* Maximum number of numerical factorizations. */
-//    mnum = 1;         /* Which factorization to use. */
-//    msglvl = 1;           /* Print statistical information in file */
-//    error = 0;            /* Initialize error flag */
-
 
 
     iparm[0] = 1;         /* No solver default */
@@ -1037,21 +1113,37 @@ void Matrix::InitializeSolve()
         exit (1);
     }
 
-    phase = 22;
+#endif
 
+
+}
+
+
+void Matrix::num_factor_pardiso()
+{
+
+#ifdef USE_PARDISO
+    MKL_INT n1 = n_row_cmprs;
+    phase = 22;
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
              &n1, &val[0], &i_ptr[0], &j_col[0],
             &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
-
-    //	PARDISO (id->pt, &(id->maxfct), &(id->mnum), &(id->mtype), &phase,
-    //	&(id->n), id->a, id->i_ptr, id->j_col, &(id->idum), &(id->nrhs),
-    //	id->iparm, &(id->msglvl),  &(id->ddum),  &(id->ddum), &(id->error));
 #endif
 
 }
 
 
-void Matrix::solve(Matrix& B, Matrix& X){
+void Matrix::solve_system(Matrix &B, Matrix & X){
+
+    if (solver == 0)
+        solve_system_pardiso(B,X);
+    else
+        solve_system_dissection(B,X);
+}
+
+
+
+void Matrix::solve_system_pardiso(Matrix& B, Matrix& X){
 #ifdef USE_PARDISO
 
     /* -------------------------------------------------------------------- */
@@ -1079,7 +1171,7 @@ void Matrix::solve(Matrix& B, Matrix& X){
 //
 //    }
 
-    if (X.nnz == 0 ){
+    if (X.numel == 0 ){
         X.zero_dense(_n_row,_n_col);
     }
 
@@ -1097,7 +1189,7 @@ void Matrix::solve(Matrix& B, Matrix& X){
 #endif
 }
 
-void Matrix::FinalizeSolve(int _i)
+void Matrix::FinalizeSolve(int i_)
 {
     if (solver == 0){
 #ifdef USE_PARDISO
@@ -1107,14 +1199,6 @@ void Matrix::FinalizeSolve(int _i)
         PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
                  &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
                 iparm, &msglvl, &ddum, &ddum, &error);
-
-    //    if (_i == 0 ) {
-    //        for (int i = 0 ; i < 64 ; i++ ){
-    //            if (iparm[i] < 0 ){
-    //                cout <<"iparm[" << i <<"] = " << iparm[i] << "\n";
-    //            }
-    //        }
-    //    }
 #endif
     }
     else if (solver == 1)
@@ -1125,10 +1209,9 @@ void Matrix::FinalizeSolve(int _i)
     }
 }
 
-void Matrix::testPardiso(string folder){
-#ifdef USE_PARDISO
+void Matrix::testSolver(string folder, int pardiso_0_dissection_1){
 /*------------------------------ TEST ------------------------------*/
-    Matrix A;
+    Matrix A, B, U;
     int n = 11;
     int cnt = 0;
     int nrhs = 5;
@@ -1137,7 +1220,6 @@ void Matrix::testPardiso(string folder){
     A.n_row_cmprs = n;
     A.n_col = n;
 
-    Matrix B;
     B.zero_dense(n , nrhs);
     double h = 1. / (n + 1);
 
@@ -1171,9 +1253,10 @@ void Matrix::testPardiso(string folder){
     cout << "A_III  " << A.j_col.size() << endl;
 
 
-    A.InitializeSolve();
-    Matrix U;
-    A.solve(B, U);
+
+    A.sym_factor(pardiso_0_dissection_1);
+    A.num_factor();
+    A.solve_system(B, U);
     double x_current = h;
     double u_current, delta = 0;
     for (int i = 0; i < n; i++){
@@ -1195,7 +1278,6 @@ void Matrix::testPardiso(string folder){
     B.printToFile("B",folder,1000,true);
     A.FinalizeSolve(0);
 /*------------------------------ TEST ------------------------------*/
-#endif
 }
 
 void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,int i_shift, int j_shift){
@@ -1382,5 +1464,74 @@ void Matrix::add(Matrix &v, double a){
 
     for (int i = 0; i < n_row_cmprs; i++)
         dense[i] += v.dense[i] * a;
+
+}
+
+
+
+void Matrix::test_K_Kp_K_condition(){
+
+    if (solver == -1){
+        fprintf(stderr, "%s %d :  matrix is not factorized... .\n", __FILE__, __LINE__);
+        return;
+    }
+
+    Matrix K_dense,Kplus_K,K_Kplus_K;
+
+    K_dense.label = "K_dense";
+    K_dense.zero_dense(n_row_cmprs,n_col);
+
+    CSRorCOO2DNS(false,false);
+
+    for (int i = 0; i < numel;i++)
+        K_dense.dense[i] = dense[i];
+
+    DNS2CSR();
+
+//    K_dense.printToFile("K_dense",options.path2data,order_number,true);
+
+    Kplus_K.label = "Kplus_K";
+
+    solve_system(K_dense,Kplus_K);
+
+//    Matrix f_tmp,x_tmp;
+//    f_tmp.zero_dense(n_row_cmprs,1);
+//    for (int i = 0; i < n_row_cmprs ; i++)
+//        f_tmp.dense[i] = 1;
+//    solve_system(f_tmp,x_tmp);
+//    x_tmp.printToFile("x_tmp",options.path2data,order_number,true);
+
+
+    if (order_number == 0){
+        cout << "is K_dense transposed ??? " << K_dense.DNS_transposed << endl;
+    }
+//
+//    Kplus_K.printToFile("Kplus_K",options.path2data,order_number,true);
+//
+    mult(Kplus_K,K_Kplus_K,true);
+    K_Kplus_K.mat_mult_dense(K_dense,"N",Kplus_K,"N");
+//    K_Kplus_K.label = "K_Kplus_K";
+//
+//    K_Kplus_K.printToFile("K_Kplus_K",options.path2data,order_number,true);
+
+    double norm_K = K_dense.norm2();
+    double norm_Kplus_K = Kplus_K.norm2();
+    double norm_K_Kplus_K = K_Kplus_K.norm2();
+
+    for (int i = 0; i < K_dense.numel; i++){
+        K_Kplus_K.dense[i] -= K_dense.dense[i];
+    }
+
+
+
+    double norm_K_minus_K_Kplus_K = K_Kplus_K.norm2();
+
+
+    cout << " =============================================  \n";
+    printf(" || K ||                          = %3.15e\n", norm_K);
+    printf(" || Kplus *_K ||                  = %3.15e\n", norm_Kplus_K);
+    printf(" || K * Kplus * K ||              = %3.15e\n", norm_K_Kplus_K);
+    printf(" || K - K * Kplus * K || / || K|| = %3.15e\n", norm_K_minus_K_Kplus_K / norm_K);
+    cout << " =============================================  \n";
 
 }

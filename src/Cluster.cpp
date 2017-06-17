@@ -17,29 +17,11 @@ bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
 
 int printMat = options.print_matrices;
 
-
-#if 0
-//    std::string path2matrix = options.path2data+"/testMat"+to_string(0)+".txt";
-    Matrix A;
-
-    symmetric = 0;  // 0-not, 1-lower tr., 2-upper tr.
-    format = 1;     // 0-coo, 1-csr, 2-dense
-    offset = 0;
-
-    printCooOrDense = true;
-    A.readCooFromFile(path2matrix,symmetric,format,offset);
-    A.printToFile("modif",folder,0,printCooOrDense);
-    A.CSR2COO();
-    A.printToFile("modif2",folder,0,printCooOrDense);
-    printCooOrDense = true;
-    A.printToFile("modif3",folder,0,printCooOrDense);
-
-    return
-
-#endif
+    folder = options.path2data;
 
 
-/*_NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW__NEW_*/
+
+
     /* mesh belonging to i-th cluster (currently, i=0 only)*/
     mesh.createMesh(options);
     nSubClst = mesh.nSubClst;
@@ -50,7 +32,6 @@ int printMat = options.print_matrices;
     BcT_dense.resize(nSubClst);
     K.resize(nSubClst);
     rhs.resize(nSubClst);
-    K_reg.resize(nSubClst);
     Fc.resize(nSubClst);
     Gc.resize(nSubClst);
     R.resize(nSubClst);
@@ -69,31 +50,87 @@ int printMat = options.print_matrices;
         data.create_analytic_ker_K(mesh,R);
     }
 
-    folder = options.path2data;
     printCooOrDense = true;
-    checkOrthogonality = false;
+    checkOrthogonality = true;
 
     neqClst = 0;
     for (int d = 0; d < K.size(); d++){
         neqClst += K[d].n_row_cmprs;
     }
 
+//    Matrix::testSolver(folder, 1);
+
+
     for (int d = 0; d < K.size(); d++){
-        if (options.solver_opt.solver == 0){
-            vector < int > nullPivots;
-            R[d].getNullPivots(nullPivots);
-            K_reg[d] = K[d];
-            K_reg[d].factorization(nullPivots);
-            if (printMat > 1){
-                K_reg[d].printToFile("K_reg",folder,d,printCooOrDense);
-                K_reg[d].getBasicMatrixInfo();
+        K[d].order_number = d;
+        K[d].options = options;
+        K[d].sym_factor(options.solver_opt.solver);
+        // if solver == 0 (pardiso), matrix R already exists (give by analytic. formula) and it is used to make
+        //      K non-singular
+        // if solver == 1 (dissection), martirx R is empty and it is created during the factorization
+        R[d].label = "kerK";
+
+
+
+        K[d].num_factor(R[d],checkOrthogonality);
+
+        K[d].test_K_Kp_K_condition();
+
+
+      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      //!
+
+#if 1
+            Matrix K_dense,Kplus_K,K_Kplus_K;
+            K_dense = K[d]; K_dense.label = "K_dense";
+            K_dense.CSRorCOO2DNS(false,false);
+            K_dense.printToFile("K_dense",folder,d,true);
+//
+            Kplus_K = K_dense;
+            Kplus_K.symmetric = 0;
+            Kplus_K.label = "Kplus_K";
+            Kplus_K.setZero();
+
+
+            K[d].solve_system(K_dense,Kplus_K);
+
+
+            if (d == 0){
+                cout << "is K_dense transposed ??? " << K_dense.DNS_transposed << endl;
             }
-        }
-        else if (options.solver_opt.solver == 1){
-            K[d].symbolic_factorization();
-            R[d].label = "kerK";
-            K[d].numeric_factorization(R[d],checkOrthogonality);
-        }
+//
+//
+            Kplus_K.printToFile("Kplus_K",folder,d,true);
+//
+            K[d].mult(Kplus_K,K_Kplus_K,true);
+//            K_Kplus_K.mat_mult_dense(K_dense,"N",Kplus_K,"N");
+            K_Kplus_K.label = "K_Kplus_K";
+//
+            K_Kplus_K.printToFile("K_Kplus_K",folder,d,true);
+
+            double norm_K = K_dense.norm2();
+            double norm_Kplus_K = Kplus_K.norm2();
+            double norm_K_Kplus_K = K_Kplus_K.norm2();
+
+            for (int i = 0; i < K_dense.numel; i++){
+                K_Kplus_K.dense[i] -= K_dense.dense[i];
+            }
+
+
+
+            double norm_K_minus_K_Kplus_K = K_Kplus_K.norm2();
+
+
+            cout << " =============================================  \n";
+            printf(" || K ||                          = %3.15e\n", norm_K);
+            printf(" || Kplus *_K ||                  = %3.15e\n", norm_Kplus_K);
+            printf(" || K * Kplus * K ||              = %3.15e\n", norm_K_Kplus_K);
+            printf(" || K - K * Kplus * K || / || K|| = %3.15e\n", norm_K_minus_K_Kplus_K / norm_K);
+            cout << " =============================================  \n";
+      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#endif
+
+
     }
 
     // constraints must wait for factorization (to use R)
@@ -140,72 +177,6 @@ int printMat = options.print_matrices;
 //
 
         // generalized inverse test || K * Kplus * K - K || / || K ||
-        bool testGenInv = false;
-
-        if (testGenInv){
-            Matrix K_dense,Kplus_K,K_Kplus_K;
-            K_dense = K[d]; K_dense.label = "K_dense";
-
-
-
-// if dissection is activated, code finishes with CORE DUMP
-// with paridios it finishes without error
-    cout <<"############################################################################\n";
-    fprintf(stderr, "%s %d : code crashes if dissection and following block ('#ifdef 1) are active .\n",
-                                                                      __FILE__, __LINE__);
-    cout <<"############################################################################\n";
-#if 1
-            K_dense.CSRorCOO2DNS(false,false);
-            K_dense.printToFile("K_dense",folder,d,true);
-//
-            Kplus_K = K_dense;
-            Kplus_K.symmetric = 0;
-            Kplus_K.label = "Kplus_K";
-            Kplus_K.setZero();
-
-
-            if (options.solver_opt.solver == 0){
-                K_reg[d].solve(K_dense,Kplus_K);
-            }
-            else if (options.solver_opt.solver == 1){
-                K[d].diss_solve(K_dense,Kplus_K);
-            }
-
-
-            if (d == 0){
-                cout << "is K_dense transposed ??? " << K_dense.DNS_transposed << endl;
-            }
-//
-//
-            Kplus_K.printToFile("Kplus_K",folder,d,true);
-//
-            K[d].mult(Kplus_K,K_Kplus_K,true);
-//            K_Kplus_K.mat_mult_dense(K_dense,"N",Kplus_K,"N");
-            K_Kplus_K.label = "K_Kplus_K";
-//
-            K_Kplus_K.printToFile("K_Kplus_K",folder,d,true);
-
-            double norm_K = K_dense.norm2();
-            double norm_Kplus_K = Kplus_K.norm2();
-            double norm_K_Kplus_K = K_Kplus_K.norm2();
-
-            for (int i = 0; i < K_dense.numel; i++){
-                K_Kplus_K.dense[i] -= K_dense.dense[i];
-            }
-
-
-
-            double norm_K_minus_K_Kplus_K = K_Kplus_K.norm2();
-
-
-            cout << " =============================================  \n";
-            printf(" || K ||                          = %3.15e\n", norm_K);
-            printf(" || Kplus *_K ||                  = %3.15e\n", norm_Kplus_K);
-            printf(" || K * Kplus * K ||              = %3.15e\n", norm_K_Kplus_K);
-            printf(" || K - K * Kplus * K || / || K|| = %3.15e\n", norm_K_minus_K_Kplus_K / norm_K);
-            cout << " =============================================  \n";
-#endif
-        }
 
 
 
@@ -217,12 +188,13 @@ int printMat = options.print_matrices;
         if (d == 0)
             cout << "Fc[i] (for each subdom) is being created ... \n" ;
 
-        if (options.solver_opt.solver == 0){
-            K_reg[d].solve(BcT_dense[d],KplusBcT_dense);
-        }
-        else if (options.solver_opt.solver == 1 ){
-            K[d].diss_solve(BcT_dense[d],KplusBcT_dense);
-        }
+        K[d].solve_system(BcT_dense[d],KplusBcT_dense);
+        //if (options.solver_opt.solver == 0){
+        //    K_reg[d].solve(BcT_dense[d],KplusBcT_dense);
+        //}
+        //else if (options.solver_opt.solver == 1 ){
+        //    K[d].diss_solve(BcT_dense[d],KplusBcT_dense);
+        //}
 
         // TODO KplusBcT_dense will be replaced by KplusBct[d]
         KplusBcT[d] = KplusBcT_dense;
@@ -302,7 +274,6 @@ int printMat = options.print_matrices;
     Matrix::getSingularVal_DNS(GcTGc_clust,S_GcTGc,3,10);
 
 
-    GcTGc_clust.getBasicMatrixInfo();
     if (printMat > 0)
         GcTGc_clust.printToFile("GcTGc_clust",folder,0,printCooOrDense);
 
@@ -310,12 +281,16 @@ int printMat = options.print_matrices;
 //    Matrix ker_GcT;
     kerGc.label = "kerGc";
     GcTGc_clust.order_number = 1000;
-    GcTGc_clust.symbolic_factorization();
+    int pardiso_0_dissection_1 = 1;
+    GcTGc_clust.sym_factor(pardiso_0_dissection_1);
     checkOrthogonality = true;
-    GcTGc_clust.numeric_factorization(kerGc,checkOrthogonality);
+    GcTGc_clust.num_factor(kerGc,checkOrthogonality );
     nRBM_f = kerGc.n_col;
     fprintf(stderr, "%s %d : ## GcTGc_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, kerGc.n_col);
+
+    GcTGc_clust.getBasicMatrixInfo();
+
     if (printMat > 0)
         kerGc.printToFile("kerGc",folder,0,printCooOrDense);
 
@@ -324,40 +299,37 @@ int printMat = options.print_matrices;
     Matrix S_Ac_clust;
     Matrix::getEigVal_DNS(Ac_clust,S_Ac_clust,10,3);
 
-    Ac_clust.getBasicMatrixInfo();
-
-
-
-
 
     if (printMat > 0)
         Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
 
     Ac_clust.order_number = 2000;
-    Ac_clust.symbolic_factorization();
+
     Ac_clust.diss_scaling = 1;
+//    Ac_clust.sym_factor(options.solver_opt.solver);
+    Ac_clust.sym_factor(0);
+    Ac_clust.getBasicMatrixInfo();
+
+
 
     if (options.solver_opt.Ac_extended_by_kerGc){
-        if (options.solver_opt.solver == 0){
-            Ac_clust.msglvl = 0;
-            Ac_clust.factorization();
-        }
-        else if (options.solver_opt.solver == 1){
-            Ac_clust.diss_scaling = 1;
-            Ac_clust.numeric_factorization();
-        }
+        Ac_clust.diss_scaling = 1;
+        Ac_clust.num_factor();
     }
     else{
         Matrix ker_Ac;
         ker_Ac.label = "ker_Ac";
-        Ac_clust.numeric_factorization(ker_Ac,checkOrthogonality);
+        checkOrthogonality = true;
+        Ac_clust.num_factor(ker_Ac,checkOrthogonality);
         fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, ker_Ac.n_col);
-
 
         if (printMat > 0)
             ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
     }
+
+
+    Ac_clust.test_K_Kp_K_condition();
 
 
 
@@ -386,14 +358,8 @@ int printMat = options.print_matrices;
 /* ########################### FINALIZING ############################################ */
 /* ################################################################################### */
 
-    for (int i = 0 ; i < nSubClst; i++){
-        if (options.solver_opt.solver == 0){
-            K_reg[i].FinalizeSolve(i);
-        }
-        else if (options.solver_opt.solver == 1){
-            K[i].FinalizeSolve(i);
-        }
-    }
+    for (int i = 0 ; i < nSubClst; i++)
+        K[i].FinalizeSolve(i);
 }
 
 
@@ -965,7 +931,12 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
     Matrix gc;
-    gc.zero_dense(nLam_c + nRBM_c, 1);
+    int ngc = nLam_c + nRBM_c;
+
+    if (options.solver_opt.Ac_extended_by_kerGc)
+        ngc += nRBM_f;
+
+    gc.zero_dense(ngc);
 
 
     for (int d = 0; d < nSubClst; d++){
@@ -986,10 +957,18 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         cntR += R[d].n_col;
     }
 
+    gc.printToFile("gc",folder,0,true);
+
     Matrix lam_alpha;
     lam_alpha = gc;
-    gc.setZero();
-    Ac_clust.diss_solve(gc,lam_alpha);
+    lam_alpha.setZero();
+
+
+    Ac_clust.solve_system(gc,lam_alpha);
+
+    lam_alpha.printToFile("lam_alpha",folder,0,true);
+
+
 
     cntR = 0;
     for (int d = 0; d < nSubClst ; d++){
@@ -1002,15 +981,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
         Matrix Kplusfc;
 
-        if (options.solver_opt.solver == 0){
-            K_reg[d].solve(f_in[d],Kplusfc);
-            if (true){
-               Kplusfc.printToFile("Kplus_f_test",folder,d,true);
-            }
-        }
-        else if (options.solver_opt.solver == 1){
-            K[d].diss_solve(f_in[d],Kplusfc);
-        }
+        K[d].solve_system(f_in[d],Kplusfc);
 
 
         Matrix Ralphac;
@@ -1207,10 +1178,10 @@ void Cluster::pcpg(){
     Matrix Fw, Pg, g, w, w_prev;
     vector < Matrix > xx, yy;
     xx.resize(nSubClst); yy.resize(nSubClst);
-
     // d_rhs = B * Kplus * f
     xx[0].label = "test";
     mult_Kplus_f(rhs,xx);
+#if 0
     mult_Bf(xx,d_rhs);
     // e = Rt * f
     mult_RfT(rhs,e);
@@ -1263,7 +1234,7 @@ void Cluster::pcpg(){
 
 
     }
-
+#endif
 }
 
 
