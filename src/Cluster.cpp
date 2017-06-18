@@ -11,16 +11,10 @@ Cluster::Cluster(Options options_)
 
     options = options_;
 
-int symmetric, format, offset;
-bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
-
-
-int printMat = options.print_matrices;
-
+    int symmetric, format, offset;
+    bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
+    int printMat = options.print_matrices;
     folder = options.path2data;
-
-
-
 
     /* mesh belonging to i-th cluster (currently, i=0 only)*/
     mesh.createMesh(options);
@@ -61,74 +55,18 @@ int printMat = options.print_matrices;
 
 //    Matrix::testSolver(folder, 1);
 
-
     for (int d = 0; d < K.size(); d++){
         K[d].order_number = d;
         K[d].options = options;
-        K[d].sym_factor(options.solver_opt.solver);
+        //K[d].sym_factor(options.solver_opt.solver);
+        K[d].sym_factor(1);
         // if solver == 0 (pardiso), matrix R already exists (give by analytic. formula) and it is used to make
         //      K non-singular
         // if solver == 1 (dissection), martirx R is empty and it is created during the factorization
         R[d].label = "kerK";
-//        Matrix Ksing = K[d];
+        Matrix Ksing = K[d];
         K[d].num_factor(R[d],checkOrthogonality);
-//        K[d].test_K_Kp_K_condition(Ksing);
-
-
-      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      //!
-
-#if 0
-            Matrix K_dense,Kplus_K,K_Kplus_K;
-            K_dense = K[d]; K_dense.label = "K_dense";
-            K_dense.CSRorCOO2DNS(false,false);
-            K_dense.printToFile("K_dense",folder,d,true);
-//
-            Kplus_K = K_dense;
-            Kplus_K.symmetric = 0;
-            Kplus_K.label = "Kplus_K";
-            Kplus_K.setZero();
-
-
-            K[d].solve_system(K_dense,Kplus_K);
-
-
-            if (d == 0){
-                cout << "is K_dense transposed ??? " << K_dense.DNS_transposed << endl;
-            }
-//
-//
-            Kplus_K.printToFile("Kplus_K",folder,d,true);
-//
-            K[d].mult(Kplus_K,K_Kplus_K,true);
-//            K_Kplus_K.mat_mult_dense(K_dense,"N",Kplus_K,"N");
-            K_Kplus_K.label = "K_Kplus_K";
-//
-            K_Kplus_K.printToFile("K_Kplus_K",folder,d,true);
-
-            double norm_K = K_dense.norm2();
-            double norm_Kplus_K = Kplus_K.norm2();
-            double norm_K_Kplus_K = K_Kplus_K.norm2();
-
-            for (int i = 0; i < K_dense.numel; i++){
-                K_Kplus_K.dense[i] -= K_dense.dense[i];
-            }
-
-
-
-            double norm_K_minus_K_Kplus_K = K_Kplus_K.norm2();
-
-
-            cout << " =============================================  \n";
-            printf(" || K ||                          = %3.15e\n", norm_K);
-            printf(" || Kplus *_K ||                  = %3.15e\n", norm_Kplus_K);
-            printf(" || K * Kplus * K ||              = %3.15e\n", norm_K_Kplus_K);
-            printf(" || K - K * Kplus * K || / || K|| = %3.15e\n", norm_K_minus_K_Kplus_K / norm_K);
-            cout << " =============================================  \n";
-      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#endif
-
-
+        K[d].test_K_Kp_K_condition(Ksing);
     }
 
     // constraints must wait for factorization (to use R)
@@ -181,6 +119,7 @@ int printMat = options.print_matrices;
         KplusBcT[d] = KplusBcT_dense;
         KplusBcT[d].symmetric = 0;
 
+
         if (printMat > 2){
             KplusBcT_dense.printToFile("KplusBcT",folder,d,printCooOrDense);
             KplusBcT_dense.getBasicMatrixInfo();
@@ -202,6 +141,8 @@ int printMat = options.print_matrices;
         Gc[d].zero_dense(n_rowGc, n_colGc );
         Bc[d].mult(R[d],Gc[d],true);
 
+
+        //
         for (int i = 0; i < Gc[d].numel; i++)
             Gc[d].dense[i] *= -1;
 
@@ -947,7 +888,6 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
 
     gc.zero_dense(ngc);
 
-
     for (int d = 0; d < nSubClst; d++){
         Matrix BcKplusfc;
         BcKplusfc.mat_mult_dense(KplusBcT[d],"T",f_in[d],"N");
@@ -984,12 +924,16 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         Matrix lamc;
         lamc.zero_dense(Bc[d].n_row_cmprs,1);
         for (int i = 0; i < Bc[d].n_row_cmprs;i++){
-           lamc.dense[i] = lam_alpha.dense[Bc[d].g2l_i_coo[i]];
+//           lamc.dense[i] = lam_alpha.dense[Bc[d].g2l_i_coo[i]];
+           lamc.dense[i] = lam_alpha.dense[Bc[d].l2g_i_coo[i]];
+ //          cout << " d: " << d << " Bc[d].l2g_i_coo[i] " << Bc[d].g2l_i_coo[i]<< endl;
         }
         Matrix KplusBcTlamc;
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
-        Matrix Kplusfc;
+        KplusBcTlamc.printToFile("KplusBcTlamc",folder,d,true);
 
+
+        Matrix Kplusfc;
         K[d].solve_system(f_in[d],Kplusfc);
 
 
@@ -998,6 +942,8 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         for (int i = 0; i < R[d].n_col; i++){
             alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
         }
+
+        alphac_d.printToFile("alpha",folder,d,true);
         Ralphac.mat_mult_dense(R[d],"N",alphac_d,"N");
         cntR += R[d].n_col;
 
@@ -1007,6 +953,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
 
         for (int i = 0; i < x_out[d].n_row_cmprs; i++){
             x_out[d].dense[i] = Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
+            x_out[d].printToFile("x_out",folder,d,true);
         }
     }
 }
@@ -1182,23 +1129,23 @@ void Cluster::create_Rf_and_Gf(){
 
 void Cluster::pcpg(){
 
-    double gPg, wFw, rho, gamma, wFPg;
-    Matrix g0, d_rhs, e, iGTG_e, lambda0;
+    double gPg, wFw, rho, gamma, wFPg, norm_gPg0;
+    Matrix g0, d_rhs, e, iGTG_e, lambda;
     Matrix Fw, Pg, g, w, w_prev;
     vector < Matrix > xx, yy;
     xx.resize(nSubClst); yy.resize(nSubClst);
     // d_rhs = B * Kplus * f
     xx[0].label = "test";
     mult_Kplus_f(rhs,xx);
-#if 0
+#if 1
     mult_Bf(xx,d_rhs);
     // e = Rt * f
     mult_RfT(rhs,e);
     // lambda0 = G * inv(GtG) * e
     iGTG_e.mat_mult_dense(invGfTGf,"N",e,"N");
-    mult_Gf(iGTG_e, lambda0);
+    mult_Gf(iGTG_e, lambda);
     // F * lambda0
-    mult_BfT(lambda0,xx);
+    mult_BfT(lambda,xx);
     mult_Kplus_f(xx,yy);
     mult_Bf(yy,g0);
     // g0 = F * lambda0 - d_rhs
@@ -1207,6 +1154,9 @@ void Cluster::pcpg(){
     g = g0;
     // Pg0
     Project(g,Pg);
+
+
+    norm_gPg0 = sqrt(Matrix::dot(Pg,Pg));
     // initial conjugate vector
     w = Pg;
 
@@ -1216,7 +1166,10 @@ void Cluster::pcpg(){
 
 
         gPg = Matrix::dot(Pg,Pg);
-        printf("it: %d,      |Pg| = %3.5e \n",it, sqrt(gPg));
+        printf("it: %d,      |Pg| = %3.5e \n",it, sqrt(gPg) / norm_gPg0);
+
+        if (sqrt(gPg) < 1e-4 * norm_gPg0)
+            break;
         // F * w
         mult_BfT(w,xx);
         mult_Kplus_f(xx,yy);
@@ -1225,6 +1178,8 @@ void Cluster::pcpg(){
         wFw = Matrix::dot(w,Fw);
 
         rho = -gPg / wFw;
+
+        lambda.add(w,rho);
 
         // new gradient
         g.add(Fw,rho);
@@ -1240,9 +1195,22 @@ void Cluster::pcpg(){
 
         w = Pg;
         w.add(w_prev,gamma);
-
-
     }
+
+
+
+    mult_BfT(lambda,xx);
+
+    for (int d = 0; d < nSubClst;d++){
+        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+            xx[d].dense[i] = rhs[d].dense[i] - xx[d].dense[i];
+        }
+    }
+
+    mult_Kplus_f(xx,yy);
+
+
+
 #endif
 }
 

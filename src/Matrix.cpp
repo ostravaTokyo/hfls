@@ -495,7 +495,7 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
             DNS2COO();
         }
         int I, J,Itmp;
-    fprintf(fp, "%%%%MatrixMarket matrix coordinate real %s\n",
+        fprintf(fp, "%%%%MatrixMarket matrix coordinate real %s\n",
         symmetric == 0 ? "general" : "symmetric");
         fprintf(fp, "%d\t%d\t%d\n", n_row, n_col, nnz);
         if (format == 0){
@@ -1108,6 +1108,7 @@ void Matrix::solve_system_pardiso(Matrix& B, Matrix& X){
     MKL_INT idum;         /* Integer dummy. */
     int _n_row, _n_col;
     if (B.DNS_transposed){
+        cout << "T" <<endl;
         _n_row = B.n_col;
         _n_col = B.n_row_cmprs;
     }
@@ -1128,6 +1129,10 @@ void Matrix::solve_system_pardiso(Matrix& B, Matrix& X){
     if (X.numel == 0 ){
         X.zero_dense(_n_row,_n_col);
     }
+    else
+    {
+        X.setZero();
+    }
 
 
     phase = 33;
@@ -1142,6 +1147,7 @@ void Matrix::solve_system_pardiso(Matrix& B, Matrix& X){
     }
 //    printf ("\nSolve completed ... ");
 #endif
+
 }
 
 void Matrix::FinalizeSolve(int i_)
@@ -1466,8 +1472,31 @@ void Matrix::test_K_Kp_K_condition(Matrix &Ks){
 //    K_dense.printToFile("K_dense",options.path2data,order_number,true);
 
     Kplus_K.label = "Kplus_K";
-
     solve_system(K_dense,Kplus_K);
+
+
+    if (label == "stiffness matrix"){
+
+        Matrix ONES, KplusONES;
+        int d = order_number;
+        bool printCooOrDense = true;
+        string folder = "../data/";
+        ONES.zero_dense(n_row_cmprs,1);
+        for (int i =0; i < n_row_cmprs; i++)
+            ONES.dense[i] = 1;
+        solve_system(ONES,KplusONES);
+        ONES.printToFile("ONES",folder,d,printCooOrDense);
+        KplusONES.printToFile("KplusONES",folder,d,printCooOrDense);
+
+        if (d == 0){
+            for (int i = 0; i < n_row_cmprs; i++)
+                cout << KplusONES.dense[i] << endl;
+
+        }
+    }
+
+
+
 
 
 
@@ -1477,8 +1506,8 @@ void Matrix::test_K_Kp_K_condition(Matrix &Ks){
 //
 //    Kplus_K.printToFile("Kplus_K",options.path2data,order_number,true);
 //
-//    mult(Kplus_K,K_Kplus_K,true);
-    K_Kplus_K.mat_mult_dense(K_dense,"N",Kplus_K,"N");
+    mult(Kplus_K,K_Kplus_K,true);
+//    K_Kplus_K.mat_mult_dense(K_dense,"N",Kplus_K,"N");
 //    K_Kplus_K.label = "K_Kplus_K";
 //
 //    K_Kplus_K.printToFile("K_Kplus_K",options.path2data,order_number,true);

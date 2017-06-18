@@ -6,6 +6,7 @@ from scipy.linalg import block_diag
 #
 #
 
+nSub = 4
 def load_matrix_basic(pathToFile,makeSparse,makeSymmetric, offset):
     f0 = open(pathToFile).readlines()
     firstLine = f0.pop(0) #removes the first line
@@ -49,7 +50,6 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
     return tmp
 
 path0 = "../data"
-nSub = 8
 
 
 
@@ -70,11 +70,12 @@ if 1:
     Gf_p = []
 
     Gc = []
-    Fc = []
+    Fc_p = []
 
     rhs = []
     xx = []
     Kplus_f_test = []
+    KplusBcT_p = []
 
 
     Bc_nonzRow = []
@@ -86,6 +87,8 @@ if 1:
 
     K_UT = []
 
+    x_out = []
+    x_out_p = []
 #    Lumped = []
 #    Lumped = []
 
@@ -113,12 +116,12 @@ if 1:
 #        Fc.append( np.dot(Bc_nonzRow[i], np.linalg.solve(K_reg[i],Bc_nonzRow[i].T)))
 #        Lumped.append( np.dot(Bc_nonzRow[i], np.dot(K[i],Bc_nonzRow[i].T)))
 
-#        rhs.append(load_matrix(path0,"dump_rhsTest_","",str(i),False,False,1))
+        rhs.append(load_matrix(path0,"dump_rhs_","",str(i),False,False,1))
 #        xx.append(load_matrix(path0,"dump_xxTest_","",str(i),False,False,1))
 #        Kplus_f_test.append(load_matrix(path0,"dump_Kplus_f_test_","",str(i),False,False,1))
 
 
-#        BcKplus = BcKplus_List[i]
+#        KplusBcT_p = BcKplus_List[i]
 
 #        BcK_dense.append(load_matrix(path0,"dump_BcK_dense_","",str(i),False,False,1))
 #        BcK_dense.append(np.dot(K[i],Bc_nonzRow[i].T).T)
@@ -126,20 +129,61 @@ if 1:
         Gc.append(np.dot(Bc[i], R[i]))
 
         KplusBcT.append(load_matrix(path0,"dump_KplusBcT_","",str(i),False,False,1))
-#        BcKplus.append(np.linalg.solve(K_reg[i],Bc_nonzRow[i].T).T)
+        KplusBcT_p.append(np.linalg.solve(K_reg[i],Bc_nonzRow[i].T))
 #        BcKplus_tmp.append(np.linalg.solve(K_reg[i],Bc[i].T).T)
+
+        x_out.append(load_matrix(path0,"dump_x_out_","",str(i),False,False,1))
+        
+        Fc_p.append(np.dot(Bc_nonzRow[i],KplusBcT_p[i]))
 
 #        iK_K = np.linalg.solve(K_reg[i],K[i])
 #        K_iK_K = np.dot(K[i],iK_K)
 #        del_ = np.linalg.norm(K_iK_K - K[i]  ) / np.linalg.norm(K[i])
 #        print(del_)
 #
+
+        tmp_g = np.dot(Bc[i],np.linalg.solve(K_reg[i], rhs[i]))
+        tmp_e = -np.dot(R[i].T,rhs[i])
+        
+        if (i == 0): 
+            g_p  = tmp_g
+            e_p = tmp_e;
+        else:
+            g_p += tmp_g;
+            e_p = np.concatenate((e_p,tmp_e))
+
+
         print(' ...%d '%(i))
+
+    gc_p = np.concatenate((g_p,e_p)) 
+    gc_p = np.concatenate((gc_p,np.zeros(6))) 
+
     Gc_clust = load_matrix(path0,"dump_Gc_clust_","",str(0),False,False,1)
     Ac_clust = load_matrix(path0,"dump_Ac_clust_","",str(0),False,True,1)
     Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),False,True,1)
     gc = load_matrix(path0,"dump_gc_","",str(0),False,False,1)
-    lam_alpha_h = load_matrix(path0,"dump_lam_alpha_","",str(0),False,False,1)
+    lam_alpha = load_matrix(path0,"dump_lam_alpha_","",str(0),False,False,1)
+
+
+    lam_alpha_p = np.linalg.solve(Ac_clust, gc)
+
+    nLam = Bc[0].shape[0]
+    lam_p = lam_alpha_p[0:nLam]
+    alpha_p = lam_alpha[nLam:]
+    for i in range(nSub): 
+        print (" ! %d " % (i))
+        x10 = np.linalg.solve(K_reg[i],rhs[i])
+        x11 = np.linalg.solve(K_reg[i],np.dot(Bc[i].T,lam_p))
+
+        print alpha_p[(6*i):(6*(i+1))]
+        x2 = np.dot(R[i],alpha_p[(6*i):(6*(i+1))]) 
+
+        x_out_p.append(x10 - x11 + x2)
+
+        print( "||x_out - x_out_p || = %e " % np.linalg.norm(x_out[i] - x_out_p[i]))
+
+
+
 
     Ac_clust_python = np.hstack((Fc_clust,Gc_clust))
 
@@ -147,7 +191,11 @@ if 1:
     print ( Z.shape)
     Ac_clust_python = np.vstack((Ac_clust_python,Z))
 
-    lam_alpha = np.linalg.solve(Ac_clust, gc)
+
+
+
+    KpOnes= load_matrix(path0,"dump_KplusONES_","",str(0),False,False,1)
+
 
 #K_regD = K_reg[0]
 #frhs = rhs[0]

@@ -22,7 +22,8 @@ int main(int argc, char *argv[]){
                  * 0: corners,
                  * 1: zero and first approx. (ker),
                  * 2: all nodes on interf.)*/
-    int typeBc = 0;
+    int typeBc = 1;
+
                 /* if true, matrix Bc (corners) is full column rank */
                 /*          matrix Bc (zero and first approx.) is full column rank matrix if
                  *          each subdomain consists of at least two or more elements */
