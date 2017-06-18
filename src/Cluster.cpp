@@ -64,9 +64,9 @@ Cluster::Cluster(Options options_)
         //      K non-singular
         // if solver == 1 (dissection), martirx R is empty and it is created during the factorization
         R[d].label = "kerK";
-        Matrix Ksing = K[d];
+//        Matrix Ksing = K[d];
         K[d].num_factor(R[d],checkOrthogonality);
-        K[d].test_K_Kp_K_condition(Ksing);
+//        K[d].test_K_Kp_K_condition(Ksing);
     }
 
     // constraints must wait for factorization (to use R)
@@ -159,8 +159,6 @@ Cluster::Cluster(Options options_)
             R[d].getBasicMatrixInfo();
         }
 
-        Matrix Ksing = K[d];
-        K[d].test_K_Kp_K_condition(Ksing);
 
     }
     cout << endl;
@@ -177,9 +175,9 @@ Cluster::Cluster(Options options_)
 
 
     Fc_clust.sym_factor(0);
-    Matrix Fc_copy = Fc_clust;
+//    Matrix Fc_copy = Fc_clust;
     Fc_clust.num_factor();
-    Fc_clust.test_K_Kp_K_condition(Fc_copy);
+//    Fc_clust.test_K_Kp_K_condition(Fc_copy);
 
 
 
@@ -244,8 +242,8 @@ Cluster::Cluster(Options options_)
 
 
 
-    Matrix Ac_clust_copy;
-    Ac_clust_copy = Ac_clust;
+ //   Matrix Ac_clust_copy;
+ //   Ac_clust_copy = Ac_clust;
     if (options.solver_opt.Ac_extended_by_kerGc){
         Ac_clust.diss_scaling = 1;
         Ac_clust.num_factor();
@@ -264,7 +262,7 @@ Cluster::Cluster(Options options_)
     }
 
 
-    Ac_clust.test_K_Kp_K_condition(Ac_clust_copy);
+//    Ac_clust.test_K_Kp_K_condition(Ac_clust_copy);
 
 
 
@@ -906,7 +904,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         cntR += R[d].n_col;
     }
 
-    gc.printToFile("gc",folder,0,true);
+//    gc.printToFile("gc",folder,0,true);
 
     Matrix lam_alpha;
     lam_alpha = gc;
@@ -915,7 +913,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
 
     Ac_clust.solve_system(gc,lam_alpha);
 
-    lam_alpha.printToFile("lam_alpha",folder,0,true);
+//    lam_alpha.printToFile("lam_alpha",folder,0,true);
 
 
 
@@ -930,7 +928,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         }
         Matrix KplusBcTlamc;
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
-        KplusBcTlamc.printToFile("KplusBcTlamc",folder,d,true);
+//        KplusBcTlamc.printToFile("KplusBcTlamc",folder,d,true);
 
 
         Matrix Kplusfc;
@@ -943,7 +941,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
             alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
         }
 
-        alphac_d.printToFile("alpha",folder,d,true);
+//        alphac_d.printToFile("alpha",folder,d,true);
         Ralphac.mat_mult_dense(R[d],"N",alphac_d,"N");
         cntR += R[d].n_col;
 
@@ -953,7 +951,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
 
         for (int i = 0; i < x_out[d].n_row_cmprs; i++){
             x_out[d].dense[i] = Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
-            x_out[d].printToFile("x_out",folder,d,true);
+//            x_out[d].printToFile("x_out",folder,d,true);
         }
     }
 }
@@ -1082,16 +1080,13 @@ void Cluster::mult_RfT(vector < Matrix > const &x_in, Matrix & alpha){
     }
 }
 
-
-
-void Cluster::Project(Matrix const & lam, Matrix & proj_lam){
+void Cluster::Project(Matrix const & lam, Matrix & proj_lam, Matrix & alpha){
 
     proj_lam = lam;
-    Matrix alpha;
-    mult_GfT(lam,alpha);
-    Matrix invGfTGf_alpha;
-    invGfTGf_alpha.mat_mult_dense(invGfTGf,"N",alpha,"N");
-    mult_Gf(invGfTGf_alpha,proj_lam);
+    Matrix beta;
+    mult_GfT(lam,beta);
+    alpha.mat_mult_dense(invGfTGf,"N",beta,"N");
+    mult_Gf(alpha,proj_lam);
 
     for (int i = 0; i < lam.n_row_cmprs; i++)
         proj_lam.dense[i] = lam.dense[i] - proj_lam.dense[i];
@@ -1113,14 +1108,14 @@ void Cluster::create_Rf_and_Gf(){
         }
         cntR += R[d].n_col;
         Rf[d].mat_mult_dense(R[d],"N",Hd,"N");
-        Rf[d].printToFile("Rf",folder,d,true);
+//        Rf[d].printToFile("Rf",folder,d,true);
         int n_rowGf = Bf[d].n_row_cmprs;
         int n_colGf = Rf[d].n_col;
         //TODO Gf (as vector) is no need to keep in the memory
         // later replace by Gf_clust (is already in create GfTGf)
         Gf[d].zero_dense(n_rowGf, n_colGf );
         Bf[d].mult(Rf[d],Gf[d],true);
-        Gf[d].printToFile("Gf",folder,d,true);
+//        Gf[d].printToFile("Gf",folder,d,true);
     }
 }
 
@@ -1152,8 +1147,10 @@ void Cluster::pcpg(){
     g0.add(d_rhs,-1);
 
     g = g0;
+
+    Matrix alpha;
     // Pg0
-    Project(g,Pg);
+    Project(g,Pg,alpha);
 
 
     norm_gPg0 = sqrt(Matrix::dot(Pg,Pg));
@@ -1161,7 +1158,6 @@ void Cluster::pcpg(){
     w = Pg;
 
     int max_it = 200;
-
     for (int it = 0; it < max_it; it++){
 
 
@@ -1185,7 +1181,43 @@ void Cluster::pcpg(){
         g.add(Fw,rho);
 
         // P * g    where P = I - G * inv(GtG) *Gt
-        Project(g,Pg);
+        Project(g,Pg,alpha);
+
+
+
+
+// //////////////////////////////////////////////////////////////////////////////////
+    mult_BfT(lambda,yy);
+    for (int d = 0; d < nSubClst;d++){
+        for (int i = 0; i < yy[d].n_row_cmprs; i++){
+            yy[d].dense[i] = rhs[d].dense[i] - yy[d].dense[i];
+        }
+    }
+    mult_Kplus_f(yy,xx);
+    for (int d = 0; d < nSubClst;d++){
+        Matrix Rf_alpha;
+        Rf_alpha.mat_mult_dense(Rf[d],"N",alpha,"N");
+        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+            xx[d].dense[i] -= Rf_alpha.dense[i];
+        }
+    }
+    vector < double > solution;
+    solution.resize(mesh.nPoints * 3, 0 );
+
+    for (int d = 0 ; d < nSubClst; d++){
+        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+            solution[data.l2g[d][i]] = xx[d].dense[i];
+        }
+    }
+    mesh.SaveVTK(solution, folder,it);
+// //////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
 
         wFPg = Matrix::dot(Fw,Pg);
 
@@ -1197,17 +1229,6 @@ void Cluster::pcpg(){
         w.add(w_prev,gamma);
     }
 
-
-
-    mult_BfT(lambda,xx);
-
-    for (int d = 0; d < nSubClst;d++){
-        for (int i = 0; i < xx[d].n_row_cmprs; i++){
-            xx[d].dense[i] = rhs[d].dense[i] - xx[d].dense[i];
-        }
-    }
-
-    mult_Kplus_f(xx,yy);
 
 
 

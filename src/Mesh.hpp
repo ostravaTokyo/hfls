@@ -57,6 +57,7 @@ public:
     vector < int > DirichletDOFs;
     void createMesh(const Options &);
     Material material;
+    void SaveVTK(vector < double > ,string, int);
 };
 
 

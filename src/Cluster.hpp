@@ -89,7 +89,7 @@ public:
     void mult_Gf(Matrix const &, Matrix &);
     void mult_GfT(Matrix const &, Matrix &);
     void mult_RfT(vector < Matrix > const &, Matrix &);
-    void Project(Matrix const & , Matrix &);
+    void Project(Matrix const & , Matrix &, Matrix &);
 
 
     void pcpg();

@@ -219,3 +219,57 @@ void Mesh::createMesh(const Options &options){
 //        //nSubClst = nSubXYZ[0] * nSubXYZ[1] + nSubXYZ[2];
 //
 //}
+
+void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
+
+  // saving VTK --------------------------------------
+  //clock_t begin = clock();
+//#ifndef WIN32
+//  mode_t mode = 0777;
+//  mkdir("data", mode);
+//#endif
+
+  string filename = str0 + "/box" + to_string(iter) + ".vtk";
+  FILE *fVTK = NULL;
+  fVTK = fopen(filename.c_str(), "w");
+  fprintf(fVTK, "# vtk DataFile Version 3.0\n");
+  fprintf(fVTK, "vtk output\n");
+  fprintf(fVTK, "ASCII\n\n");
+  fprintf(fVTK, "DATASET UNSTRUCTURED_GRID\n");
+  fprintf(fVTK, "POINTS %d float\n", nPoints);
+  for (int i = 0; i < nPoints; i++) {
+    fprintf(fVTK, "%f %f %f\n", points[i].x,points[i].y, points[i].z);
+  }
+  int k1 = nElementsClst * 9;
+  fprintf(fVTK, "CELLS %d %d\n", nElementsClst, k1);
+  for (int i = 0; i < nElementsClst; i++) {
+    fprintf(fVTK, "%d ", 8);
+    for (int j = 0; j < 8; j++) {
+      fprintf(fVTK, "% d", elements[i].ind[j]);
+    }
+    fprintf(fVTK, "\n");
+  }
+  fprintf(fVTK, "CELL_TYPES %d\n", nElementsClst);
+  for (int i = 0; i < nElementsClst; i++) {
+    fprintf(fVTK, "%d\n", 12);
+  }
+  fprintf(fVTK, "POINT_DATA %d\n", nPoints);
+  fprintf(fVTK, "SCALARS displacements float 3\n");
+  fprintf(fVTK, "LOOKUP_TABLE my_table\n");
+//#ifdef flag_Fortran
+  for (int i = 0; i < nPoints; i++) {
+//    fprintf(fVTK, "%f %f %f\n",0 ,0 ,0 );
+    fprintf(fVTK, "%f %f %f\n", solution[3 * i + 0],
+                                solution[3 * i + 1],
+                                solution[3 * i + 2]);
+  }
+//#endif
+  fprintf(fVTK, "\nCELL_DATA %d\n",nElementsClst);
+  fprintf(fVTK, "SCALARS decomposition int 1\n");
+  fprintf(fVTK, "LOOKUP_TABLE decomposition\n");
+  for (int i = 0; i < nElementsClst; i++) {
+    fprintf(fVTK, "%d\n", elements[i].PartitionId);
+  }
+  fclose(fVTK);
+
+}

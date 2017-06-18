@@ -1475,25 +1475,25 @@ void Matrix::test_K_Kp_K_condition(Matrix &Ks){
     solve_system(K_dense,Kplus_K);
 
 
-    if (label == "stiffness matrix"){
-
-        Matrix ONES, KplusONES;
-        int d = order_number;
-        bool printCooOrDense = true;
-        string folder = "../data/";
-        ONES.zero_dense(n_row_cmprs,1);
-        for (int i =0; i < n_row_cmprs; i++)
-            ONES.dense[i] = 1;
-        solve_system(ONES,KplusONES);
-        ONES.printToFile("ONES",folder,d,printCooOrDense);
-        KplusONES.printToFile("KplusONES",folder,d,printCooOrDense);
-
-        if (d == 0){
-            for (int i = 0; i < n_row_cmprs; i++)
-                cout << KplusONES.dense[i] << endl;
-
-        }
-    }
+//    if (label == "stiffness matrix"){
+//
+//        Matrix ONES, KplusONES;
+//        int d = order_number;
+//        bool printCooOrDense = true;
+//        string folder = "../data/";
+//        ONES.zero_dense(n_row_cmprs,1);
+//        for (int i =0; i < n_row_cmprs; i++)
+//            ONES.dense[i] = 1;
+//        solve_system(ONES,KplusONES);
+//        ONES.printToFile("ONES",folder,d,printCooOrDense);
+//        KplusONES.printToFile("KplusONES",folder,d,printCooOrDense);
+//
+//        if (d == 0){
+//            for (int i = 0; i < n_row_cmprs; i++)
+//                cout << KplusONES.dense[i] << endl;
+//
+//        }
+//    }
 
 
 

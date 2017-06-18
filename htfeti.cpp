@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
                 /* print_matrices  = 1 : clust. objects (GcTGc, Fc, Ac)*/
                 /* print_matrices  = 2 : print all previous + K, Bc, Fc_sub, Gc_sub ...  */
                 /* print_matrices  = 3 : print all previous + BcT_dense, BcT_dense_new, ...  */
-    int print_matrices = 3;
+    int print_matrices = 0;
                 /* Ac matrix with or withour regularization */
     bool Ac_extended_by_kerGc = true;
 
