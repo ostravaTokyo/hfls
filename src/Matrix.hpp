@@ -84,7 +84,6 @@ public:
 
     void mult(const Matrix &, Matrix &, bool);
     void mult(const double[], double [] , bool, int,int);
-    void CsrElementByElement();
     void COO2CSR();
     void CSR2COO();
     void CSRorCOO2DNS(bool, bool);
@@ -108,6 +107,7 @@ public:
     MKL_INT n;
     void *pt[64];
     MKL_INT maxfct, mnum, phase, error, msglvl;
+    MKL_INT n1_p;
 
     double  ddum;            /* Double dummy */
     MKL_INT idum;           /* Integer dummy. */
@@ -177,7 +177,7 @@ public:
 
     static double dot(Matrix const &, Matrix const &);
     void add(Matrix &,double);
-    void test_K_Kp_K_condition();
+    void test_K_Kp_K_condition(Matrix &);
 
 };
 #endif

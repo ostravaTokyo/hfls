@@ -39,6 +39,7 @@ int printMat = options.print_matrices;
     Gf.resize(nSubClst);
     Lumped.resize(nSubClst);
 
+
     cout << "assembling of K, f ... \n" ;
     data.fe_assemb_local_K_f(mesh);
     cout << "symbolic factorization etc. ... \n" ;
@@ -69,18 +70,15 @@ int printMat = options.print_matrices;
         //      K non-singular
         // if solver == 1 (dissection), martirx R is empty and it is created during the factorization
         R[d].label = "kerK";
-
-
-
+//        Matrix Ksing = K[d];
         K[d].num_factor(R[d],checkOrthogonality);
-
-        K[d].test_K_Kp_K_condition();
+//        K[d].test_K_Kp_K_condition(Ksing);
 
 
       //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       //!
 
-#if 1
+#if 0
             Matrix K_dense,Kplus_K,K_Kplus_K;
             K_dense = K[d]; K_dense.label = "K_dense";
             K_dense.CSRorCOO2DNS(false,false);
@@ -168,20 +166,11 @@ int printMat = options.print_matrices;
         BcT_dense[d].dense = Bc_tmp.dense;
         BcT_dense[d].label = "BcT_dense";
 
-
-
         if (printMat > 2){
             BcT_dense[d].printToFile("BcT_dense",folder,d,printCooOrDense);
             BcT_dense[d].getBasicMatrixInfo();
         }
 //
-
-        // generalized inverse test || K * Kplus * K - K || / || K ||
-
-
-
-
-
         Matrix KplusBcT_dense;
         KplusBcT_dense.zero_dense(BcT_dense[d].n_row_cmprs, BcT_dense[d].n_col);
 
@@ -189,23 +178,13 @@ int printMat = options.print_matrices;
             cout << "Fc[i] (for each subdom) is being created ... \n" ;
 
         K[d].solve_system(BcT_dense[d],KplusBcT_dense);
-        //if (options.solver_opt.solver == 0){
-        //    K_reg[d].solve(BcT_dense[d],KplusBcT_dense);
-        //}
-        //else if (options.solver_opt.solver == 1 ){
-        //    K[d].diss_solve(BcT_dense[d],KplusBcT_dense);
-        //}
-
-        // TODO KplusBcT_dense will be replaced by KplusBct[d]
         KplusBcT[d] = KplusBcT_dense;
         KplusBcT[d].symmetric = 0;
-
 
         if (printMat > 2){
             KplusBcT_dense.printToFile("KplusBcT",folder,d,printCooOrDense);
             KplusBcT_dense.getBasicMatrixInfo();
         }
-
 
         Fc[d].zero_dense(Bc[d].n_row_cmprs,  Bc[d].n_row_cmprs);
         Bc[d].mult(KplusBcT_dense,Fc[d],true);
@@ -238,6 +217,10 @@ int printMat = options.print_matrices;
             R[d].printToFile("R",folder,d,printCooOrDense);
             R[d].getBasicMatrixInfo();
         }
+
+        Matrix Ksing = K[d];
+        K[d].test_K_Kp_K_condition(Ksing);
+
     }
     cout << endl;
 
@@ -250,6 +233,14 @@ int printMat = options.print_matrices;
 
     Matrix S_Fc_clust;
     Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
+
+
+    Fc_clust.sym_factor(0);
+    Matrix Fc_copy = Fc_clust;
+    Fc_clust.num_factor();
+    Fc_clust.test_K_Kp_K_condition(Fc_copy);
+
+
 
     cout << "Gc_clust is being created ... \n" ;
     create_Gc_clust();
@@ -307,11 +298,13 @@ int printMat = options.print_matrices;
 
     Ac_clust.diss_scaling = 1;
 //    Ac_clust.sym_factor(options.solver_opt.solver);
-    Ac_clust.sym_factor(0);
-    Ac_clust.getBasicMatrixInfo();
+    Ac_clust.sym_factor(1);
+  //  Ac_clust.getBasicMatrixInfo();
 
 
 
+    Matrix Ac_clust_copy;
+    Ac_clust_copy = Ac_clust;
     if (options.solver_opt.Ac_extended_by_kerGc){
         Ac_clust.diss_scaling = 1;
         Ac_clust.num_factor();
@@ -321,6 +314,7 @@ int printMat = options.print_matrices;
         ker_Ac.label = "ker_Ac";
         checkOrthogonality = true;
         Ac_clust.num_factor(ker_Ac,checkOrthogonality);
+        //Ac_clust.num_factor();
         fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
                                                     __FILE__, __LINE__, ker_Ac.n_col);
 
@@ -329,14 +323,12 @@ int printMat = options.print_matrices;
     }
 
 
-    Ac_clust.test_K_Kp_K_condition();
+    Ac_clust.test_K_Kp_K_condition(Ac_clust_copy);
 
 
 
     if (options.solver_opt.solver == 1 or true){
         //kerGc;
-
-
         create_Rf_and_Gf();
         create_GfTGf();
         GfTGf.printToFile("GfTGf",folder,0,true);
@@ -344,11 +336,7 @@ int printMat = options.print_matrices;
         invGfTGf.printToFile("iGfTGf",folder,0,true);
 
         // conjugate gradient //
-
         pcpg();
-
-
-
 
     }
 
@@ -810,9 +798,7 @@ void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fu
             }
         }
     }
-
     matrix_Bx_COO2CSR(Bc_,cntLam);
-
 }
 
 void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc,
@@ -833,7 +819,6 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
     int global_DOF;
     int ind_neigh_sub;
     int cntLam = 0;
-//    bool print2cmd = false;
     int j_col_Bc_curr;
     int j_col_Bc_neigh;
 
@@ -853,14 +838,14 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
                 it = find (mesh.DirichletDOFs.begin(), mesh.DirichletDOFs.end(), global_DOF);
                 if (it != mesh.DirichletDOFs.end()){
 
-                    j_col_Bc_curr = data.g2l[d][global_DOF];
-                    Bc_[d].l2g_i_coo.push_back(cntLam);
-                    Bc_[d].i_coo_cmpr.push_back(cntLam);
-                    Bc_[d].j_col.push_back(j_col_Bc_curr);
-                    Bc_[d].val.push_back(1);
-                    cntLam++;
-
-                    *it = -(*it);
+//                    j_col_Bc_curr = data.g2l[d][global_DOF];
+//                    Bc_[d].l2g_i_coo.push_back(cntLam);
+//                    Bc_[d].i_coo_cmpr.push_back(cntLam);
+//                    Bc_[d].j_col.push_back(j_col_Bc_curr);
+//                    Bc_[d].val.push_back(1);
+//                    cntLam++;
+//
+//                    *it = -(*it);
                     continue;
                 }
             }
@@ -891,6 +876,30 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
             }
         }
     }
+
+    if (addDirConstr){
+        for (int d = 0; d < Bc_.size(); d++){
+            for (int i = 0; i < mesh.DirichletDOFs.size();i++){
+                int dirDof = mesh.DirichletDOFs[i];
+                if (dirDof >= 0){
+                    it = find (data.l2g[d].begin(), data.l2g[d].end(), dirDof);
+                    if (it != data.l2g[d].end()){
+                        j_col_Bc_curr = data.g2l[d][dirDof];
+                        Bc_[d].l2g_i_coo.push_back(cntLam);
+                        Bc_[d].i_coo_cmpr.push_back(cntLam);
+                        Bc_[d].j_col.push_back(j_col_Bc_curr);
+                        Bc_[d].val.push_back(1);
+                        cntLam++;
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+
 
     matrix_Bx_COO2CSR(Bc_,cntLam);
 

@@ -49,7 +49,7 @@ def load_matrix(path,str0,i,j,makeSparse,makeSymmetric,offset):
     return tmp
 
 path0 = "../data"
-nSub = 4
+nSub = 8
 
 
 
@@ -178,6 +178,9 @@ for i in range(nSub - 1):
     else:
         Gf_g += Gf_p[i+1]
 
+
+
+
 #Fc__ = np.dot(Bc_g,np.linalg.solve(K_regD,Bc_g.T))
 #
 #
@@ -298,24 +301,26 @@ for i in range(nSub - 1):
 ##BcT_dense = load_matrix(path0,"dump_BcT_dense_","",str(0),True,True,1) 
 #
 #
-K_test= []
-Kplus_K_test = []
-K_Kplus_K_test = []
-K_reg_test = []
-K_reg_SF = []
-x_test = []
-for i in range(4): 
-    K_test.append(load_matrix(path0,"dump_K_dense_","",str(i),False,True,1))
-    K_reg_test.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
-    K_reg_SF.append(load_matrix(path0,"dump_K_reg_SF_","",str(i),False,True,1)) 
-    Kplus_K_test.append(load_matrix(path0,"dump_Kplus_K_","",str(i),False,False,1))
-    K_Kplus_K_test.append(load_matrix(path0,"dump_K_Kplus_K_","",str(i),False,False,1))
-
-    #KKpK = np.dot(K_test[i], np.linalg.solve(K_reg_test[i],K_test[i]))
-    KKpK = np.dot(K[i], np.linalg.solve(K_reg[i],K[i]))
-    print "norm = %3.8e \n" % np.linalg.norm(KKpK - K[i])
-    x_test.append(load_matrix(path0,"dump_x_tmp_","",str(i),False,False,1))
-
+#K_test= []
+#Kplus_K_test = []
+#K_Kplus_K_test = []
+#K_reg_test = []
+#K_reg_SF = []
+#x_test = []
+#
+#
+#for i in range(4): 
+#
+#    K_test.append(load_matrix(path0,"dump_K_dense_","",str(i),False,True,1))
+#    K_reg_test.append(load_matrix(path0,"dump_K_reg_","",str(i),False,True,1)) 
+#    K_reg_SF.append(load_matrix(path0,"dump_K_reg_SF_","",str(i),False,True,1)) 
+#    Kplus_K_test.append(load_matrix(path0,"dump_Kplus_K_","",str(i),False,False,1))
+#    K_Kplus_K_test.append(load_matrix(path0,"dump_K_Kplus_K_","",str(i),False,False,1))
+#
+#    #KKpK = np.dot(K_test[i], np.linalg.solve(K_reg_test[i],K_test[i]))
+#    KKpK = np.dot(K[i], np.linalg.solve(K_reg[i],K[i]))
+#    print "norm = %3.8e \n" % np.linalg.norm(KKpK - K[i])
+#
 
 
 #

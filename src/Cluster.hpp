@@ -27,7 +27,6 @@ public:
     string folder;
     std::vector< Matrix> K;
     std::vector< Matrix> rhs;
-    std::vector< Matrix> K_reg;
     std::vector< Matrix> Lumped;
     std::vector< Matrix> R;
     std::vector< Matrix> Fc;
