@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
                  * 0: corners,
                  * 1: zero and first approx. (ker),
                  * 2: all nodes on interf.)*/
-    int typeBc = 1;
+    int typeBc = 2;
 
                 /* if true, matrix Bc (corners) is full column rank */
                 /*          matrix Bc (zero and first approx.) is full column rank matrix if
@@ -33,13 +33,13 @@ int main(int argc, char *argv[]){
                 /* print_matrices  = 1 : clust. objects (GcTGc, Fc, Ac)*/
                 /* print_matrices  = 2 : print all previous + K, Bc, Fc_sub, Gc_sub ...  */
                 /* print_matrices  = 3 : print all previous + BcT_dense, BcT_dense_new, ...  */
-    int print_matrices = 0;
+    int print_matrices = 3;
                 /* Ac matrix with or withour regularization */
     bool Ac_extended_by_kerGc = true;
 
                 /* sparse-BLOCK or dense assembling of GcTGc matrix */
     bool GcTGc_assembl_block_by_block= true;
-    bool create_analytic_ker_K = false;
+    bool create_analytic_ker_K = true;
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------

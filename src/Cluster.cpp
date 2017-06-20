@@ -894,7 +894,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         cntR += R[d].n_col;
     }
 
-//    gc.printToFile("gc",folder,0,true);
+    gc.printToFile("gc",folder,0,true);
 
     Matrix lam_alpha;
     lam_alpha = gc;
@@ -903,7 +903,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
 
     Ac_clust.solve_system(gc,lam_alpha);
 
-//    lam_alpha.printToFile("lam_alpha",folder,0,true);
+    lam_alpha.printToFile("lam_alpha",folder,0,true);
 
 
 
@@ -912,9 +912,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         Matrix lamc;
         lamc.zero_dense(Bc[d].n_row_cmprs,1);
         for (int i = 0; i < Bc[d].n_row_cmprs;i++){
-//           lamc.dense[i] = lam_alpha.dense[Bc[d].g2l_i_coo[i]];
            lamc.dense[i] = lam_alpha.dense[Bc[d].l2g_i_coo[i]];
- //          cout << " d: " << d << " Bc[d].l2g_i_coo[i] " << Bc[d].g2l_i_coo[i]<< endl;
         }
         Matrix KplusBcTlamc;
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
@@ -935,14 +933,15 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
         Ralphac.mat_mult_dense(R[d],"N",alphac_d,"N");
         cntR += R[d].n_col;
 
+
         if (x_out[d].numel == 0)
             x_out[d].zero_dense(K[d].n_row_cmprs);
 
 
         for (int i = 0; i < x_out[d].n_row_cmprs; i++){
-            x_out[d].dense[i] = Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
-//            x_out[d].printToFile("x_out",folder,d,true);
+            x_out[d].dense[i] =  Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
         }
+//        x_out[d].printToFile("x_out",folder,d,true);
     }
 }
 
@@ -1042,7 +1041,7 @@ void Cluster::mult_Bf(vector < Matrix > const &x_in, Matrix &lambda ){
         Matrix Bf_x_d;
         Bf[d].mult(x_in[d],Bf_x_d, true);
         for (int i = 0; i < Bf_x_d.n_row_cmprs; i++){
-            lambda.dense[Bf[d].l2g_i_coo[i]] =  Bf_x_d.dense[i];
+            lambda.dense[Bf[d].l2g_i_coo[i]] +=  Bf_x_d.dense[i];
         }
     }
 
@@ -1218,6 +1217,10 @@ void Cluster::pcpg(){
     xx[0].label = "test";
     mult_Kplus_f(rhs,xx);
 
+    for (int d = 0; d < nSubClst; d++){
+        xx[d].printToFile("xx_drhs",folder,d,true);
+    }
+
 
 // //////////////////////////////////////////////////////////////////////////////////
 //    vector < double > solution;
@@ -1234,6 +1237,7 @@ void Cluster::pcpg(){
 
     mult_Bf(xx,d_rhs);
 
+    d_rhs.printToFile("d_rhs",folder,0,true);
 //    for (int d = 0; d < nSubClst; d++){
 //       mult_Kplus_f(Rf,xx);
 //       xx[d].printToFile("Kplus_f_Rf",folder,d,true);
@@ -1248,7 +1252,6 @@ void Cluster::pcpg(){
 //        e.dense[i] *= -1;
 
 
-    e.printToFile("e",folder,0,true);
 
 
 
