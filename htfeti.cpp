@@ -12,17 +12,17 @@ int main(int argc, char *argv[]){
     string path2data = "../data/";
 
                 /* material constants */
-    double young_modulus = 10000;
+    double young_modulus = 1000;
     double poissons_ratio = 0.3;
 
                 /* linear solver */
-    double pardiso_0_dissection_1 = 1;
+    double pardiso_0_dissection_1 = 0;
 
                 /* type of Bc matrix
                  * 0: corners,
                  * 1: zero and first approx. (ker),
                  * 2: all nodes on interf.)*/
-    int typeBc = 2;
+    int typeBc = 1;
 
                 /* if true, matrix Bc (corners) is full column rank */
                 /*          matrix Bc (zero and first approx.) is full column rank matrix if
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
                 /* print_matrices  = 1 : clust. objects (GcTGc, Fc, Ac)*/
                 /* print_matrices  = 2 : print all previous + K, Bc, Fc_sub, Gc_sub ...  */
                 /* print_matrices  = 3 : print all previous + BcT_dense, BcT_dense_new, ...  */
-    int print_matrices = 3;
+    int print_matrices = 0;
                 /* Ac matrix with or withour regularization */
     bool Ac_extended_by_kerGc = true;
 
@@ -43,6 +43,7 @@ int main(int argc, char *argv[]){
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
+
 
     cout << argv[0] << endl;
     Options options;

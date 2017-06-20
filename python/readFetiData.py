@@ -66,7 +66,7 @@ if 1:
     Bf = []
     BcT_dense = []
     Gc = []
-    Gf = []
+#    Gf = []
     Gf_p = []
 
     Gc = []
@@ -109,7 +109,7 @@ if 1:
 #        Lumped.append(load_matrix(path0,"dump_Lumped_","",str(i),False,False,1))
         BcT_dense.append(load_matrix(path0,"dump_BcT_dense_","",str(i),False,False,1))
         Gc.append(load_matrix(path0,"dump_Gc_","",str(i),False,False,1))
-        Gf.append(load_matrix(path0,"dump_Gf_","",str(i),False,False,1))
+#        Gf.append(load_matrix(path0,"dump_Gf_","",str(i),False,False,1))
 
         indBc = np.abs(Bc[i]).sum(axis=1)>0
         Bc_nonzRow.append( Bc[i][indBc,:])
