@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     double poissons_ratio = 0.3;
 
                 /* linear solver */
-    double pardiso_0_dissection_1 = 0;
+    double pardiso_0_dissection_1 = 1;
 
                 /* type of Bc matrix
                  * 0: corners,
@@ -39,6 +39,7 @@ int main(int argc, char *argv[]){
 
                 /* sparse-BLOCK or dense assembling of GcTGc matrix */
     bool GcTGc_assembl_block_by_block= true;
+    bool create_analytic_ker_K = false;
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
@@ -49,7 +50,7 @@ int main(int argc, char *argv[]){
                         young_modulus, poissons_ratio,
                         pardiso_0_dissection_1,print_matrices,
                        typeBc, Ac_extended_by_kerGc, GcTGc_assembl_block_by_block,
-                       Bc_fullRank);
+                       Bc_fullRank,create_analytic_ker_K);
     Cluster cluster(options);
     cout << "----------------- done -----------------\n" ;
     return 0;

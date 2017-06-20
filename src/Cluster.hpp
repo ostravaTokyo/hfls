@@ -91,6 +91,7 @@ public:
     void mult_RfT(vector < Matrix > const &, Matrix &);
     void Project(Matrix const & , Matrix &, Matrix &);
 
+    void mult_Ff(Matrix const &, Matrix &);
 
     void pcpg();
 

@@ -41,7 +41,7 @@ Cluster::Cluster(Options options_)
     data.feti_numeric(mesh,K,rhs);
     cout << "ker(K) is being created ... \n" ;
 
-    if (options.solver_opt.solver == 0){
+    if (options.solver_opt.create_analytic_ker_K){
         data.create_analytic_ker_K(mesh,R);
     }
 
@@ -58,11 +58,7 @@ Cluster::Cluster(Options options_)
     for (int d = 0; d < K.size(); d++){
         K[d].order_number = d;
         K[d].options = options;
-        //K[d].sym_factor(options.solver_opt.solver);
-        K[d].sym_factor(1);
-        // if solver == 0 (pardiso), matrix R already exists (give by analytic. formula) and it is used to make
-        //      K non-singular
-        // if solver == 1 (dissection), martirx R is empty and it is created during the factorization
+        K[d].sym_factor(options.solver_opt.solver);
         R[d].label = "kerK";
 //        Matrix Ksing = K[d];
         K[d].num_factor(R[d],checkOrthogonality);
@@ -266,18 +262,17 @@ Cluster::Cluster(Options options_)
 
 
 
-    if (options.solver_opt.solver == 1 or true){
-        //kerGc;
-        create_Rf_and_Gf();
-        create_GfTGf();
-        GfTGf.printToFile("GfTGf",folder,0,true);
-        compute_invGfTGf();
-        invGfTGf.printToFile("iGfTGf",folder,0,true);
+      //kerGc;
+      create_Rf_and_Gf();
+      create_GfTGf();
+      Gf_clust.printToFile("Gf_clust",folder,0,true);
+      GfTGf.printToFile("GfTGf",folder,0,true);
+      compute_invGfTGf();
+      invGfTGf.printToFile("iGfTGf",folder,0,true);
 
-        // conjugate gradient //
-        pcpg();
+      // conjugate gradient //
+      pcpg();
 
-    }
 
 
 
@@ -835,11 +830,6 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
         }
     }
 
-
-
-
-
-
     matrix_Bx_COO2CSR(Bc_,cntLam);
 
 }
@@ -957,6 +947,89 @@ void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out)
 }
 
 
+
+//void Cluster::mult_Kplus_f(vector < Matrix > & f_in , vector < Matrix > & x_out){
+
+
+
+void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
+
+    // gc will be allocated onece at the beginning of Cluster.cpp //
+
+
+    vector < Matrix > xx, yy;
+    xx.resize(nSubClst); yy.resize(nSubClst);
+
+    mult_BfT(w,xx);
+
+    for (int d = 0; d < nSubClst; d++)
+        K[d].solve_system(xx[d],yy[d]);
+    mult_Bf(yy,Fw);
+
+    Matrix gc;
+    int ngc = nLam_c + nRBM_c;
+
+    if (options.solver_opt.Ac_extended_by_kerGc)
+        ngc += nRBM_f;
+
+    gc.zero_dense(ngc);
+
+    for (int d = 0; d < nSubClst; d++){
+        Matrix BcKplusfc;
+        BcKplusfc.mat_mult_dense(KplusBcT[d],"T",xx[d],"N");
+        for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
+            gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
+        }
+    }
+
+    int cntR = 0;
+    for (int d = 0; d < nSubClst; d++){
+        Matrix Rtfc;
+        Rtfc.mat_mult_dense(R[d],"T",xx[d],"N");
+        for (int i = 0 ; i < R[d].n_col; i++){
+            gc.dense[nLam_c + cntR + i] = -Rtfc.dense[i];
+        }
+        cntR += R[d].n_col;
+    }
+
+    Matrix lam_alpha;
+    lam_alpha = gc;
+    lam_alpha.setZero();
+
+    Ac_clust.solve_system(gc,lam_alpha);
+
+
+    cntR = 0;
+    for (int d = 0; d < nSubClst ; d++){
+        Matrix lamc;
+        lamc.zero_dense(Bc[d].n_row_cmprs,1);
+        for (int i = 0; i < Bc[d].n_row_cmprs;i++){
+           lamc.dense[i] = lam_alpha.dense[Bc[d].l2g_i_coo[i]];
+        }
+        Matrix KplusBcTlamc;
+        KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
+
+        Matrix alphac_d; alphac_d.zero_dense(R[d].n_col,1);
+        for (int i = 0; i < R[d].n_col; i++){
+            alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
+        }
+        xx[d].mat_mult_dense(R[d],"N",alphac_d,"N");
+        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+            xx[d].dense[i] -= KplusBcTlamc.dense[i];
+        }
+        cntR += R[d].n_col;
+    }
+
+
+
+    Matrix w1;
+    mult_Bf(xx,w1);
+    Fw.add(w1,1);
+}
+
+
+
+
 void Cluster::mult_Bf(vector < Matrix > const &x_in, Matrix &lambda ){
 
 
@@ -1000,10 +1073,10 @@ void Cluster::create_GfTGf(){
     Gf_clust.zero_dense(nLam_f,Rf[0].n_col);
 
     for (int d = 0; d < nSubClst; d++){
-        for (int j = 0 ; j < Gf[d].n_col; j ++){
-            for (int i = 0 ; i < Gf[d].n_row_cmprs; i ++){
+        for (int j = 0 ; j < Gf[d].n_col; j++){
+            for (int i = 0 ; i < Gf[d].n_row_cmprs; i++){
                 Gf_clust.dense[Bf[d].l2g_i_coo[i] + j * Gf_clust.n_row_cmprs] +=
-                        Gf[d].dense[i + j * Gf[d].n_row_cmprs];
+                    Gf[d].dense[i + j * Gf[d].n_row_cmprs];
             }
         }
     }
@@ -1075,21 +1148,24 @@ void Cluster::mult_RfT(vector < Matrix > const &x_in, Matrix & alpha){
         Matrix alpha_d;
         alpha_d.mat_mult_dense(Rf[d],"T",x_in[d],"N");
         for (int i = 0; i < alpha_d.n_row_cmprs; i++){
-            alpha.dense[i] = alpha_d.dense[i];
+            alpha.dense[i] += alpha_d.dense[i];
         }
     }
 }
 
-void Cluster::Project(Matrix const & lam, Matrix & proj_lam, Matrix & alpha){
+void Cluster::Project(Matrix const & x, Matrix & Px, Matrix & alpha){
 
-    proj_lam = lam;
-    Matrix beta;
-    mult_GfT(lam,beta);
-    alpha.mat_mult_dense(invGfTGf,"N",beta,"N");
-    mult_Gf(alpha,proj_lam);
+    Px = x;
+    Matrix GfTx;
+    mult_GfT(x,GfTx);
+    alpha.mat_mult_dense(invGfTGf,"N",GfTx,"N");
+    mult_Gf(alpha,Px);
 
-    for (int i = 0; i < lam.n_row_cmprs; i++)
-        proj_lam.dense[i] = lam.dense[i] - proj_lam.dense[i];
+    for (int i = 0; i < x.n_row_cmprs; i++)
+        Px.dense[i] = x.dense[i] - Px.dense[i];
+
+    for (int i = 0 ; i < alpha.n_row_cmprs;i++)
+        alpha.dense[i] *= 1;
 
 
 }
@@ -1108,16 +1184,23 @@ void Cluster::create_Rf_and_Gf(){
         }
         cntR += R[d].n_col;
         Rf[d].mat_mult_dense(R[d],"N",Hd,"N");
-//        Rf[d].printToFile("Rf",folder,d,true);
+        Rf[d].printToFile("Rf",folder,d,true);
         int n_rowGf = Bf[d].n_row_cmprs;
         int n_colGf = Rf[d].n_col;
         //TODO Gf (as vector) is no need to keep in the memory
         // later replace by Gf_clust (is already in create GfTGf)
         Gf[d].zero_dense(n_rowGf, n_colGf );
         Bf[d].mult(Rf[d],Gf[d],true);
-//        Gf[d].printToFile("Gf",folder,d,true);
+        Gf[d].printToFile("Gf",folder,d,true);
     }
 }
+
+
+
+
+
+
+
 
 
 
@@ -1128,27 +1211,70 @@ void Cluster::pcpg(){
     Matrix g0, d_rhs, e, iGTG_e, lambda;
     Matrix Fw, Pg, g, w, w_prev;
     vector < Matrix > xx, yy;
+    Matrix alpha;
     xx.resize(nSubClst); yy.resize(nSubClst);
     // d_rhs = B * Kplus * f
+
     xx[0].label = "test";
     mult_Kplus_f(rhs,xx);
-#if 1
+
+
+// //////////////////////////////////////////////////////////////////////////////////
+//    vector < double > solution;
+//    solution.resize(mesh.nPoints * 3, 0 );
+//
+//    for (int d = 0 ; d < nSubClst; d++){
+//        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+//            solution[data.l2g[d][i]] = xx[d].dense[i];
+//        }
+//    }
+//    mesh.SaveVTK(solution, folder,100000);
+// //////////////////////////////////////////////////////////////////////////////////
+
+
     mult_Bf(xx,d_rhs);
-    // e = Rt * f
+
+//    for (int d = 0; d < nSubClst; d++){
+//       mult_Kplus_f(Rf,xx);
+//       xx[d].printToFile("Kplus_f_Rf",folder,d,true);
+//    }
+
+    bool new_feti_operator = false;
+
+#if 1
+    // e = -Rt * f
     mult_RfT(rhs,e);
+//    for (int i = 0; i < e.n_row_cmprs; i++)
+//        e.dense[i] *= -1;
+
+
+    e.printToFile("e",folder,0,true);
+
+
+
     // lambda0 = G * inv(GtG) * e
     iGTG_e.mat_mult_dense(invGfTGf,"N",e,"N");
     mult_Gf(iGTG_e, lambda);
+
+
+
+//    Matrix test; Project(lambda,test,alpha); test.printToFile("testXYZ",folder,0,true);
+
+
     // F * lambda0
-    mult_BfT(lambda,xx);
-    mult_Kplus_f(xx,yy);
-    mult_Bf(yy,g0);
+    if (new_feti_operator){
+        mult_Ff(lambda,g0);
+    }
+    else{
+        mult_BfT(lambda,xx);
+        mult_Kplus_f(xx,yy);
+        mult_Bf(yy,g0);
+    }
     // g0 = F * lambda0 - d_rhs
     g0.add(d_rhs,-1);
 
     g = g0;
 
-    Matrix alpha;
     // Pg0
     Project(g,Pg,alpha);
 
@@ -1167,9 +1293,14 @@ void Cluster::pcpg(){
         if (sqrt(gPg) < 1e-4 * norm_gPg0)
             break;
         // F * w
-        mult_BfT(w,xx);
-        mult_Kplus_f(xx,yy);
-        mult_Bf(yy,Fw);
+        if (new_feti_operator){
+            mult_Ff(w,Fw);
+        }
+        else{
+            mult_BfT(w,xx);
+            mult_Kplus_f(xx,yy);
+            mult_Bf(yy,Fw);
+        }
 
         wFw = Matrix::dot(w,Fw);
 
@@ -1211,13 +1342,6 @@ void Cluster::pcpg(){
     }
     mesh.SaveVTK(solution, folder,it);
 // //////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
 
         wFPg = Matrix::dot(Fw,Pg);
 

@@ -6,7 +6,7 @@ from scipy.linalg import block_diag
 #
 #
 
-nSub = 4
+nSub = 2
 def load_matrix_basic(pathToFile,makeSparse,makeSymmetric, offset):
     f0 = open(pathToFile).readlines()
     firstLine = f0.pop(0) #removes the first line
@@ -87,8 +87,8 @@ if 1:
 
     K_UT = []
 
-    x_out = []
-    x_out_p = []
+#    x_out = []
+#    x_out_p = []
 #    Lumped = []
 #    Lumped = []
 
@@ -132,7 +132,7 @@ if 1:
         KplusBcT_p.append(np.linalg.solve(K_reg[i],Bc_nonzRow[i].T))
 #        BcKplus_tmp.append(np.linalg.solve(K_reg[i],Bc[i].T).T)
 
-        x_out.append(load_matrix(path0,"dump_x_out_","",str(i),False,False,1))
+#        x_out.append(load_matrix(path0,"dump_x_out_","",str(i),False,False,1))
         
         Fc_p.append(np.dot(Bc_nonzRow[i],KplusBcT_p[i]))
 
@@ -155,32 +155,33 @@ if 1:
 
         print(' ...%d '%(i))
 
-    gc_p = np.concatenate((g_p,e_p)) 
-    gc_p = np.concatenate((gc_p,np.zeros(6))) 
+#    gc_p = np.concatenate((g_p,e_p)) 
+#    gc_p = np.concatenate((gc_p,np.zeros(6))) 
 
     Gc_clust = load_matrix(path0,"dump_Gc_clust_","",str(0),False,False,1)
     Ac_clust = load_matrix(path0,"dump_Ac_clust_","",str(0),False,True,1)
-    Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),False,True,1)
-    gc = load_matrix(path0,"dump_gc_","",str(0),False,False,1)
-    lam_alpha = load_matrix(path0,"dump_lam_alpha_","",str(0),False,False,1)
+    Fc_clust = load_matrix(path0,"dump_Fc_clust_","",str(0),False,True,1) 
+    ker_GcTGc = load_matrix(path0,"dump_kerGc_","",str(0),False,False,1) 
+#    gc = load_matrix(path0,"dump_gc_","",str(0),False,False,1)
+#    lam_alpha = load_matrix(path0,"dump_lam_alpha_","",str(0),False,False,1)
 
 
-    lam_alpha_p = np.linalg.solve(Ac_clust, gc)
+#    lam_alpha_p = np.linalg.solve(Ac_clust, gc)
 
-    nLam = Bc[0].shape[0]
-    lam_p = lam_alpha_p[0:nLam]
-    alpha_p = lam_alpha[nLam:]
-    for i in range(nSub): 
-        print (" ! %d " % (i))
-        x10 = np.linalg.solve(K_reg[i],rhs[i])
-        x11 = np.linalg.solve(K_reg[i],np.dot(Bc[i].T,lam_p))
+#    nLam = Bc[0].shape[0]
+#    lam_p = lam_alpha_p[0:nLam]
+##    alpha_p = lam_alpha[nLam:]
+#    for i in range(nSub): 
+#        print (" ! %d " % (i))
+#        x10 = np.linalg.solve(K_reg[i],rhs[i])
+#        x11 = np.linalg.solve(K_reg[i],np.dot(Bc[i].T,lam_p))
+#
+#        print alpha_p[(6*i):(6*(i+1))]
+#        x2 = np.dot(R[i],alpha_p[(6*i):(6*(i+1))]) 
+#
+#        x_out_p.append(x10 - x11 + x2)
 
-        print alpha_p[(6*i):(6*(i+1))]
-        x2 = np.dot(R[i],alpha_p[(6*i):(6*(i+1))]) 
-
-        x_out_p.append(x10 - x11 + x2)
-
-        print( "||x_out - x_out_p || = %e " % np.linalg.norm(x_out[i] - x_out_p[i]))
+#        print( "||x_out - x_out_p || = %e " % np.linalg.norm(x_out[i] - x_out_p[i]))
 
 
 
@@ -191,10 +192,11 @@ if 1:
     print ( Z.shape)
     Ac_clust_python = np.vstack((Ac_clust_python,Z))
 
+    Gf_clust = load_matrix(path0,"dump_Gf_clust_","",str(0),False,False,1)
+#    test = load_matrix(path0,"dump_testXYZ_","",str(0),False,False,1)
 
 
-
-    KpOnes= load_matrix(path0,"dump_KplusONES_","",str(0),False,False,1)
+#    KpOnes= load_matrix(path0,"dump_KplusONES_","",str(0),False,False,1)
 
 
 #K_regD = K_reg[0]
@@ -287,7 +289,6 @@ for i in range(nSub - 1):
 #GcTGc = load_matrix(path0,"dump_GcTGc_clust_","",str(0),False,True,1) 
 #GfTGf = load_matrix(path0,"dump_GfTGf_","",str(0),False,False,1) 
 #iGfTGf = load_matrix(path0,"dump_iGfTGf_","",str(0),False,False,1) 
-#ker_GcTGc = load_matrix(path0,"dump_kerGc_","",str(0),False,False,1) 
 #ker_Ac = load_matrix(path0,"dump_ker_Ac_","",str(0),False,False,1) 
 ##KpBcT0 = load_matrix(path0,"dump_KplusBcT_","",str(0),False,False,1) 
 ##KpBcT1 = load_matrix(path0,"dump_KplusBcT_","",str(1),False,False,1) 

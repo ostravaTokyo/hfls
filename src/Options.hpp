@@ -10,6 +10,7 @@ public:
     bool Bc_fullRank;
     bool Ac_extended_by_kerGc;
     bool GcTGc_assembl_block_by_block;
+    bool create_analytic_ker_K;
 };
 
 
@@ -23,7 +24,7 @@ class Options {
     public:
         int print_matrices;
         std::string  path2data;
-        void set_values(std::string, int, char*[], double, double, int,int,int,bool,bool,bool);
+        void set_values(std::string, int, char*[], double, double, int,int,int,bool,bool,bool,bool);
         CubeMesh meshSetting;
         double young_modulus;
         double poissons_ratio;

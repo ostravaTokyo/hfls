@@ -80,16 +80,16 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_){
             R.dense[3 * i + 2 + n * 5] =  y;
         }
 
-        for (int j = 0; j < R.n_col; j++){
-            double norm_2 = 0;
-            for (int i = 0; i < R.n_row; i++){
-               norm_2 += R.dense[i + n * j] *  R.dense[i + n * j];
-            }
-            norm_2 = sqrt(norm_2);
-            for (int i = 0; i < R.n_row; i++){
-               R.dense[i + n * j] /= norm_2;
-            }
-        }
+//        for (int j = 0; j < R.n_col; j++){
+//            double norm_2 = 0;
+//            for (int i = 0; i < R.n_row; i++){
+//               norm_2 += R.dense[i + n * j] *  R.dense[i + n * j];
+//            }
+//            norm_2 = sqrt(norm_2);
+//            for (int i = 0; i < R.n_row; i++){
+//               R.dense[i + n * j] /= norm_2;
+//            }
+//        }
 
     }
 }
