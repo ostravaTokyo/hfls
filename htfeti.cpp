@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     double poissons_ratio = 0.3;
 
                 /* linear solver */
-    double pardiso_0_dissection_1 = 0;
+    double pardiso_0_dissection_1 = 1;
 
                 /* type of Bc matrix
                  * 0: corners,
@@ -35,11 +35,11 @@ int main(int argc, char *argv[]){
                 /* print_matrices  = 3 : print all previous + BcT_dense, BcT_dense_new, ...  */
     int print_matrices = 0;
                 /* Ac matrix with or withour regularization */
-    bool Ac_extended_by_kerGc = true;
+    bool Ac_extended_by_kerGc = false;
 
                 /* sparse-BLOCK or dense assembling of GcTGc matrix */
     bool GcTGc_assembl_block_by_block= true;
-    bool create_analytic_ker_K = true;
+    bool create_analytic_ker_K = false;
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------

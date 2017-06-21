@@ -1271,7 +1271,7 @@ void Cluster::pcpg(){
 
 
         gPg = Matrix::dot(Pg,Pg);
-        printf("it: %d,      |Pg| = %3.5e \n",it+1, sqrt(gPg) / norm_gPg0);
+        printf("it: %4d,      |Pg| = %3.9e \n",it+1, sqrt(gPg) / norm_gPg0);
 
         if (sqrt(gPg) < eps_iter * norm_gPg0)
             break;
