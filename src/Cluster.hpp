@@ -69,6 +69,7 @@ public:
     void create_GfTGf();
     void compute_invGfTGf();
 
+    vector < double > weigth;
 
     /* dual */
 
@@ -92,8 +93,12 @@ public:
     void Project(Matrix const & , Matrix &, Matrix &);
 
     void mult_Ff(Matrix const &, Matrix &);
+    void Precond(Matrix const &, Matrix &);
+    void scale(Matrix &);
 
     void pcpg();
+    void pcpg2();
+    void printVTK(vector < Matrix > &, vector < Matrix > &, Matrix &, Matrix &, int);
 
 //    static double dot(Matrix &, Matrix &);
 //    static double apb(Matrix &, Matrix &, double, double);

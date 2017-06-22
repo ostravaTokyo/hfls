@@ -10,19 +10,16 @@ int main(int argc, char *argv[]){
 
     /* data printed into */
     string path2data = "../data/";
-
                 /* material constants */
     double young_modulus = 1000;
     double poissons_ratio = 0.3;
-
                 /* linear solver */
     double pardiso_0_dissection_1 = 1;
-
                 /* type of Bc matrix
                  * 0: corners,
                  * 1: zero and first approx. (ker),
                  * 2: all nodes on interf.)*/
-    int typeBc = 1;
+    int typeBc = 0;
 
                 /* if true, matrix Bc (corners) is full column rank */
                 /*          matrix Bc (zero and first approx.) is full column rank matrix if
@@ -39,10 +36,19 @@ int main(int argc, char *argv[]){
 
                 /* sparse-BLOCK or dense assembling of GcTGc matrix */
     bool GcTGc_assembl_block_by_block= true;
-    bool create_analytic_ker_K = false;
+    bool create_analytic_ker_K = true;
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
+//
+
+    if (pardiso_0_dissection_1 == 0 && !create_analytic_ker_K){
+        cout <<"###########################################################" << endl;
+        cout << "if pardiso, kernel must be provided by analytical formula" << endl;
+        cout <<"###########################################################" << endl;
+        create_analytic_ker_K = true;
+    }
+
 
 
     cout << argv[0] << endl;
