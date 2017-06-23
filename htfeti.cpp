@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
                  * 0: corners,
                  * 1: zero and first approx. (ker),
                  * 2: all nodes on interf.)*/
-    int typeBc = 0;
+    int typeBc = 1;
 
                 /* if true, matrix Bc (corners) is full column rank */
                 /*          matrix Bc (zero and first approx.) is full column rank matrix if
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
 
                 /* sparse-BLOCK or dense assembling of GcTGc matrix */
     bool GcTGc_assembl_block_by_block= true;
-    bool create_analytic_ker_K = true;
+    bool create_analytic_ker_K = false;
 
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------

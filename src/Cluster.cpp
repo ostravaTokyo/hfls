@@ -1245,9 +1245,6 @@ void Cluster::pcpg2(){
 
     mult_Bf(xx,d_rhs);
 
-
-
-
     // e = Rt * f
     mult_RfT(rhs,e);
 
@@ -1274,11 +1271,11 @@ void Cluster::pcpg2(){
     w = Pz;
 
 
-    int max_it = 200, cnt_iter = 0;
+    int max_iter = 200;
 
-    for (int it = 0; it < max_it; it++){
+    for (int it = 0; it < max_iter; it++){
 
-        printf("it: %4d,      |Pg| = %3.9e \n",cnt_iter + 1, sqrt(gPz) / norm_gPz0);
+        printf("it: %4d,      |Pg| = %3.9e \n",it + 1, sqrt(gPz) / norm_gPz0);
         if (sqrt(gPz) < eps_iter * norm_gPz0)
             break;
 
@@ -1305,25 +1302,11 @@ void Cluster::pcpg2(){
 
         printVTK(yy, xx, lambda, alpha, it);
 
-        cnt_iter++;
     }
-   // printf("it: %4d,      |Pg| = %3.9e \n",cnt_iter + 1, sqrt(gPz) / norm_gPz0);
 
     lambda.printToFile("lambda_",folder,0,true);
 
-    Matrix uDecomp;
-    uDecomp.zero_dense(rhs[0].n_row_cmprs * nSubClst);
-
-    int cnt = 0;
-    for (int d = 0 ; d < nSubClst; d++){
-        for (int i = 0; i < xx[d].n_row_cmprs; i++){
-            uDecomp.dense[cnt] = xx[d].dense[i];
-            cnt++;
-        }
-    }
-    uDecomp.printToFile("uDecomp",folder,0,true);
-
-
+    // final solution (parameter 1000 is number > maxIter)
     printVTK(yy, xx, lambda, alpha, 1000);
 
 
@@ -1391,8 +1374,8 @@ void Cluster::pcpg(){
     // initial conjugate vector
     w = Pg;
 
-    int max_it = 200;
-    for (int it = 0; it < max_it; it++){
+    int max_iter = 200;
+    for (int it = 0; it < max_iter; it++){
 
 
         gPg = Matrix::dot(Pg,Pg);
