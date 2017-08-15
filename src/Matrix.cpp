@@ -1,24 +1,42 @@
-
 #include "Matrix.hpp"
 #include <math.h>
+#include <iostream>
 
 
 using namespace std;
 
-
-Matrix::Matrix(){
+Matrix::Matrix() :
+  n_row(0), n_col(0), DNS_transposed(false)
+{
     nnz = 0;
     numel = 0;
-    n_row = 0;
-    n_col = 0;
     n_row_cmprs= 0;
     DNS_reducedZeroRows = false;
-    DNS_transposed = false;
     diss_scaling = -1;
     msglvl = -1;
-    solver = -1;
-    printed = false;
 }
+
+Matrix:: Matrix(string st_) : label(st_)
+{
+    nnz = 0;
+    numel = 0;
+    n_row_cmprs= 0;
+    DNS_reducedZeroRows = false;
+    diss_scaling = -1;
+    msglvl = -1;
+}
+
+Matrix::Matrix(int n_row_, int n_col_, bool NorT) :
+  n_row(n_row_), n_col(n_col_), DNS_transposed(!NorT)
+{
+    nnz = 0;
+    numel = 0;
+    n_row_cmprs= 0;
+    DNS_reducedZeroRows = false;
+    diss_scaling = -1;
+    msglvl = -1;
+}
+
 
 Matrix::~Matrix()
 {
@@ -35,11 +53,11 @@ bool Matrix::compareDouble(double i, double j)
 { return fabs(i)<=fabs(j); }
 
 
-void Matrix::zero_dense(int n_row){
-    bool NorT = true;
-    n_col = 1;
-    zero_dense(n_row, n_col, NorT);
-}
+//void Matrix::zero_dense(int n_row){
+//    bool NorT = true;
+//    n_col = 1;
+//    zero_dense(n_row, n_col, NorT);
+//}
 
 void Matrix::zero_dense(int n_row,int n_col){
     bool NorT = true;
@@ -890,8 +908,15 @@ void Matrix::solve_system_dissection(Matrix const &B, Matrix &X){
 
     int projection = 0;
     int trans = 0;
-    diss_solve_n(*diss_dslv,&X.dense[0],
-                 _n_col, projection, trans);
+
+    if (_n_col == 1){
+        diss_solve_1(*diss_dslv,&X.dense[0],
+                      projection, trans);
+    }
+    else {
+        diss_solve_n(*diss_dslv,&X.dense[0],
+                     _n_col, projection, trans);
+    }
 #endif
 }
 
@@ -1737,14 +1762,3 @@ void Matrix::getSubDiagBlockmatrix(Matrix const & A_in, Matrix & A_out, int i_st
   }
 #endif
 }
-
-
-
-
-
-
-
-
-
-
-

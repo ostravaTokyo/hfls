@@ -45,9 +45,10 @@ bool myfunction (int i,int j);
 class Matrix{
 public:
     Matrix();
+    Matrix(int n_row_, int n_col_, bool NorT);
     Matrix(string );
     ~Matrix();
-    void zero_dense(int);
+  //    void zero_dense(int);
     void zero_dense(int,int);
     void zero_dense(int,int,bool);
     vector < double >  val;
@@ -175,10 +176,22 @@ public:
 
 
     void createDirichletPreconditioner(Matrix const & ,Matrix const & );
-    void getSubDiagBlockmatrix(Matrix const & , Matrix & , int , int );
-
-
-
+    void getSubDiagBlockmatrix(Matrix const & , Matrix & , int , int ); 
 
 };
+
+
+class Vector : public Matrix
+{
+public:
+  Vector(int n_row = 0) : Matrix(n_row, 1, true) { }
+  void zero_dense(int n_row)
+  {
+    bool NorT = true;
+    int n_col = 1;
+    Matrix::zero_dense(n_row, n_col, NorT);
+  }
+};
 #endif
+
+
