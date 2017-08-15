@@ -25,13 +25,15 @@ Cluster::Cluster(Options options_)
     Bf.resize(nSubClst);
     BcT_dense.resize(nSubClst);
     K.resize(nSubClst);
+
+    Preconditioner.resize(nSubClst);
+
     rhs.resize(nSubClst);
     Fc.resize(nSubClst);
     Gc.resize(nSubClst);
     R.resize(nSubClst);
     Rf.resize(nSubClst);
     Gf.resize(nSubClst);
-    Lumped.resize(nSubClst);
 
 
     cout << "assembling of K, f ... \n" ;
@@ -71,7 +73,7 @@ Cluster::Cluster(Options options_)
 
     cout << "subdomain:  ";
     for (int d = 0; d < K.size(); d++){
-    cout << d <<" ";
+        cout << d <<" ";
         if (printMat > 1){
             K[d].printToFile("K",folder,d,printCooOrDense);
             K[d].getBasicMatrixInfo();
@@ -79,22 +81,21 @@ Cluster::Cluster(Options options_)
             rhs[d].printToFile("rhs",folder,d,printCooOrDense);
             rhs[d].label = "rhs";
             rhs[d].getBasicMatrixInfo();
-        }
-        if (printMat > 1){
             Bc[d].printToFile("Bc",folder,d,printCooOrDense);
             Bc[d].getBasicMatrixInfo();
             Bf[d].printToFile("Bf",folder,d,printCooOrDense);
             Bf[d].getBasicMatrixInfo();
         }
 //
-//
         Matrix Bc_tmp;
         Bc_tmp = Bc[d];
+
+
+        Preconditioner[d].createDirichletPreconditioner(Bf[d],K[d]);
 
         reduceZeroRows = true;
         transpose = true;
         Bc_tmp.CSRorCOO2DNS(reduceZeroRows,transpose);
-
 
         BcT_dense[d].zero_dense(Bc_tmp.n_col,Bc_tmp.n_row_cmprs);
         BcT_dense[d].dense = Bc_tmp.dense;
@@ -114,7 +115,6 @@ Cluster::Cluster(Options options_)
         K[d].solve_system(BcT_dense[d],KplusBcT_dense);
         KplusBcT[d] = KplusBcT_dense;
         KplusBcT[d].symmetric = 0;
-
 
         if (printMat > 2){
             KplusBcT_dense.printToFile("KplusBcT",folder,d,printCooOrDense);
@@ -170,7 +170,7 @@ Cluster::Cluster(Options options_)
     Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
 
 
-    Fc_clust.sym_factor(0);
+    Fc_clust.sym_factor(options.solver_opt.solver);
 //    Matrix Fc_copy = Fc_clust;
     Fc_clust.num_factor();
 //    Fc_clust.test_K_Kp_K_condition(Fc_copy);
@@ -197,7 +197,7 @@ Cluster::Cluster(Options options_)
 
     Matrix S_GcTGc;
     Matrix::getEigVal_DNS(GcTGc_clust,S_GcTGc,10,3);
-    Matrix::getSingularVal_DNS(GcTGc_clust,S_GcTGc,3,10);
+//    Matrix::getSingularVal_DNS(GcTGc_clust,S_GcTGc,3,10);
 
 
     if (printMat > 0)
@@ -207,8 +207,7 @@ Cluster::Cluster(Options options_)
 //    Matrix ker_GcT;
     kerGc.label = "kerGc";
     GcTGc_clust.order_number = 1000;
-    int pardiso_0_dissection_1 = 1;
-    GcTGc_clust.sym_factor(pardiso_0_dissection_1);
+    GcTGc_clust.sym_factor(1);
     checkOrthogonality = true;
     GcTGc_clust.num_factor(kerGc,checkOrthogonality );
     nRBM_f = kerGc.n_col;
@@ -232,16 +231,18 @@ Cluster::Cluster(Options options_)
     Ac_clust.order_number = 2000;
 
     Ac_clust.diss_scaling = 1;
-//    Ac_clust.sym_factor(options.solver_opt.solver);
-    Ac_clust.sym_factor(1);
-  //  Ac_clust.getBasicMatrixInfo();
+    Ac_clust.sym_factor(options.solver_opt.solver);
 
 
 
- //   Matrix Ac_clust_copy;
- //   Ac_clust_copy = Ac_clust;
+//    Matrix Ac_clust_copy;
+//    Ac_clust_copy = Ac_clust;
     if (options.solver_opt.Ac_extended_by_kerGc){
         Ac_clust.diss_scaling = 1;
+
+        if (options.solver_opt.solver == 0){
+            Ac_clust.iparm[9] = 8;
+        }
         Ac_clust.num_factor();
     }
     else{
@@ -956,7 +957,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & rhs_in , vector < Matrix > & x_ou
 }
 
 
-void Cluster::Precond(Matrix const & w_in , Matrix & w_out){
+void Cluster::Preconditioning(Matrix const & w_in , Matrix & w_out){
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
 
@@ -1179,7 +1180,7 @@ void Cluster::mult_RfT(vector < Matrix > const &x_in, Matrix & alpha){
     }
 }
 
-void Cluster::Project(Matrix const & x, Matrix & Px, Matrix & alpha){
+void Cluster::Projection(Matrix const & x, Matrix & Px, Matrix & alpha){
 
     Px = x;
     Matrix GfTx;
@@ -1261,9 +1262,9 @@ void Cluster::pcpg2(){
     g = g0;
 
     // Pg0
-    Project(g,Pg,alpha);
-    Precond(Pg,z);
-    Project(z,Pz,beta);
+    Projection(g,Pg,alpha);
+    Preconditioning(Pg,z);
+    Projection(z,Pz,beta);
     gPz = Matrix::dot(g,Pz);
 
     norm_gPz0 = sqrt(gPz);
@@ -1286,9 +1287,9 @@ void Cluster::pcpg2(){
         lambda.add(w,rho);
         g.add(Fw,rho);
 
-        Project(g,Pg,alpha);
-        Precond(Pg,z);
-        Project(z,Pz,beta);
+        Projection(g,Pg,alpha);
+        Preconditioning(Pg,z);
+        Projection(z,Pz,beta);
 
         gPz_prev = gPz;
         gPz = Matrix::dot(g,Pz);
@@ -1367,7 +1368,7 @@ void Cluster::pcpg(){
     g = g0;
 
     // Pg0
-    Project(g,Pg,alpha);
+    Projection(g,Pg,alpha);
 
 
     norm_gPg0 = sqrt(Matrix::dot(Pg,Pg));
@@ -1404,7 +1405,7 @@ void Cluster::pcpg(){
 
         // P * g    where P = I - G * inv(GtG) *Gt
 
-        Project(g,Pg,alpha);
+        Projection(g,Pg,alpha);
 
 
 
