@@ -210,7 +210,7 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
 }
 
 
-void Data::feti_numeric_element(Matrix &Ksub, Matrix & rhs_sub, local_K_f &Kelem){
+void Data::feti_numeric_element(Matrix &Ksub, Vector & rhs_sub, local_K_f &Kelem){
       //
 
     double K_ij;
@@ -242,10 +242,11 @@ void Data::feti_numeric_element(Matrix &Ksub, Matrix & rhs_sub, local_K_f &Kelem
 
 
 
-void Data::feti_numeric(Mesh &mesh, vector <Matrix> & K_,  vector <Matrix>& rhs_)
+void Data::feti_numeric(Mesh &mesh, vector <Matrix> & K_,  vector <Vector>& rhs_)
 {
     for (int d = 0 ; d < mesh.nSubClst; d++){
-        rhs_[d].zero_dense(K_[d].n_row_cmprs,1);
+      //        rhs_[d].zero_dense(K_[d].n_row_cmprs,1);
+      rhs_[d].zero_dense(K_[d].n_row_cmprs);
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
             feti_numeric_element(K_[d],rhs_[d], i_loc_K_f);
