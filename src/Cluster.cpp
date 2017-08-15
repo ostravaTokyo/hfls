@@ -372,11 +372,11 @@ void Cluster::create_GcTGc_clust_sparse(){
 
     for (int i = 0 ; i < nSubClst ; i++){
         GcTGc_sparse_clust.nnz += (Gc[i].n_col + 1) * Gc[i].n_col;
-        Matrix Gii;
+        Matrix Gii("Gii");
         Matrix Gc_i = Gc[i];
         Gc_i.CSRorCOO2DNS(true,false);
         Gii.mat_mult_dense(Gc_i,"T",Gc_i,"N");
-        Gii.label = "Gii";
+	//        Gii.label = "Gii";
         Matrix::updateCOOstructure( tmpVec,
                                 Gii,blockPointer[i],blockPointer[i]);
         for (int j = 0 ; j < neighbours[i].size(); j++){
@@ -877,10 +877,10 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
     }
 }
 
-void Cluster::mult_Kplus_f(vector < Matrix > & rhs_in , vector < Matrix > & x_out){
+void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
-    Matrix gc;
+    Vector gc;
     int ngc = nLam_c + nRBM_c;
 
     if (options.solver_opt.Ac_extended_by_kerGc)
@@ -889,7 +889,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & rhs_in , vector < Matrix > & x_ou
     gc.zero_dense(ngc);
 
     for (int d = 0; d < nSubClst; d++){
-        Matrix BcKplusfc;
+        Vector BcKplusfc;
         BcKplusfc.mat_mult_dense(KplusBcT[d],"T",rhs_in[d],"N");
         for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
             gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
@@ -898,7 +898,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & rhs_in , vector < Matrix > & x_ou
 
     int cntR = 0;
     for (int d = 0; d < nSubClst; d++){
-        Matrix Rtfc;
+        Vector Rtfc;
         Rtfc.mat_mult_dense(R[d],"T",rhs_in[d],"N");
         for (int i = 0 ; i < R[d].n_col; i++){
             gc.dense[nLam_c + cntR + i] = -Rtfc.dense[i];
@@ -908,7 +908,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & rhs_in , vector < Matrix > & x_ou
 
 //    gc.printToFile("gc",folder,0,true);
 
-    Matrix lam_alpha;
+    Vector lam_alpha;
     lam_alpha = gc;
     lam_alpha.setZero();
 
@@ -921,21 +921,21 @@ void Cluster::mult_Kplus_f(vector < Matrix > & rhs_in , vector < Matrix > & x_ou
 
     cntR = 0;
     for (int d = 0; d < nSubClst ; d++){
-        Matrix lamc;
-        lamc.zero_dense(Bc[d].n_row_cmprs,1);
+        Vector lamc;
+        lamc.zero_dense(Bc[d].n_row_cmprs);
         for (int i = 0; i < Bc[d].n_row_cmprs;i++){
            lamc.dense[i] = lam_alpha.dense[Bc[d].l2g_i_coo[i]];
         }
-        Matrix KplusBcTlamc;
+        Vector KplusBcTlamc;
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
 
 
-        Matrix Kplusfc;
+        Vector Kplusfc;
         K[d].solve_system(rhs_in[d],Kplusfc);
 
 
-        Matrix Ralphac;
-        Matrix alphac_d; alphac_d.zero_dense(R[d].n_col,1);
+        Vector Ralphac;
+        Vector alphac_d; alphac_d.zero_dense(R[d].n_col);
         for (int i = 0; i < R[d].n_col; i++){
             alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
         }
@@ -957,7 +957,7 @@ void Cluster::mult_Kplus_f(vector < Matrix > & rhs_in , vector < Matrix > & x_ou
 }
 
 
-void Cluster::Preconditioning(Matrix const & w_in , Matrix & w_out){
+void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
 
@@ -966,7 +966,7 @@ void Cluster::Preconditioning(Matrix const & w_in , Matrix & w_out){
 
     w_out = w_in;
 
-    vector < Matrix > xx, yy;
+    vector < Vector > xx, yy;
     xx.resize(nSubClst); yy.resize(nSubClst);
 
     scale(w_out);
@@ -979,12 +979,12 @@ void Cluster::Preconditioning(Matrix const & w_in , Matrix & w_out){
     scale(w_out);
 }
 
-void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
+void Cluster::mult_Ff(Vector const & w , Vector & Fw){
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
 
 
-    vector < Matrix > xx, yy;
+    vector < Vector > xx, yy;
     xx.resize(nSubClst); yy.resize(nSubClst);
 
     mult_BfT(w,xx);
@@ -993,7 +993,7 @@ void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
         K[d].solve_system(xx[d],yy[d]);
     mult_Bf(yy,Fw);
 
-    Matrix gc;
+    Vector gc;
     int ngc = nLam_c + nRBM_c;
 
     if (options.solver_opt.Ac_extended_by_kerGc)
@@ -1002,7 +1002,7 @@ void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
     gc.zero_dense(ngc);
 
     for (int d = 0; d < nSubClst; d++){
-        Matrix BcKplusfc;
+        Vector BcKplusfc;
         BcKplusfc.mat_mult_dense(KplusBcT[d],"T",xx[d],"N");
         for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
             gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
@@ -1011,7 +1011,7 @@ void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
 
     int cntR = 0;
     for (int d = 0; d < nSubClst; d++){
-        Matrix Rtfc;
+        Vector Rtfc;
         Rtfc.mat_mult_dense(R[d],"T",xx[d],"N");
         for (int i = 0 ; i < R[d].n_col; i++){
             gc.dense[nLam_c + cntR + i] = -Rtfc.dense[i];
@@ -1019,7 +1019,7 @@ void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
         cntR += R[d].n_col;
     }
 
-    Matrix lam_alpha;
+    Vector lam_alpha;
     lam_alpha = gc;
     lam_alpha.setZero();
 
@@ -1028,15 +1028,15 @@ void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
 
     cntR = 0;
     for (int d = 0; d < nSubClst ; d++){
-        Matrix lamc;
-        lamc.zero_dense(Bc[d].n_row_cmprs,1);
+        Vector lamc;
+        lamc.zero_dense(Bc[d].n_row_cmprs);
         for (int i = 0; i < Bc[d].n_row_cmprs;i++){
            lamc.dense[i] = lam_alpha.dense[Bc[d].l2g_i_coo[i]];
         }
-        Matrix KplusBcTlamc;
+        Vector KplusBcTlamc;
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
 
-        Matrix alphac_d; alphac_d.zero_dense(R[d].n_col,1);
+        Vector alphac_d; alphac_d.zero_dense(R[d].n_col);
         for (int i = 0; i < R[d].n_col; i++){
             alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
         }
@@ -1049,7 +1049,7 @@ void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
 
 
 
-    Matrix w1;
+    Vector w1;
     mult_Bf(xx,w1);
     Fw.add(w1,1);
 }
@@ -1057,7 +1057,7 @@ void Cluster::mult_Ff(Matrix const & w , Matrix & Fw){
 
 
 
-void Cluster::mult_Bf(vector < Matrix > const &x_in, Matrix &lambda ){
+void Cluster::mult_Bf(vector < Vector > const &x_in, Vector &lambda ){
 
 
     if (lambda.numel == 0)
@@ -1066,7 +1066,7 @@ void Cluster::mult_Bf(vector < Matrix > const &x_in, Matrix &lambda ){
         lambda.setZero();
 
     for (int d = 0; d < nSubClst; d++ ){
-        Matrix Bf_x_d;
+        Vector Bf_x_d;
         Bf[d].mult(x_in[d],Bf_x_d, true);
         for (int i = 0; i < Bf_x_d.n_row_cmprs; i++){
             lambda.dense[Bf[d].l2g_i_coo[i]] +=  Bf_x_d.dense[i];
@@ -1075,15 +1075,15 @@ void Cluster::mult_Bf(vector < Matrix > const &x_in, Matrix &lambda ){
 
 }
 
-void Cluster::mult_BfT(Matrix const &lambda, vector < Matrix > &x_out){
+void Cluster::mult_BfT(Vector const &lambda, vector < Vector > &x_out){
 
     for (int d = 0; d < nSubClst; d++){
         if (x_out[d].numel == 0)
             x_out[d].zero_dense(K[d].n_row_cmprs);
         else
             x_out[d].setZero();
-        Matrix lam_;
-        lam_.zero_dense(Bf[d].n_row_cmprs,1);
+        Vector lam_;
+        lam_.zero_dense(Bf[d].n_row_cmprs);
         for (int i = 0; i < Bf[d].n_row_cmprs;i++){
             lam_.dense[i] = lambda.dense[Bf[d].l2g_i_coo[i]];
         }
@@ -1141,10 +1141,10 @@ void Cluster::compute_invGfTGf(){
 
 }
 
-void Cluster::mult_Gf(Matrix const & alpha, Matrix & lambda){
+void Cluster::mult_Gf(Vector const & alpha, Vector & lambda){
 
     if (lambda.numel == 0){
-        lambda.zero_dense(nRBM_f,1);
+        lambda.zero_dense(nRBM_f);
     }
     else{
         lambda.setZero();
@@ -1152,9 +1152,9 @@ void Cluster::mult_Gf(Matrix const & alpha, Matrix & lambda){
     lambda.mat_mult_dense(Gf_clust,"N",alpha,"N");
 }
 
-void Cluster::mult_GfT(Matrix const & lambda, Matrix & alpha){
+void Cluster::mult_GfT(Vector const & lambda, Vector & alpha){
     if (alpha.numel == 0){
-        alpha.zero_dense(nRBM_f,1);
+        alpha.zero_dense(nRBM_f);
     }
     else{
         alpha.setZero();
@@ -1162,10 +1162,10 @@ void Cluster::mult_GfT(Matrix const & lambda, Matrix & alpha){
     alpha.mat_mult_dense(Gf_clust,"T",lambda,"N");
 }
 
-void Cluster::mult_RfT(vector < Matrix > const &x_in, Matrix & alpha){
+void Cluster::mult_RfT(vector <Vector> const &x_in, Vector & alpha){
 
     if (alpha.numel == 0){
-        alpha.zero_dense(nRBM_f,1);
+        alpha.zero_dense(nRBM_f);
     }
     else{
         alpha.setZero();
@@ -1180,10 +1180,10 @@ void Cluster::mult_RfT(vector < Matrix > const &x_in, Matrix & alpha){
     }
 }
 
-void Cluster::Projection(Matrix const & x, Matrix & Px, Matrix & alpha){
+void Cluster::Projection(Vector const & x, Vector & Px, Vector & alpha){
 
     Px = x;
-    Matrix GfTx;
+    Vector GfTx;
     mult_GfT(x,GfTx);
     alpha.mat_mult_dense(invGfTGf,"N",GfTx,"N");
     mult_Gf(alpha,Px);
@@ -1222,7 +1222,7 @@ void Cluster::create_Rf_and_Gf(){
 
 
 
-void Cluster::scale(Matrix & x){
+void Cluster::scale(Vector & x){
 
     for (int i = 0 ; i < x.n_row_cmprs; i++)
         x.dense[i] *= weigth[i];
@@ -1235,10 +1235,10 @@ void Cluster::pcpg2(){
 
     double gPz, gPz_prev, wFw, rho, gamma, wFPg, norm_gPz0;
     double eps_iter = 1e-4;
-    Matrix g0, d_rhs, e, iGTG_e, lambda, z, Pz;
-    Matrix Fw, Pg, g, w, w_prev;
-    vector < Matrix > xx, yy;
-    Matrix beta, alpha;
+    Vector g0, d_rhs, e, iGTG_e, lambda, z, Pz;
+    Vector Fw, Pg, g, w, w_prev;
+    vector < Vector > xx, yy;
+    Vector beta, alpha;
     xx.resize(nSubClst); yy.resize(nSubClst);
 
     xx[0].label = "test";
@@ -1321,10 +1321,10 @@ void Cluster::pcpg(){
 
     double gPg, wFw, rho, gamma, wFPg, norm_gPg0;
     double eps_iter = 1e-4;
-    Matrix g0, d_rhs, e, iGTG_e, lambda, z, Pz;
-    Matrix Fw, Pg, g, w, w_prev;
-    vector < Matrix > xx, yy;
-    Matrix alpha;
+    Vector g0, d_rhs, e, iGTG_e, lambda, z, Pz;
+    Vector Fw, Pg, g, w, w_prev;
+    vector < Vector > xx, yy;
+    Vector alpha;
     xx.resize(nSubClst); yy.resize(nSubClst);
     // d_rhs = B * Kplus * f
 
@@ -1422,7 +1422,7 @@ void Cluster::pcpg(){
         }
         mult_Kplus_f(yy,xx);
         for (int d = 0; d < nSubClst;d++){
-            Matrix Rf_alpha;
+            Vector Rf_alpha;
             Rf_alpha.mat_mult_dense(Rf[d],"N",alpha,"N");
             for (int i = 0; i < xx[d].n_row_cmprs; i++){
                 xx[d].dense[i] -= Rf_alpha.dense[i];
@@ -1455,7 +1455,7 @@ void Cluster::pcpg(){
 
     lambda.printToFile("lambda_",folder,0,true);
 
-    Matrix uDecomp;
+    Vector uDecomp;
     uDecomp.zero_dense(rhs[0].n_row_cmprs * nSubClst);
 
     int cnt = 0;
@@ -1478,7 +1478,7 @@ void Cluster::pcpg(){
     }
     mult_Kplus_f(yy,xx);
     for (int d = 0; d < nSubClst;d++){
-        Matrix Rf_alpha;
+        Vector Rf_alpha;
         Rf_alpha.mat_mult_dense(Rf[d],"N",alpha,"N");
         for (int i = 0; i < xx[d].n_row_cmprs; i++){
             xx[d].dense[i] -= Rf_alpha.dense[i];
@@ -1507,7 +1507,7 @@ void Cluster::pcpg(){
 
 
 
-void Cluster::printVTK(vector < Matrix > & yy, vector <Matrix > & xx, Matrix &lambda, Matrix & alpha , int it){
+void Cluster::printVTK(vector < Vector > & yy, vector <Vector > & xx, Vector &lambda, Vector & alpha , int it){
 
 
         mult_BfT(lambda,yy);
@@ -1518,7 +1518,7 @@ void Cluster::printVTK(vector < Matrix > & yy, vector <Matrix > & xx, Matrix &la
         }
         mult_Kplus_f(yy,xx);
         for (int d = 0; d < nSubClst;d++){
-            Matrix Rf_alpha;
+            Vector Rf_alpha;
             Rf_alpha.mat_mult_dense(Rf[d],"N",alpha,"N");
             for (int i = 0; i < xx[d].n_row_cmprs; i++){
                 xx[d].dense[i] -= Rf_alpha.dense[i];

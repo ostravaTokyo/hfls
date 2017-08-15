@@ -26,7 +26,7 @@ public:
     int nRBM_c;
     string folder;
     std::vector< Matrix> K;
-    std::vector< Matrix> rhs;
+    std::vector< Vector > rhs;
     std::vector< Matrix> Preconditioner;
     std::vector< Matrix> R;
     std::vector< Matrix> Fc;
@@ -84,21 +84,21 @@ public:
 
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
 
-    void mult_Kplus_f(vector < Matrix > & , vector < Matrix > &);
-    void mult_Bf(vector < Matrix > const &, Matrix &);
-    void mult_BfT(Matrix const &, vector < Matrix > &);
-    void mult_Gf(Matrix const &, Matrix &);
-    void mult_GfT(Matrix const &, Matrix &);
-    void mult_RfT(vector < Matrix > const &, Matrix &);
-    void Projection(Matrix const & , Matrix &, Matrix &);
+    void mult_Kplus_f(vector < Vector > & , vector < Vector > &);
+    void mult_Bf(vector < Vector > const &, Vector &);
+    void mult_BfT(Vector  const &, vector < Vector > &);
+    void mult_Gf(Vector const &, Vector &);
+    void mult_GfT(Vector const &, Vector &);
+    void mult_RfT(vector < Vector > const &, Vector&);
+    void Projection(Vector const & , Vector &, Vector &);
 
-    void mult_Ff(Matrix const &, Matrix &);
-    void Preconditioning(Matrix const &, Matrix &);
-    void scale(Matrix &);
+    void mult_Ff(Vector const &, Vector &);
+    void Preconditioning(Vector const &, Vector &);
+    void scale(Vector &);
 
     void pcpg();
     void pcpg2();
-    void printVTK(vector < Matrix > &, vector < Matrix > &, Matrix &, Matrix &, int);
+    void printVTK(vector < Vector > &, vector < Vector > &, Vector &, Vector &, int);
 
 //    static double dot(Matrix &, Matrix &);
 //    static double apb(Matrix &, Matrix &, double, double);
