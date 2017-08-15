@@ -74,13 +74,7 @@ public:
 
     int ij(int, int);
 
-//    bool printCooOrDense;
     MKL_INT m;
-    //coo row compressed
-
-    //csr
-    //dns
-
 
     void mult(const Matrix &, Matrix &, bool);
     void mult(const double[], double [] , bool, int,int);
@@ -178,6 +172,13 @@ public:
     static double dot(Matrix const &, Matrix const &);
     void add(Matrix &,double);
     void test_K_Kp_K_condition(Matrix &);
+
+
+    void createDirichletPreconditioner(Matrix const & ,Matrix const & );
+    void getSubDiagBlockmatrix(Matrix const & , Matrix & , int , int );
+
+
+
 
 };
 #endif
