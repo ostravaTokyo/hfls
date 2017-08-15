@@ -1071,7 +1071,12 @@ void Matrix::sym_factor_pardiso(){
 void Matrix::num_factor_pardiso()
 {
 
+
+
 #ifdef USE_PARDISO
+
+
+
     phase = 22;
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
              &n1_p, &val[0], &i_ptr[0], &j_col[0],
@@ -1534,3 +1539,212 @@ void Matrix::test_K_Kp_K_condition(Matrix &Ks){
     cout << " =============================================  \n";
 
 }
+
+void Matrix::createDirichletPreconditioner(Matrix const &Bf, Matrix const & K){
+
+
+#ifdef GENINVtools
+
+    vector<int>::iterator it;
+    vector < int > perm_vec = Bf.j_col;
+
+
+    sort(perm_vec.begin(), perm_vec.end());
+    it = unique (perm_vec.begin(), perm_vec.end());
+    perm_vec.resize( distance(perm_vec.begin(),it));
+
+
+
+    vector <int> perm_vec_full (  K.n_row);
+    vector <int> perm_vec_diff (  K.n_row_cmprs);
+    vector <int> I_row_indices_p (K.nnz);
+    vector <int> J_col_indices_p (K.nnz);
+
+
+
+
+    for (int i = 0; i < perm_vec_full.size(); i++) {
+        perm_vec_full[i] = i;
+    }
+
+    it = std::set_difference( perm_vec_full.begin(), perm_vec_full.end(), perm_vec.begin(), perm_vec.end(), perm_vec_diff.begin() );
+    perm_vec_diff.resize(it - perm_vec_diff.begin());
+
+    perm_vec_full = perm_vec_diff;
+    perm_vec_full.insert(perm_vec_full.end(), perm_vec.begin(), perm_vec.end());
+
+    Matrix K_modif = K;
+
+    vector <vector <int >> vec_I1_i2(K_modif.n_row_cmprs, vector <int >(2, 1));
+
+    for (int i = 0; i < K_modif.n_row_cmprs;i++){
+        vec_I1_i2[i][0] = perm_vec_full[i];
+        vec_I1_i2[i][1] = i; // position to create reverse permutation
+    }
+
+    sort(vec_I1_i2.begin(), vec_I1_i2.end(), [](const vector <int >& a, const vector <int>& b) { return a[0] < b[0]; });
+
+    // permutations made on matrix in COO format
+     K_modif.CSR2COO();
+     int I_index,J_index;
+     bool unsymmetric = false;
+     for (int i = 0;i<K_modif.nnz;i++){
+       I_index = vec_I1_i2[K_modif.i_coo_cmpr[i]][1];
+       J_index = vec_I1_i2[K_modif.j_col[i]][1];
+       if (unsymmetric || I_index<=J_index){
+         I_row_indices_p[i]=I_index;
+         J_col_indices_p[i]=J_index;
+       }
+       else{
+         I_row_indices_p[i]=J_index;
+         J_col_indices_p[i]=I_index;
+       }
+     }
+
+     for (int i = 0; i<K_modif.nnz;i++){
+       K_modif.i_coo_cmpr[i] = I_row_indices_p[i];
+       K_modif.j_col[i] = J_col_indices_p[i];
+     }
+
+
+     K_modif.COO2CSR();
+
+
+     // ------------------------------------------------------------------------------------------------------------------
+//     bool diagonalized_K_rr = config::solver::PRECONDITIONER == config::solver::PRECONDITIONERalternative::SUPER_DIRICHLET;
+//     //        PRECONDITIONER==NONE              - 0
+//     //        PRECONDITIONER==LUMPED            - 1
+//     //        PRECONDITIONER==WEIGHT_FUNCTION   - 2
+//     //        PRECONDITIONER==DIRICHLET         - 3
+//     //        PRECONDITIONER==SUPER_DIRICHLET   - 4
+//     //
+//     //        When next line is uncomment, var. PRECONDITIONER==DIRICHLET and PRECONDITIONER==SUPER_DIRICHLET provide identical preconditioner.
+//     //        bool diagonalized_K_rr = false
+//     // ------------------------------------------------------------------------------------------------------------------
+
+        int sc_size = perm_vec.size();
+
+        if (sc_size == physics.K[d].rows) {
+            cluster.domains[d].Prec = physics.K[d];
+            cluster.domains[d].Prec.ConvertCSRToDense(1);
+       // if physics.K[d] does not contain inner DOF
+        } else {
+
+       if (config::solver::PRECONDITIONER == config::solver::PRECONDITIONERalternative::DIRICHLET) {
+         SparseSolverCPU createSchur;
+/          createSchur.msglvl=1;
+         int sc_size = perm_vec.size();
+         createSchur.ImportMatrix_wo_Copy(K_modif);
+         createSchur.Create_SC(cluster.domains[d].Prec, sc_size,false);
+              cluster.domains[d].Prec.ConvertCSRToDense(1);
+       }
+       else
+       {
+         SparseMatrix K_rr;
+         SparseMatrix K_rs;
+         SparseMatrix K_sr;
+         SparseMatrix KsrInvKrrKrs;
+
+         int i_start = 0;
+         int nonsing_size = K_modif.rows - sc_size - i_start;
+         int j_start = nonsing_size;
+
+         K_rs.getSubBlockmatrix_rs(K_modif,K_rs,i_start, nonsing_size,j_start,sc_size);
+
+         if (cluster.SYMMETRIC_SYSTEM){
+           K_rs.MatTranspose(K_sr);
+         }
+         else
+         {
+           K_sr.getSubBlockmatrix_rs(K_modif,K_sr,j_start,sc_size,i_start, nonsing_size);
+         }
+
+         cluster.domains[d].Prec.getSubDiagBlockmatrix(K_modif,cluster.domains[d].Prec,nonsing_size,sc_size);
+//         SEQ_VECTOR <double> diagonals;
+//         SparseSolverCPU K_rr_solver;
+
+         // K_rs is replaced by:
+         // a) K_rs = 1/diag(K_rr) * K_rs          (simplified Dirichlet precond.)
+         // b) K_rs =    inv(K_rr) * K_rs          (classical Dirichlet precond. assembled by own - not via PardisoSC routine)
+//         if (diagonalized_K_rr){
+//           diagonals = K_modif.getDiagonal();
+//           // diagonals is obtained directly from K_modif (not from K_rr to avoid assembling) thanks to its structure
+//           //      K_modif = [K_rr, K_rs]
+//           //                [K_sr, K_ss]
+//           //
+//           for (int i = 0; i < K_rs.rows; i++) {
+//             for (int j = K_rs.CSR_I_row_indices[i]; j < K_rs.CSR_I_row_indices[i + 1]; j++) {
+//               K_rs.CSR_V_values[j - offset] /= diagonals[i];
+//             }
+//           }
+//         }
+//         else
+//         {
+//           K_rr.getSubDiagBlockmatrix(K_modif,K_rr,i_start, nonsing_size);
+//           K_rr_solver.ImportMatrix_wo_Copy(K_rr);
+//           K_rr_solver.SolveMat_Dense(K_rs);
+//         }
+//
+//         KsrInvKrrKrs.MatMat(K_sr,'N',K_rs);
+//         cluster.domains[d].Prec.MatAddInPlace(KsrInvKrrKrs,'N',-1);
+//       }
+
+        }
+
+
+#endif
+}
+
+
+void Matrix::getSubDiagBlockmatrix(Matrix const & A_in, Matrix & A_out, int i_start, int size_rr){
+#ifdef GENINVtools
+//
+// Function 'getSubDiagBlockmatrix' returns the diagonal block A_in(r,r) from original A_in,
+// where r = { i_start , i_start+1 , i_start+2 , ... , istart + size_rr - 1 }
+//
+// rev. 2015-10-10 (A.M.)
+//
+// step 1: getting nnz of submatrix
+  int nnz_new=0;
+  for (int i = 0;i<size_rr;i++){
+    for (int j = A_in.CSR_I_row_indices[i+i_start];j<A_in.CSR_I_row_indices[i+i_start+1];j++){
+      if ((A_in.CSR_J_col_indices[j])>=i_start &&
+                      (A_in.CSR_J_col_indices[j])<(i_start+size_rr)){
+        nnz_new++;
+      }
+    }
+  }
+// step 2: allocation 1d arrays
+  A_out.CSR_V_values.resize(nnz_new);
+  A_out.CSR_J_col_indices.resize(nnz_new);
+  A_out.CSR_I_row_indices.resize(size_rr+1);
+  A_out.rows=size_rr;
+  A_out.cols=size_rr;
+  A_out.nnz=nnz_new;
+    A_out.type = A_in.type;
+// step 3: filling 1d arrays
+  int ijcnt=0;
+  for (int i = 0;i<size_rr;i++){
+    for (int j = A_in.CSR_I_row_indices[i+i_start];j<A_in.CSR_I_row_indices[i+i_start+1];j++){
+      if ((A_in.CSR_J_col_indices[j])>=i_start &&
+                    (A_in.CSR_J_col_indices[j])<(i_start+size_rr)){
+        A_out.CSR_J_col_indices[ijcnt] = (A_in.CSR_J_col_indices[j]) - i_start;
+        A_out.CSR_V_values[ijcnt]=A_in.CSR_V_values[j];
+        ijcnt++;
+      }
+    }
+    A_out.CSR_I_row_indices[i]=ijcnt;
+  }
+#endif
+}
+
+
+
+
+
+
+
+
+
+
+
