@@ -27,7 +27,7 @@ public:
     string folder;
     std::vector< Matrix> K;
     std::vector< Matrix> rhs;
-    std::vector< Matrix> Lumped;
+    std::vector< Matrix> Preconditioner;
     std::vector< Matrix> R;
     std::vector< Matrix> Fc;
     std::vector< Matrix> Bc;
@@ -90,10 +90,10 @@ public:
     void mult_Gf(Matrix const &, Matrix &);
     void mult_GfT(Matrix const &, Matrix &);
     void mult_RfT(vector < Matrix > const &, Matrix &);
-    void Project(Matrix const & , Matrix &, Matrix &);
+    void Projection(Matrix const & , Matrix &, Matrix &);
 
     void mult_Ff(Matrix const &, Matrix &);
-    void Precond(Matrix const &, Matrix &);
+    void Preconditioning(Matrix const &, Matrix &);
     void scale(Matrix &);
 
     void pcpg();
