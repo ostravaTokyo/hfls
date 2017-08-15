@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
     double young_modulus = 1000;
     double poissons_ratio = 0.3;
                 /* linear solver */
-    int pardiso_0_dissection_1 = 0;
+    int pardiso_0_dissection_1 = 1;
                 /* type of Bc matrix
                  * 0: corners,
                  * 1: zero and first approx. (ker),
