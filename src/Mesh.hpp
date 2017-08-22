@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 #include <stdio.h>
 #include <fstream>
 #include <iomanip>
@@ -55,7 +56,7 @@ public:
     vector < int > cornerNodes;
     vector < int > cornerDOFs;
     vector < int > DirichletDOFs;
-    void createMesh(const Options &);
+    void createMesh(const Options &, map< string, string> & );
     Material material;
     void SaveVTK(vector < double > ,string, int);
 };

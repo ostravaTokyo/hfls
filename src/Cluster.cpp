@@ -4,20 +4,31 @@
 #ifdef DISSECTION
 #include "Dissection.hpp"
 #endif
+
+
 using namespace std;
 
-Cluster::Cluster(Options options_)
+
+Cluster::Cluster(Options options_, map <string,string> options2_)
 {
 
     options = options_;
+    options2 = options2_;
 
-    int symmetric, format, offset;
     bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
+
+
+#ifdef  origOpt
     int printMat = options.print_matrices;
     folder = options.path2data;
+#else
+    int printMat = atoi(options2["print_matrices"].c_str());
+    folder = options2["path2data"];
+#endif
+
 
     /* mesh belonging to i-th cluster (currently, i=0 only)*/
-    mesh.createMesh(options);
+    mesh.createMesh(options, options2);
     nSubClst = mesh.nSubClst;
 
     Bc.resize(nSubClst);
@@ -43,9 +54,16 @@ Cluster::Cluster(Options options_)
     data.feti_numeric(mesh,K,rhs);
     cout << "ker(K) is being created ... \n" ;
 
+
+#ifdef  origOpt
     if (options.solver_opt.create_analytic_ker_K){
         data.create_analytic_ker_K(mesh,R);
     }
+#else
+    if (options2["create_analytic_ker_K"].compare("true") == 0){
+        data.create_analytic_ker_K(mesh,R);
+    }
+#endif
 
     printCooOrDense = true;
     checkOrthogonality = true;
@@ -59,8 +77,13 @@ Cluster::Cluster(Options options_)
 
     for (int d = 0; d < K.size(); d++){
         K[d].order_number = d;
+#ifdef  origOpt
         K[d].options = options;
         K[d].sym_factor(options.solver_opt.solver);
+#else
+        K[d].options2 = options2;
+        K[d].sym_factor(options2["linear_solver"]);
+#endif
         R[d].label = "kerK";
 //        Matrix Ksing = K[d];
         K[d].num_factor(R[d],checkOrthogonality);
@@ -69,7 +92,7 @@ Cluster::Cluster(Options options_)
 
     // constraints must wait for factorization (to use R)
     cout << "boolean matrix is being created. ... \n" ;
-    create_cluster_constraints(options);
+    create_cluster_constraints(options, options2);
 
     cout << "subdomain:  ";
     for (int d = 0; d < K.size(); d++){
@@ -170,7 +193,11 @@ Cluster::Cluster(Options options_)
     Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
 
 
+#ifdef origOpt
     Fc_clust.sym_factor(options.solver_opt.solver);
+#else
+    Fc_clust.sym_factor(options2["linear_solver"]);
+#endif
 //    Matrix Fc_copy = Fc_clust;
     Fc_clust.num_factor();
 //    Fc_clust.test_K_Kp_K_condition(Fc_copy);
@@ -184,7 +211,12 @@ Cluster::Cluster(Options options_)
         Gc_clust.printToFile("Gc_clust",folder,0,printCooOrDense);
 
     cout << "GcTGc is being created ... \n" ;
+
+#ifdef origOpt
     if (options.solver_opt.GcTGc_assembl_block_by_block){
+#else
+    if (options2["GcTGc_assembl_block_by_block"].compare("true") == 0 ){
+#endif
         cout << " ... block version "<< endl;
         create_GcTGc_clust_sparse();
         GcTGc_clust = GcTGc_sparse_clust;
@@ -220,7 +252,15 @@ Cluster::Cluster(Options options_)
         kerGc.printToFile("kerGc",folder,0,printCooOrDense);
 
     cout << "Ac_clust is being created ... \n" ;
-    create_Ac_clust(options.solver_opt.Ac_extended_by_kerGc);
+    bool flag0 = false;
+#ifdef origOpt
+    flag0 = options.solver_opt.Ac_extended_by_kerGc;
+#else
+    if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
+        flag0 = true;
+    }
+#endif
+    create_Ac_clust(flag0);
     Matrix S_Ac_clust;
     Matrix::getEigVal_DNS(Ac_clust,S_Ac_clust,10,3);
 
@@ -231,16 +271,28 @@ Cluster::Cluster(Options options_)
     Ac_clust.order_number = 2000;
 
     Ac_clust.diss_scaling = 1;
+#ifdef origOpt
     Ac_clust.sym_factor(options.solver_opt.solver);
+#else
+    Ac_clust.sym_factor(options2["linear_solver"]);
+#endif
 
 
 
 //    Matrix Ac_clust_copy;
 //    Ac_clust_copy = Ac_clust;
+#ifdef origOpt
     if (options.solver_opt.Ac_extended_by_kerGc){
+#else
+    if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
+#endif
         Ac_clust.diss_scaling = 1;
 
+#ifdef origOpt
         if (options.solver_opt.solver == 0){
+#else
+        if (options2["linear_solver"].compare("pardiso") == 0 ){
+#endif
             Ac_clust.iparm[9] = 8;
         }
         Ac_clust.num_factor();
@@ -474,7 +526,8 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
     A_clust.sortAndUniqueCOO(tmpVec);
     /* tmpVec released from the memory */
     tmpVec.clear();
-    tmpVec.shrink_to_fit();
+    vector < int_int_dbl >().swap(tmpVec);
+   // tmpVec.shrink_to_fit();
 
     /* both Fc or Gc do not have compressed rows,
      * therefore n_row = n_row_cmprs                        */
@@ -579,7 +632,9 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
 
     Ac_clust.sortAndUniqueCOO(tmpVec);
     tmpVec.clear();
-    tmpVec.shrink_to_fit();
+    vector < int_int_dbl >().swap(tmpVec);
+   // tmpVec.shrink_to_fit();
+
 
     if (Ac_nonsingular){
         Ac_clust.n_row = Fc_clust.n_row_cmprs + Gc_clust.n_col + kerGc.n_col;
@@ -618,7 +673,8 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
 
 
 
-void Cluster::create_cluster_constraints(const Options &options){
+void Cluster::create_cluster_constraints(const Options &options,
+                                         const map< string, string> &options2){
 
     vector < vector < int > > subDOFset;
     vector<int>::iterator it;
@@ -665,6 +721,7 @@ void Cluster::create_cluster_constraints(const Options &options){
     }
 
 
+#ifdef origOpt
     if (options.solver_opt.typeBc == 1 ){
         create_Bc_weightedAverages_in_COO(Bc,options.solver_opt.Bc_fullRank);
     }
@@ -677,6 +734,30 @@ void Cluster::create_cluster_constraints(const Options &options){
 
         create_Bc_or_Bf_in_CSR(Bc,options.solver_opt.Bc_fullRank, cornersOnlyOrAllDof);
     }
+
+    cout << "----------------------------------------------------------------" << endl;
+
+#else
+    bool cornersOnlyOrAllDof;
+
+    bool flag1 = false;
+    if (options2.at("Bc_fullRank").compare("true") == 0)
+        flag1 = true;
+
+
+    if (options2.at("typeBc").compare("ker") == 0){
+        create_Bc_weightedAverages_in_COO(Bc,flag1);
+    }
+    else if (options2.at("typeBc").compare("cor") == 0){
+            cornersOnlyOrAllDof = true;
+            create_Bc_or_Bf_in_CSR(Bc,flag1, cornersOnlyOrAllDof);
+    }
+    else if (options2.at("typeBc").compare("all") == 0){
+            cornersOnlyOrAllDof = true;
+            create_Bc_or_Bf_in_CSR(Bc,flag1, cornersOnlyOrAllDof);
+    }
+
+#endif
 
 
     bool Bf_full_rank           = false;
@@ -766,7 +847,9 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
     vector<int>::iterator it;
 
     for (int d = 0; d < Bc_.size(); d++){
-        for ( auto it1 = data.interface[d].begin(); it1 != data.interface[d].end(); ++it1  ){
+//        for ( auto it1 = data.interface[d].begin(); it1 != data.interface[d].end(); ++it1  ){
+        typedef std::map<int,vector < int > >::iterator it_type;
+        for(it_type it1 = data.interface[d].begin(); it1 != data.interface[d].end(); it1++) {
             global_DOF = it1->first;
 
             if (cornersOnlyOrAllDof){
@@ -883,7 +966,12 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
     Vector gc;
     int ngc = nLam_c + nRBM_c;
 
+
+#ifdef origOpt
     if (options.solver_opt.Ac_extended_by_kerGc)
+#else
+    if (options2.at("Ac_extended_by_kerGc").compare("true") == 0 )
+#endif
         ngc += nRBM_f;
 
     gc.zero_dense(ngc);
@@ -996,7 +1084,11 @@ void Cluster::mult_Ff(Vector const & w , Vector & Fw){
     Vector gc;
     int ngc = nLam_c + nRBM_c;
 
+#ifdef origOpt
     if (options.solver_opt.Ac_extended_by_kerGc)
+#else
+    if (options2.at("Ac_extended_by_kerGc").compare("true") == 0 )
+#endif
         ngc += nRBM_f;
 
     gc.zero_dense(ngc);

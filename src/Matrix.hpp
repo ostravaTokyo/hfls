@@ -49,6 +49,7 @@ public:
     Matrix(string );
     ~Matrix();
   //    void zero_dense(int);
+    void init();
     void zero_dense(int,int);
     void zero_dense(int,int,bool);
     vector < double >  val;
@@ -70,6 +71,7 @@ public:
     string label;
     int order_number;
     Options options;
+    map < string, string > options2;
     bool printed;
 
 
@@ -119,6 +121,7 @@ public:
     int diss_scaling;
     int diss_int0;
     int solver;
+    string linear_solver;
     double diss_eps_pivot;
 
 
@@ -138,6 +141,7 @@ public:
 
 
     void sym_factor(int);
+    void sym_factor(string);
     void num_factor();
     void num_factor(Matrix&);
     void num_factor(Matrix&, bool);

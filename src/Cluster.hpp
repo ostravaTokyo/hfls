@@ -16,7 +16,7 @@ class Cluster
 {
 
 public:
-    Cluster(Options options);
+    Cluster(Options options, map <string, string>);
     /* 'new' data created inside the app */
     int nSubClst;
     int neqClst;
@@ -55,6 +55,7 @@ public:
     Matrix invGfTGf;
 
     Options options;
+    map <string, string> options2;
 
     /* FETI */
     void create_Gf_clust();
@@ -76,7 +77,7 @@ public:
     /* constraints */
     vector < vector < int > > neighbours;
 
-    void create_cluster_constraints(const Options &);
+    void create_cluster_constraints(const Options &, const map <string, string> &);
     void create_Bc_or_Bf_in_CSR(vector <Matrix> &, bool , bool);
     void create_Bc_or_Bf_in_CSR(vector <Matrix> &, bool , bool, bool);
     void create_Bc_weightedAverages_in_COO(vector <Matrix> &, bool);

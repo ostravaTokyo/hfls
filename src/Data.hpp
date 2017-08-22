@@ -39,7 +39,7 @@ public:
     static double inverse_matrix_3x3(double *, double *);
 
     vector < local_K_f >  local_K_f_clust;
-    vector < vector <int> >  l2g;
+    vector < vector <int> > l2g;
     vector < map<int,int> > g2l;
     vector < vector <int> > selectorOfElemPartitId;
     vector < map < int,vector < int > > > interface;

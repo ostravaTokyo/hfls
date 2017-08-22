@@ -2,6 +2,7 @@
 #define __OPTIONS_HPP_INCLUDED
 #include <string>
 #include <iostream>
+#include <stdlib.h>
 
 class SolverOptions{
 public:

@@ -5,43 +5,45 @@
 
 using namespace std;
 
-Matrix::Matrix() :
-  n_row(0), n_col(0), DNS_transposed(false)
+Matrix::Matrix()
 {
-    nnz = 0;
-    numel = 0;
-    n_row_cmprs= 0;
-    DNS_reducedZeroRows = false;
-    diss_scaling = -1;
-    msglvl = -1;
+    Matrix::init();
 }
 
-Matrix:: Matrix(string st_) : label(st_)
+
+Matrix:: Matrix(string label_)
 {
-    nnz = 0;
-    numel = 0;
-    n_row_cmprs= 0;
-    DNS_reducedZeroRows = false;
-    diss_scaling = -1;
-    msglvl = -1;
+    Matrix::init();
+    label = label_;
 }
 
-Matrix::Matrix(int n_row_, int n_col_, bool NorT) :
-  n_row(n_row_), n_col(n_col_), DNS_transposed(!NorT)
+Matrix::Matrix(int n_row_, int n_col_, bool NorT)
 {
-    nnz = 0;
-    numel = 0;
-    n_row_cmprs= 0;
-    DNS_reducedZeroRows = false;
-    diss_scaling = -1;
-    msglvl = -1;
+    Matrix::init();
+    n_row = n_row_;
+    n_col = n_col_;
+    DNS_transposed = !NorT;
+}
+
+void Matrix::init()
+{
+  label = "";
+  n_row = 0;
+  n_col = 0;
+  DNS_transposed = false;
+  nnz = 0;
+  numel = 0;
+  n_row_cmprs = 0;
+  DNS_reducedZeroRows = false;
+  diss_scaling = -1;
+  msglvl = -1;
+  solver = -1;
+  linear_solver = "";
 }
 
 
 Matrix::~Matrix()
-{
-
-}
+{}
 
 
 bool Matrix::cmp_int_int_I(int_int_dbl a,int_int_dbl b)
@@ -53,11 +55,6 @@ bool Matrix::compareDouble(double i, double j)
 { return fabs(i)<=fabs(j); }
 
 
-//void Matrix::zero_dense(int n_row){
-//    bool NorT = true;
-//    n_col = 1;
-//    zero_dense(n_row, n_col, NorT);
-//}
 
 void Matrix::zero_dense(int n_row,int n_col){
     bool NorT = true;
@@ -173,13 +170,13 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
     if (format_ != 2){
         if (i_coo_cmpr.size() > nnz){
             i_coo_cmpr.resize(nnz);
-            i_coo_cmpr.shrink_to_fit();
+//            i_coo_cmpr.shrink_to_fit();
 
             j_col.resize(nnz);
-            j_col.shrink_to_fit();
+//            j_col.shrink_to_fit();
 
             val.resize(nnz);
-            val.shrink_to_fit();
+//            val.shrink_to_fit();
         }
 /* Sorting [I, J, V]  --------------------------------------------------------*/
         vector < int_int_dbl > tmpVec;
@@ -191,7 +188,7 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
         }
         sortAndUniqueCOO(tmpVec);
         tmpVec.clear();
-        tmpVec.shrink_to_fit();
+//        tmpVec.shrink_to_fit();
 
         if (format_ == 1){
             COO2CSR();
@@ -267,16 +264,16 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
     }
 
     l2g_i_coo.resize(counter );
-    l2g_i_coo.shrink_to_fit();
+//    l2g_i_coo.shrink_to_fit();
 
     i_coo_cmpr.resize(nnz);
-    i_coo_cmpr.shrink_to_fit();
+//    i_coo_cmpr.shrink_to_fit();
 
     j_col.resize(nnz);
-    j_col.shrink_to_fit();
+//    j_col.shrink_to_fit();
 
     val.resize(nnz);
-    val.shrink_to_fit();
+//    val.shrink_to_fit();
 
     n_row_cmprs = counter;
     n_row = counter;
@@ -303,7 +300,7 @@ void Matrix::COO2CSR(){
 
     i_ptr[n_row_cmprs] = nnz;
     i_coo_cmpr.clear();
-    i_coo_cmpr.shrink_to_fit();
+//    i_coo_cmpr.shrink_to_fit();
     format = 1;
 #if VERBOSE_LEVEL>4
 /* test - print 'i_ptr' to cmd                                                */
@@ -327,7 +324,7 @@ void Matrix::CSR2COO(){
         }
     }
     i_ptr.clear();
-    i_ptr.shrink_to_fit();
+//    i_ptr.shrink_to_fit();
     format = 0;
 }
 
@@ -405,18 +402,18 @@ void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_){
 
     if(format_ == 0){
         i_coo_cmpr.clear();
-        i_coo_cmpr.shrink_to_fit();
+//        i_coo_cmpr.shrink_to_fit();
     }
     else if (format_ == 1){
         i_ptr.clear();
-        i_ptr.shrink_to_fit();
+//        i_ptr.shrink_to_fit();
     }
 
     j_col.clear();
-    j_col.shrink_to_fit();
+//    j_col.shrink_to_fit();
 
     val.clear();
-    val.shrink_to_fit();
+//    val.shrink_to_fit();
     numel = n_row_cmprs * n_col;
 
     format = 2;
@@ -484,7 +481,7 @@ void Matrix::DNS2COO(){
         }
     }
     dense.clear();
-    dense.shrink_to_fit();
+//    dense.shrink_to_fit();
     format = 0;
 }
 
@@ -499,8 +496,13 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
     }
 
     const int format_ = format;
-    string path2matrix = folder+"/dump_" + nameOfMat + "_" +
-                                                     to_string(indOfMat)+".txt";
+//    string path2matrix = folder+"/dump_" + nameOfMat + "_" +
+//                                                     to_string(indOfMat)+".txt";
+
+    char _str[128];
+    sprintf(_str,"%s/dump_%s_%d.txt",folder.c_str(),nameOfMat.c_str(),indOfMat);
+    string path2matrix = _str;
+
     FILE *fp = NULL;
     fp = fopen(path2matrix.c_str(), "w");
     if (fp == NULL) {
@@ -773,7 +775,11 @@ void Matrix::getBasicMatrixInfo(){
     printf("j_col.size():       %lu \n", j_col.size());
     printf("val.size():         %lu \n", val.size());
     printf("dense.size():       %lu \n", dense.size());
-    printf("solver:             %d (-1: None, 0: pardiso, 1: dissection)\n", solver);
+    if (solver > -1)
+        printf("solver:             %d (-1: None, 0: pardiso, 1: dissection)\n", solver);
+    else
+        printf("            :       %s \n", options2["linear_solver"].c_str());
+
 
     double density = 100 * nnz / (double)( n_row_cmprs * n_col );
 
@@ -920,6 +926,22 @@ void Matrix::solve_system_dissection(Matrix const &B, Matrix &X){
 #endif
 }
 
+void Matrix::sym_factor(string linear_solver_){
+
+    linear_solver = linear_solver_;
+
+    if (linear_solver.compare("pardiso") == 0){
+        sym_factor_pardiso();
+    }
+    else if (linear_solver.compare("dissection") == 0){
+        sym_factor_dissection();
+    }
+    else{
+        cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
+        return;
+    }
+    solver = -1;
+}
 void Matrix::sym_factor(int pardiso_0_dissection_1){
     solver = pardiso_0_dissection_1;
     if (solver == 0){
@@ -937,15 +959,29 @@ void Matrix::sym_factor(int pardiso_0_dissection_1){
 
 void Matrix::num_factor(){
 
-    if (solver == 0){
-        num_factor_pardiso();
+    if (solver > -1){
+        if (solver == 0){
+            num_factor_pardiso();
+        }
+        else if (solver == 1){
+            num_factor_dissection();
+        }
+        else{
+            cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
+            return;
+        }
     }
-    else if (solver == 1){
-        num_factor_dissection();
-    }
-    else{
-        cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
-        return;
+    else {
+        if (linear_solver.compare("pardiso") == 0){
+            num_factor_pardiso();
+        }
+        else if (linear_solver.compare("dissection") == 0){
+            num_factor_dissection();
+        }
+        else{
+            cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
+            return;
+        }
     }
 }
 
@@ -971,10 +1007,17 @@ void Matrix::num_factor(Matrix &R, bool checkOrthogonality_){
         num_factor();
 
         bool printCooOrDense = true;
+#ifdef origOpt
         if (!printed && options.print_matrices > 1){
             printToFile("K_reg",options.path2data,order_number,printCooOrDense);
             printed = true;
         }
+#else
+        if (!printed && atoi(options2["print_matrices"].c_str()) > 1){
+            printToFile("K_reg",options2["path2data"],order_number,printCooOrDense);
+            printed = true;
+        }
+#endif
 
         for (int i = 0 ; i < tmp.size();i++)
             val[tmp[i]] *= 0.5;
@@ -982,15 +1025,29 @@ void Matrix::num_factor(Matrix &R, bool checkOrthogonality_){
 
     }
     else{
-        if (solver == 0){
-            num_factor_pardiso();
+        if (solver > -1){
+            if (solver == 0){
+                num_factor_pardiso();
+            }
+            else if (solver == 1){
+                num_factor_dissection(R);
+            }
+            else {
+                cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
+                return;
+            }
         }
-        else if (solver == 1){
-            num_factor_dissection(R);
-        }
-        else {
-            cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
-            return;
+        else{
+            if (linear_solver.compare("pardiso") == 0){
+                num_factor_pardiso();
+            }
+            else if (linear_solver.compare("dissection") == 0){
+                num_factor_dissection(R);
+            }
+            else {
+                cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
+                return;
+            }
         }
     }
 
@@ -1113,15 +1170,30 @@ void Matrix::num_factor_pardiso()
 
 void Matrix::solve_system(Matrix &B, Matrix & X){
 
-    if (solver == 0){
-        solve_system_pardiso(B,X);
-    }
-    else if(solver == 1){
-        solve_system_dissection(B,X);
+    if (solver > -1){
+        if (solver == 0){
+            solve_system_pardiso(B,X);
+        }
+        else if(solver == 1){
+            solve_system_dissection(B,X);
+        }
+        else{
+            cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
+            return;
+        }
     }
     else{
-        cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
-        return;
+        if (linear_solver.compare("pardiso") == 0){
+            solve_system_pardiso(B,X);
+        }
+        else if(linear_solver.compare("dissection") == 0){
+            solve_system_dissection(B,X);
+        }
+        else{
+            cout << "ERROR >>>>>>>>>>>>>>>>>>>>>>>>>>> "  << endl;
+            return;
+        }
+
     }
 
 }
@@ -1182,21 +1254,41 @@ void Matrix::solve_system_pardiso(Matrix& B, Matrix& X){
 
 void Matrix::FinalizeSolve(int i_)
 {
-    if (solver == 0){
+    if (solver < -1){
+        if (solver == 0){
 #ifdef USE_PARDISO
-        double ddum;          /* Double dummy */
-        MKL_INT idum;         /* Integer dummy. */
-        phase = -1;           /* Release internal memory. */
-        PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
-                 &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
-                iparm, &msglvl, &ddum, &ddum, &error);
+            double ddum;          /* Double dummy */
+            MKL_INT idum;         /* Integer dummy. */
+            phase = -1;           /* Release internal memory. */
+            PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
+                     &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
+                    iparm, &msglvl, &ddum, &ddum, &error);
 #endif
-    }
-    else if (solver == 1)
-    {
+        }
+        else if (solver == 1)
+        {
 #ifdef DISSECTION
-        diss_free(*diss_dslv);
+            diss_free(*diss_dslv);
 #endif
+        }
+    }
+    else{
+        if (linear_solver.compare("pardiso") == 0 ){
+#ifdef USE_PARDISO
+            double ddum;          /* Double dummy */
+            MKL_INT idum;         /* Integer dummy. */
+            phase = -1;           /* Release internal memory. */
+            PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
+                     &n, &ddum, &i_ptr[0], &j_col[0], &idum, &nrhs,
+                    iparm, &msglvl, &ddum, &ddum, &error);
+#endif
+        }
+        else if (linear_solver.compare("dissection") == 0)
+        {
+#ifdef DISSECTION
+            diss_free(*diss_dslv);
+#endif
+        }
     }
 }
 

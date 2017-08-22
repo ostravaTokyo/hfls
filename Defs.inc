@@ -4,8 +4,12 @@ PROJ_DIR = /data_space/WorkSpace/htfeti_app/gitRepo/hfls
 DISSECTION_INC = /data_space/france/dissection_20170530/include
 
 
-CXX	= icpc -std=c++11
+#CXX	= icpc -std=c++11
 #CXX	= g++ -std=c++11
+CXX	= g++ -std=c++98
+
+#CXX = g++ -std=c++0x
+
 CCFLAGS   = -c -g0 -DDISSECTION -DUSE_PARDISO=1 -DVERBOSE_LEVEL=3 -I$(PROJ_DIR)/include -I$(DISSECTION_INC)
 LD      = $(CXX)
 
