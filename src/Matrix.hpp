@@ -16,6 +16,10 @@
 #include <cstring>
 #include "map"
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+
 #ifdef DISSECTION
 #include "Dissection.hpp"
 #endif
@@ -46,6 +50,7 @@ class Matrix{
 public:
     Matrix();
     Matrix(int n_row_, int n_col_, bool NorT);
+    Matrix(int n_row_, int n_col_, int nnz_, bool NorT);
     Matrix(string );
     ~Matrix();
   //    void zero_dense(int);
@@ -56,6 +61,7 @@ public:
     vector < int >     i_ptr; // new MKL_INT[crs->m+1];
     vector < int >     j_col; // new MKL_INT[crs->nnz];
     vector < int >     i_coo_cmpr;
+    vector < int >     j_col_cmpr;
     vector < int >     l2g_i_coo;
     map <int,int>      g2l_i_coo;
     vector < double >  dense;
@@ -89,12 +95,14 @@ public:
     void DNS2COO();
     void compresRows();
     void readCooFromFile(string, int,int,int);
-    void printToFile(string,string,int,bool);
+    void printToFile(string, string,int,bool);
     void FinalizeSolve(int);
     void setZero();
     void getNullPivots(vector < int > & );
     void sortAndUniqueCOO(vector < int_int_dbl > &);
     void submatrix_row_selector(Matrix &, vector <int> &);
+    void getSubBlockmatrix_rs(Matrix &, Matrix &, int, int, int, int);
+    void getSubDiagBlockmatrix(const Matrix &, const Matrix &, Matrix &,int , int);
 
     void getBasicMatrixInfo();
 
@@ -179,8 +187,8 @@ public:
     void test_K_Kp_K_condition(Matrix &);
 
 
-    void createDirichletPreconditioner(Matrix const & ,Matrix const & );
-    void getSubDiagBlockmatrix(Matrix const & , Matrix & , int , int ); 
+    void createDirichletPreconditioner(const Matrix & ,const Matrix & ,Matrix &);
+    void getSubDiagBlockmatrix(const Matrix & , Matrix & , int , int );
 
 };
 

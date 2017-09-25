@@ -25,6 +25,17 @@ Matrix::Matrix(int n_row_, int n_col_, bool NorT)
     DNS_transposed = !NorT;
 }
 
+Matrix::Matrix(int n_row_, int n_col_, int nnz_, bool NorT)
+{
+    Matrix::init();
+    n_row = n_row_;
+    n_col = n_col_;
+    nnz   = nnz_;
+    DNS_transposed = !NorT;
+
+}
+
+
 void Matrix::init()
 {
   label = "";
@@ -371,6 +382,15 @@ void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_){
         n_row_ = n_row;
     }
 
+
+    if (l2g_i_coo.size() == 0){
+        l2g_i_coo.resize(nnz);
+        for (int i = 0; i < n_row_cmprs; i++){
+            l2g_i_coo[i] = i;
+        }
+    }
+
+
     dense.resize(n_row * n_col);
     for (int i = 0; i < n_row_ * n_col;i++){
         dense[i] = 0;
@@ -502,6 +522,27 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
     char _str[128];
     sprintf(_str,"%s/dump_%s_%d.txt",folder.c_str(),nameOfMat.c_str(),indOfMat);
     string path2matrix = _str;
+
+
+
+    printf("+++++++++++++++++++++++++++++++++++      %s\n", folder.c_str());
+//
+//    struct stat s0 = {0};
+//
+//    if (!stat(folder.c_str(), &s0)){
+//        printf("'%s' is %sa directory.\n", folder.c_str(), (s0.st_mode & S_IFDIR)  : "" ? "not ");
+//  // (s0.st_mode & S_IFDIR) can be replaced with S_ISDIR(s.st_mode)
+//    }
+//    else{
+//        perror("stat()");
+//    }
+//    return 0;
+//
+//
+
+
+
+
 
     FILE *fp = NULL;
     fp = fopen(path2matrix.c_str(), "w");
@@ -687,9 +728,14 @@ void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
     if (format !=1)
         fprintf(stderr, "%s %d : matrix is not in CSR format .\n",__FILE__,__LINE__);
 
+
+
     int dbg_flag = -1;
     int _n_col_rhs;
     int _n_rws;
+
+
+
 
     if (NorT)
         _n_rws = n_row_cmprs;
@@ -704,38 +750,38 @@ void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
         _n_col_rhs = X_in.n_col;
     }
 
+
+
     if (X_out.nnz == 0) {
        X_out.zero_dense(_n_rws,_n_col_rhs);
     }
 
     mult(&(X_in.dense[0]),&(X_out.dense[0]), NorT, _n_col_rhs, dbg_flag);
+
+
+
 }
 
 
 void Matrix::mult(const double x_in[], double  x_out[], bool NorT, int n_rhs, int dbg_flag){
 
-
     for (int i = 0; i < n_row_cmprs; i++) {
         for (int j = i_ptr[i]; j < i_ptr[i + 1]; j++) {
             if (symmetric > 0 ){
                 for (int k = 0; k < n_rhs; k++){
-                    x_out[i + k * n_row_cmprs] +=
-                            val[j] * x_in[j_col[j] + k * n_col];
+                    x_out[i + k * n_row_cmprs] += val[j] * x_in[j_col[j] + k * n_col];
                     if (j_col[j] != i){
-                        x_out[j_col[j] + k * n_row_cmprs] +=
-                                      val[j] * x_in[i + k * n_col];
+                        x_out[j_col[j] + k * n_row_cmprs] += val[j] * x_in[i + k * n_col];
                     }
                 }
             }
             else {
                 for (int k = 0; k < n_rhs; k++){
                     if (NorT){
-                        x_out[i + k * n_row_cmprs] +=
-                                val[j] * x_in[j_col[j] + k * n_col];
+                        x_out[i + k * n_row_cmprs] += val[j] * x_in[j_col[j] + k * n_col];
                     }
                     else {
-                        x_out[j_col[j] + k * n_row_cmprs] +=
-                                      val[j] * x_in[i + k * n_col];
+                        x_out[j_col[j] + k * n_col] += val[j] * x_in[i + k * n_row_cmprs];
                     }
                 }
             }
@@ -1657,10 +1703,16 @@ void Matrix::test_K_Kp_K_condition(Matrix &Ks){
 
 }
 
-void Matrix::createDirichletPreconditioner(Matrix const &Bf, Matrix const & K){
+
+int compareVecVec(const vector <int >& a, const vector <int>& b)  { return a[0] < b[0]; }
+
+void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
+                                           Matrix &Precond){
 
 
-#ifdef GENINVtools
+
+
+    map <string, string> c_options2 = K.options2;
 
     vector<int>::iterator it;
     vector < int > perm_vec = Bf.j_col;
@@ -1677,6 +1729,8 @@ void Matrix::createDirichletPreconditioner(Matrix const &Bf, Matrix const & K){
     vector <int> I_row_indices_p (K.nnz);
     vector <int> J_col_indices_p (K.nnz);
 
+    vector < int_int_dbl > tmpVec(K.nnz);
+
 
 
 
@@ -1691,130 +1745,198 @@ void Matrix::createDirichletPreconditioner(Matrix const &Bf, Matrix const & K){
     perm_vec_full.insert(perm_vec_full.end(), perm_vec.begin(), perm_vec.end());
 
     Matrix K_modif = K;
+    K_modif.label = "K_modif";
 
-    vector <vector <int >> vec_I1_i2(K_modif.n_row_cmprs, vector <int >(2, 1));
+    vector <vector <int > > vec_I1_i2(K_modif.n_row_cmprs, vector <int >(2, 1));
 
     for (int i = 0; i < K_modif.n_row_cmprs;i++){
         vec_I1_i2[i][0] = perm_vec_full[i];
         vec_I1_i2[i][1] = i; // position to create reverse permutation
     }
 
-    sort(vec_I1_i2.begin(), vec_I1_i2.end(), [](const vector <int >& a, const vector <int>& b) { return a[0] < b[0]; });
+    sort(vec_I1_i2.begin(), vec_I1_i2.end(), compareVecVec);
 
     // permutations made on matrix in COO format
-     K_modif.CSR2COO();
-     int I_index,J_index;
-     bool unsymmetric = false;
-     for (int i = 0;i<K_modif.nnz;i++){
+    K_modif.CSR2COO();
+
+    bool printCooOrDense_ = true;
+//     K_modif.printToFile("K_modif_v1",c_options2["path2data"].c_str(),order_number,printCooOrDense_);
+
+
+    int I_index,J_index;
+    bool unsymmetric = false;
+    for (int i = 0;i<K_modif.nnz;i++){
        I_index = vec_I1_i2[K_modif.i_coo_cmpr[i]][1];
        J_index = vec_I1_i2[K_modif.j_col[i]][1];
        if (unsymmetric || I_index<=J_index){
          I_row_indices_p[i]=I_index;
          J_col_indices_p[i]=J_index;
+         tmpVec[i].I =  I_index;
+         tmpVec[i].J =  J_index;
        }
        else{
          I_row_indices_p[i]=J_index;
          J_col_indices_p[i]=I_index;
+         tmpVec[i].I =  J_index;
+         tmpVec[i].J =  I_index;
        }
+       tmpVec[i].V =  K_modif.val[i];
      }
 
-     for (int i = 0; i<K_modif.nnz;i++){
-       K_modif.i_coo_cmpr[i] = I_row_indices_p[i];
-       K_modif.j_col[i] = J_col_indices_p[i];
-     }
 
 
-     K_modif.COO2CSR();
+    for (int i = 0; i < K_modif.nnz; i++){
+       K_modif.i_coo_cmpr[i] = tmpVec[i].I;
+       K_modif.j_col[i]      = tmpVec[i].J;
+    }
+
+//     K_modif.printToFile("K_modif_v2",c_options2["path2data"],order_number,printCooOrDense_);
 
 
-     // ------------------------------------------------------------------------------------------------------------------
-//     bool diagonalized_K_rr = config::solver::PRECONDITIONER == config::solver::PRECONDITIONERalternative::SUPER_DIRICHLET;
-//     //        PRECONDITIONER==NONE              - 0
-//     //        PRECONDITIONER==LUMPED            - 1
-//     //        PRECONDITIONER==WEIGHT_FUNCTION   - 2
-//     //        PRECONDITIONER==DIRICHLET         - 3
-//     //        PRECONDITIONER==SUPER_DIRICHLET   - 4
-//     //
-//     //        When next line is uncomment, var. PRECONDITIONER==DIRICHLET and PRECONDITIONER==SUPER_DIRICHLET provide identical preconditioner.
-//     //        bool diagonalized_K_rr = false
-//     // ------------------------------------------------------------------------------------------------------------------
-
-        int sc_size = perm_vec.size();
-
-        if (sc_size == physics.K[d].rows) {
-            cluster.domains[d].Prec = physics.K[d];
-            cluster.domains[d].Prec.ConvertCSRToDense(1);
-       // if physics.K[d] does not contain inner DOF
-        } else {
-
-       if (config::solver::PRECONDITIONER == config::solver::PRECONDITIONERalternative::DIRICHLET) {
-         SparseSolverCPU createSchur;
-/          createSchur.msglvl=1;
-         int sc_size = perm_vec.size();
-         createSchur.ImportMatrix_wo_Copy(K_modif);
-         createSchur.Create_SC(cluster.domains[d].Prec, sc_size,false);
-              cluster.domains[d].Prec.ConvertCSRToDense(1);
-       }
-       else
-       {
-         SparseMatrix K_rr;
-         SparseMatrix K_rs;
-         SparseMatrix K_sr;
-         SparseMatrix KsrInvKrrKrs;
-
-         int i_start = 0;
-         int nonsing_size = K_modif.rows - sc_size - i_start;
-         int j_start = nonsing_size;
-
-         K_rs.getSubBlockmatrix_rs(K_modif,K_rs,i_start, nonsing_size,j_start,sc_size);
-
-         if (cluster.SYMMETRIC_SYSTEM){
-           K_rs.MatTranspose(K_sr);
-         }
-         else
-         {
-           K_sr.getSubBlockmatrix_rs(K_modif,K_sr,j_start,sc_size,i_start, nonsing_size);
-         }
-
-         cluster.domains[d].Prec.getSubDiagBlockmatrix(K_modif,cluster.domains[d].Prec,nonsing_size,sc_size);
-//         SEQ_VECTOR <double> diagonals;
-//         SparseSolverCPU K_rr_solver;
-
-         // K_rs is replaced by:
-         // a) K_rs = 1/diag(K_rr) * K_rs          (simplified Dirichlet precond.)
-         // b) K_rs =    inv(K_rr) * K_rs          (classical Dirichlet precond. assembled by own - not via PardisoSC routine)
-//         if (diagonalized_K_rr){
-//           diagonals = K_modif.getDiagonal();
-//           // diagonals is obtained directly from K_modif (not from K_rr to avoid assembling) thanks to its structure
-//           //      K_modif = [K_rr, K_rs]
-//           //                [K_sr, K_ss]
-//           //
-//           for (int i = 0; i < K_rs.rows; i++) {
-//             for (int j = K_rs.CSR_I_row_indices[i]; j < K_rs.CSR_I_row_indices[i + 1]; j++) {
-//               K_rs.CSR_V_values[j - offset] /= diagonals[i];
-//             }
-//           }
-//         }
-//         else
-//         {
-//           K_rr.getSubDiagBlockmatrix(K_modif,K_rr,i_start, nonsing_size);
-//           K_rr_solver.ImportMatrix_wo_Copy(K_rr);
-//           K_rr_solver.SolveMat_Dense(K_rs);
-//         }
 //
-//         KsrInvKrrKrs.MatMat(K_sr,'N',K_rs);
-//         cluster.domains[d].Prec.MatAddInPlace(KsrInvKrrKrs,'N',-1);
-//       }
+    K_modif.sortAndUniqueCOO(tmpVec);
 
+//     K_modif.printToFile("K_modif_v3",c_options2["path2data"],order_number,printCooOrDense_);
+
+
+    K_modif.COO2CSR();
+
+
+    int sc_size = perm_vec.size();
+
+
+    Matrix K_rr("K_rr");
+    Matrix K_rs("K_rs");
+    Matrix K_ss("K_ss");
+    Matrix &KsrInvKrrKrs = Precond;
+    KsrInvKrrKrs.label = "KsrInvKrrKrs";
+
+    Matrix InvKrrKrs("InvKrrKrs");
+
+    int i_start = 0;
+    int nonsing_size = K_modif.n_row - sc_size - i_start;
+    int j_start = nonsing_size;
+
+    K_ss.getSubDiagBlockmatrix(K_modif,K_ss,nonsing_size,sc_size);
+
+    K_rs.getSubBlockmatrix_rs(K_modif,K_rs,i_start, nonsing_size,j_start,sc_size);
+
+    bool printCooOrDense = true;
+//           K_ss.printToFile("K_ss",c_options2["path2data"],order_number,printCooOrDense);
+
+
+
+    K_modif.getBasicMatrixInfo();
+    K_rs.getBasicMatrixInfo();
+//    K_rs.printToFile("K_rs",c_options2["path2data"],order_number,printCooOrDense);
+
+
+    K_rr.getSubDiagBlockmatrix(K_modif,K_rr,i_start, nonsing_size);
+//            K_rr.printToFile("K_rr",c_options2["path2data"],order_number,printCooOrDense);
+
+
+    K_rr.options2 = c_options2;
+    K_rr.sym_factor("pardiso");
+    Matrix R;
+    bool checkOrthogonality_ = false;
+    K_rr.num_factor(R,checkOrthogonality_);
+
+    Matrix K_rs_copy = K_rs;
+    K_rs_copy.label = "K_rs_copy";
+    K_rs_copy.getBasicMatrixInfo();
+    K_rs.label = "o";
+    K_rs.getBasicMatrixInfo();
+    K_rs.CSRorCOO2DNS(false,false);
+    K_rs.getBasicMatrixInfo();
+    K_rr.solve_system(K_rs,InvKrrKrs);
+    InvKrrKrs.getBasicMatrixInfo();
+//    InvKrrKrs.printToFile("InvKrrKrs",c_options2["path2data"],order_number,printCooOrDense);
+
+
+    K_rs_copy.mult(InvKrrKrs,KsrInvKrrKrs,false);
+
+    for (int i = 0; i < KsrInvKrrKrs.numel;i++)
+        KsrInvKrrKrs.dense[i] *= -1;
+
+//            Precond.printToFile("KsrInvKrrKrs",c_options2["path2data"],order_number,printCooOrDense);
+
+    for (int i = 0; i < n_row_cmprs; i++) {
+        for (int j = K_ss.i_ptr[i]; j < K_ss.i_ptr[i + 1]; j++) {
+            Precond.dense[i + K_ss.j_col[j] * K_ss.n_row_cmprs ] += K_ss.val[j];
+            if (K_ss.j_col[j] != i){
+                Precond.dense[K_ss.j_col[j] + i * K_ss.n_row_cmprs ] += K_ss.val[j];
+            }
         }
+    }
+    Precond.printToFile("Precond",c_options2["path2data"],order_number,printCooOrDense);
 
-
-#endif
 }
 
 
-void Matrix::getSubDiagBlockmatrix(Matrix const & A_in, Matrix & A_out, int i_start, int size_rr){
-#ifdef GENINVtools
+
+
+void Matrix::getSubBlockmatrix_rs( Matrix & A_in, Matrix & A_out,
+                                         int  i_start, int i_size,
+                                         int  j_start, int j_size){
+
+            cout << "i_start  " << i_start  << endl;
+            cout << "i_size   " << i_size   << endl;
+            cout << "j_start  " << j_start  << endl;
+            cout << "j_size   " << j_size   << endl;
+
+
+//
+// Original matrix A_in is assembled from 4 submatrices
+//
+//      A_in = [A_in(r,r)  A_in(r,s)]
+//             [A_in(s,r)  A_in(s,s)].
+//
+// Function 'getSubBlockmatrix_rs' returns square matrix A_in(r,s) in CSR format.
+//
+// rev. 2015-10-10 (A.M.)
+//
+// step 1: getting nnz of submatrix
+
+  int nnz_new=0;
+  int offset = A_in.i_ptr[0] ? 1 : 0;
+  for (int i = 0;i<i_size;i++){
+    for (int j = A_in.i_ptr[i+i_start];j<A_in.i_ptr[i+i_start+1];j++){
+      if ((A_in.j_col[j-offset]-offset)>=j_start &&
+                      (A_in.j_col[j-offset]-offset)<(j_start+j_size)){
+        nnz_new++;
+      }
+    }
+  }
+
+  cout << "abcdef           "   << nnz_new << endl;
+// step 2: allocation 1d arrays
+  A_out.val.resize(nnz_new);
+  A_out.j_col.resize(nnz_new);
+  A_out.i_ptr.resize(i_size+1);
+  A_out.n_row =i_size;
+  A_out.n_row_cmprs =i_size;
+  A_out.n_col =j_size;
+  A_out.nnz=nnz_new;
+  A_out.numel=nnz_new;
+  A_out.format = 1;
+  A_out.symmetric = 0;
+// step 3: filling 1d arrays
+  int ijcnt=0;
+  A_out.i_ptr[0]=offset;
+  for (int i = 0;i<i_size;i++){
+    for (int j = A_in.i_ptr[i+i_start];j<A_in.i_ptr[i+i_start+1];j++){
+      if ((A_in.j_col[j-offset]-offset)>=j_start && (A_in.j_col[j-offset]-offset)<(j_start+j_size)){
+        A_out.j_col[ijcnt] = (A_in.j_col[j-offset]) - j_start;
+        A_out.val[ijcnt]=A_in.val[j-offset];
+        ijcnt++;
+      }
+    }
+    A_out.i_ptr[i+1]=offset+ijcnt;
+  }
+}
+
+
+void Matrix::getSubDiagBlockmatrix(const Matrix & A_in, Matrix & A_out, int i_start, int size_rr){
 //
 // Function 'getSubDiagBlockmatrix' returns the diagonal block A_in(r,r) from original A_in,
 // where r = { i_start , i_start+1 , i_start+2 , ... , istart + size_rr - 1 }
@@ -1823,34 +1945,37 @@ void Matrix::getSubDiagBlockmatrix(Matrix const & A_in, Matrix & A_out, int i_st
 //
 // step 1: getting nnz of submatrix
   int nnz_new=0;
+  int offset = A_in.i_ptr[0] ? 1 : 0;
   for (int i = 0;i<size_rr;i++){
-    for (int j = A_in.CSR_I_row_indices[i+i_start];j<A_in.CSR_I_row_indices[i+i_start+1];j++){
-      if ((A_in.CSR_J_col_indices[j])>=i_start &&
-                      (A_in.CSR_J_col_indices[j])<(i_start+size_rr)){
+    for (int j = A_in.i_ptr[i+i_start];j<A_in.i_ptr[i+i_start+1];j++){
+      if ((A_in.j_col[j-offset]-offset)>=i_start &&
+                      (A_in.j_col[j-offset]-offset)<(i_start+size_rr)){
         nnz_new++;
       }
     }
   }
 // step 2: allocation 1d arrays
-  A_out.CSR_V_values.resize(nnz_new);
-  A_out.CSR_J_col_indices.resize(nnz_new);
-  A_out.CSR_I_row_indices.resize(size_rr+1);
-  A_out.rows=size_rr;
-  A_out.cols=size_rr;
+  A_out.val.resize(nnz_new);
+  A_out.j_col.resize(nnz_new);
+  A_out.i_ptr.resize(size_rr+1);
+  A_out.n_row = size_rr;
+  A_out.n_row_cmprs = size_rr;
+  A_out.n_col =size_rr;
   A_out.nnz=nnz_new;
-    A_out.type = A_in.type;
+  A_out.symmetric = A_in.symmetric;
+  A_out.format = A_in.format;
 // step 3: filling 1d arrays
   int ijcnt=0;
+  A_out.i_ptr[0]=offset;
   for (int i = 0;i<size_rr;i++){
-    for (int j = A_in.CSR_I_row_indices[i+i_start];j<A_in.CSR_I_row_indices[i+i_start+1];j++){
-      if ((A_in.CSR_J_col_indices[j])>=i_start &&
-                    (A_in.CSR_J_col_indices[j])<(i_start+size_rr)){
-        A_out.CSR_J_col_indices[ijcnt] = (A_in.CSR_J_col_indices[j]) - i_start;
-        A_out.CSR_V_values[ijcnt]=A_in.CSR_V_values[j];
+    for (int j = A_in.i_ptr[i+i_start];j<A_in.i_ptr[i+i_start+1];j++){
+      if ((A_in.j_col[j-offset]-offset)>=i_start &&
+                    (A_in.j_col[j-offset]-offset)<(i_start+size_rr)){
+        A_out.j_col[ijcnt] = (A_in.j_col[j-offset]) - i_start;
+        A_out.val[ijcnt]=A_in.val[j-offset];
         ijcnt++;
       }
     }
-    A_out.CSR_I_row_indices[i]=ijcnt;
+    A_out.i_ptr[i+1]=offset+ijcnt;
   }
-#endif
 }

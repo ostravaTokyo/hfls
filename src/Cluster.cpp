@@ -27,6 +27,10 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 #endif
 
 
+
+    printf("+++++++++++++++++++++++++++++++++++ cluster     %s\n", options2["path2data"].c_str());
+
+
     /* mesh belonging to i-th cluster (currently, i=0 only)*/
     mesh.createMesh(options, options2);
     nSubClst = mesh.nSubClst;
@@ -94,6 +98,10 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     cout << "boolean matrix is being created. ... \n" ;
     create_cluster_constraints(options, options2);
 
+
+
+
+
     cout << "subdomain:  ";
     for (int d = 0; d < K.size(); d++){
         cout << d <<" ";
@@ -113,8 +121,8 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
         Matrix Bc_tmp;
         Bc_tmp = Bc[d];
 
-
-        Preconditioner[d].createDirichletPreconditioner(Bf[d],K[d]);
+        Preconditioner[d].order_number = d;
+        Preconditioner[d].createDirichletPreconditioner(Bf[d],K[d],Preconditioner[d]);
 
         reduceZeroRows = true;
         transpose = true;
@@ -766,6 +774,17 @@ void Cluster::create_cluster_constraints(const Options &options,
     create_Bc_or_Bf_in_CSR(Bf,Bf_full_rank,Bf_cornersOnlyOrAllDof,Bf_addDirConstr);
 
 
+    if (options2["preconditoner"] == "Dirichlet"){
+
+            vector<int>::iterator it;
+            vector < int > l2g_(Bc_[d].i_coo_cmpr);
+            sort(l2g_.begin(), l2g_.end());
+            it = unique (l2g_.begin(), l2g_.end());
+            l2g_.resize( distance(l2g_.begin(),it));
+    }
+
+
+
     nLam_c = Bc[0].n_row;
     nLam_f = Bf[0].n_row;
 
@@ -1060,8 +1079,18 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
     scale(w_out);
     mult_BfT(w_in,xx);
 
-    for (int d = 0; d < nSubClst; d++)
-        K[d].mult(xx[d],yy[d],true);
+    bool DIRICHLET = true;
+
+    for (int d = 0; d < nSubClst; d++){
+
+        if (DIRICHLET){
+
+
+        }
+        else{
+            K[d].mult(xx[d],yy[d],true);
+        }
+    }
 
     mult_Bf(yy,w_out);
     scale(w_out);
@@ -1164,7 +1193,6 @@ void Cluster::mult_Bf(vector < Vector > const &x_in, Vector &lambda ){
             lambda.dense[Bf[d].l2g_i_coo[i]] +=  Bf_x_d.dense[i];
         }
     }
-
 }
 
 void Cluster::mult_BfT(Vector const &lambda, vector < Vector > &x_out){
