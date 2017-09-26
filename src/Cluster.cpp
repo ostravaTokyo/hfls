@@ -1366,8 +1366,9 @@ void Cluster::scale(Vector & x){
 
 void Cluster::pcpg2(){
 
-    double gPz, gPz_prev, wFw, rho, gamma, wFPg, norm_gPz0;
-    double eps_iter = 1e-4;
+    double eps_iter     = atof(options2["eps_iter"].c_str());
+
+    double gPz, gPz_prev, wFw, rho, gamma, norm_gPz0;
     Vector g0, d_rhs, e, iGTG_e, lambda, z, Pz;
     Vector Fw, Pg, g, w, w_prev;
     vector < Vector > xx, yy;
@@ -1433,18 +1434,12 @@ void Cluster::pcpg2(){
         w = Pz;
         w.add(w_prev,gamma);
 
-
         printVTK(yy, xx, lambda, alpha, it);
-
     }
 
     lambda.printToFile("lambda_",folder,0,true);
-
     // final solution (parameter 1000 is number > maxIter)
     printVTK(yy, xx, lambda, alpha, 1000);
-
-
-
 
 }
 
@@ -1452,8 +1447,9 @@ void Cluster::pcpg2(){
 
 void Cluster::pcpg(){
 
+    double eps_iter     = atof(options2["eps_iter"].c_str());
+
     double gPg, wFw, rho, gamma, wFPg, norm_gPg0;
-    double eps_iter = 1e-4;
     Vector g0, d_rhs, e, iGTG_e, lambda, z, Pz;
     Vector Fw, Pg, g, w, w_prev;
     vector < Vector > xx, yy;
