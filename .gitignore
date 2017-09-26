@@ -48,4 +48,6 @@ main
 *.zip
 *.avi
 
-
+#dissection
+dissection*.log
+singularindex*data
