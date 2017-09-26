@@ -11,8 +11,11 @@ int main(int argc, char *argv[]){
 
     std::map<string,string > options2;
 
+
+    options2["eps_iter"]                        = "1e-4";
     /* Dirichlet, lumped */
     options2["preconditioner"]                  = "Dirichlet";
+    //options2["preconditioner"]                  = "lumped";
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
     options2["poissons_ratio"]                  =  "0.3";
