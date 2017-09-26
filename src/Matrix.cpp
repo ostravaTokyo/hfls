@@ -525,7 +525,7 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
 
 
 
-    printf("+++++++++++++++++++++++++++++++++++      %s\n", folder.c_str());
+//    printf("+++++++++++++++++++++++++++++++++++      %s\n", folder.c_str());
 //
 //    struct stat s0 = {0};
 //
@@ -1826,8 +1826,8 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
 
 
 
-    K_modif.getBasicMatrixInfo();
-    K_rs.getBasicMatrixInfo();
+//    K_modif.getBasicMatrixInfo();
+//    K_rs.getBasicMatrixInfo();
 //    K_rs.printToFile("K_rs",c_options2["path2data"],order_number,printCooOrDense);
 
 
@@ -1843,17 +1843,21 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
 
     Matrix K_rs_copy = K_rs;
     K_rs_copy.label = "K_rs_copy";
-    K_rs_copy.getBasicMatrixInfo();
+//    K_rs_copy.getBasicMatrixInfo();
     K_rs.label = "o";
-    K_rs.getBasicMatrixInfo();
+//    K_rs.getBasicMatrixInfo();
     K_rs.CSRorCOO2DNS(false,false);
-    K_rs.getBasicMatrixInfo();
+//    K_rs.getBasicMatrixInfo();
     K_rr.solve_system(K_rs,InvKrrKrs);
-    InvKrrKrs.getBasicMatrixInfo();
+//    InvKrrKrs.getBasicMatrixInfo();
 //    InvKrrKrs.printToFile("InvKrrKrs",c_options2["path2data"],order_number,printCooOrDense);
 
 
     K_rs_copy.mult(InvKrrKrs,KsrInvKrrKrs,false);
+
+
+//    for (int i = 0 ; i < KsrInvKrrKrs.numel;i++)
+//        KsrInvKrrKrs.dense[i] = 0;
 
     for (int i = 0; i < KsrInvKrrKrs.numel;i++)
         KsrInvKrrKrs.dense[i] *= -1;
@@ -1868,7 +1872,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
             }
         }
     }
-    Precond.printToFile("Precond",c_options2["path2data"],order_number,printCooOrDense);
+//    Precond.printToFile("Precond",c_options2["path2data"],order_number,printCooOrDense);
 
 }
 
@@ -1878,11 +1882,6 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
 void Matrix::getSubBlockmatrix_rs( Matrix & A_in, Matrix & A_out,
                                          int  i_start, int i_size,
                                          int  j_start, int j_size){
-
-            cout << "i_start  " << i_start  << endl;
-            cout << "i_size   " << i_size   << endl;
-            cout << "j_start  " << j_start  << endl;
-            cout << "j_size   " << j_size   << endl;
 
 
 //
@@ -1908,7 +1907,6 @@ void Matrix::getSubBlockmatrix_rs( Matrix & A_in, Matrix & A_out,
     }
   }
 
-  cout << "abcdef           "   << nnz_new << endl;
 // step 2: allocation 1d arrays
   A_out.val.resize(nnz_new);
   A_out.j_col.resize(nnz_new);
