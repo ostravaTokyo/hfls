@@ -122,7 +122,10 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
         Bc_tmp = Bc[d];
 
         Preconditioner[d].order_number = d;
-        Preconditioner[d].createDirichletPreconditioner(Bf[d],K[d],Preconditioner[d]);
+
+        if (options2.at("preconditioner").compare("Dirichlet") == 0 )
+            Preconditioner[d].createDirichletPreconditioner(Bf[d],K[d],Preconditioner[d]);
+
 
         reduceZeroRows = true;
         transpose = true;
@@ -773,18 +776,15 @@ void Cluster::create_cluster_constraints(const Options &options,
     bool Bf_addDirConstr        = true;
     create_Bc_or_Bf_in_CSR(Bf,Bf_full_rank,Bf_cornersOnlyOrAllDof,Bf_addDirConstr);
 
-
-    if (options2["preconditoner"] == "Dirichlet"){
-
+    if (options2.at("preconditioner").compare("Dirichlet") == 0 ){
             vector<int>::iterator it;
-            vector < int > l2g_(Bc_[d].i_coo_cmpr);
-            sort(l2g_.begin(), l2g_.end());
-            it = unique (l2g_.begin(), l2g_.end());
-            l2g_.resize( distance(l2g_.begin(),it));
+            for (int d = 0 ; d < nSubClst; d++){
+                Bf[d].j_col_cmpr = Bf[d].j_col;
+                sort(Bf[d].j_col_cmpr.begin(), Bf[d].j_col_cmpr.end());
+                it = unique (Bf[d].j_col_cmpr.begin(), Bf[d].j_col_cmpr.end());
+                Bf[d].j_col_cmpr.resize( distance(Bf[d].j_col_cmpr.begin(),it));
+            }
     }
-
-
-
     nLam_c = Bc[0].n_row;
     nLam_f = Bf[0].n_row;
 
@@ -1079,12 +1079,25 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
     scale(w_out);
     mult_BfT(w_in,xx);
 
-    bool DIRICHLET = true;
 
     for (int d = 0; d < nSubClst; d++){
 
-        if (DIRICHLET){
+        if (options2.at("preconditioner").compare("Dirichlet") == 0 ){
+            Vector  x_(xx[d].n_row_cmprs);
+            x_.zero_dense(xx[d].n_row_cmprs);
+            for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
+               x_.dense[i] = xx[d].dense[Bf[d].j_col_cmpr[i]];
+            }
 
+//            x_.printToFile("x_",folder,0,true);
+            Vector y;
+
+            y.mat_mult_dense(Preconditioner[d],"N",x_,"N");
+
+            yy[d].zero_dense(xx[d].n_row_cmprs);
+            for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
+               yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
+            }
 
         }
         else{
