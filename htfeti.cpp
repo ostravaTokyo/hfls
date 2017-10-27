@@ -13,9 +13,8 @@ int main(int argc, char *argv[]){
 
     options2["eps_iter"]                        = "1e-4";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
-    options2["preconditioner"]                  = "Dirichlet_implicit";
+    options2["preconditioner"]                  = "lumped";
     //options2["preconditioner"]                  = "Dirichlet_explicit";
-    //options2["preconditioner"]                  = "lumped";
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
     options2["poissons_ratio"]                  =  "0.3";
