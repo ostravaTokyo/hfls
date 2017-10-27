@@ -211,6 +211,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     /* Fc_clust  */
     cout << "Fc_clust is being created ... \n" ;
     create_Fc_clust();
+    Fc_clust.options2 = options2;
     Fc_clust.getBasicMatrixInfo();
     if (printMat > 0)
         Fc_clust.printToFile("Fc_clust",folder,0,printCooOrDense);
@@ -232,6 +233,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
     cout << "Gc_clust is being created ... \n" ;
     create_Gc_clust();
+    Gc_clust.options2 = options2;
     cout << "====================================================\n";
     if (printMat > 0)
         Gc_clust.printToFile("Gc_clust",folder,0,printCooOrDense);
@@ -251,6 +253,8 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
         create_GcTGc();
         GcTGc_clust.getBasicMatrixInfo();
     }
+    GcTGc_clust.options2 = options2;
+
     nRBM_c = GcTGc_clust.n_row_cmprs;
 
     Matrix S_GcTGc;
@@ -287,6 +291,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     }
 #endif
     create_Ac_clust(flag0);
+    Ac_clust.options2 = options2;
     Matrix S_Ac_clust;
     Matrix::getEigVal_DNS(Ac_clust,S_Ac_clust,10,3);
 
