@@ -9,8 +9,7 @@
 using namespace std;
 int main(int argc, char *argv[]){
 
-    std::map<string,string > options2;
-
+    map<string,string > options2;
 
     options2["eps_iter"]                        = "1e-4";
     /* Dirichlet, lumped */
@@ -86,11 +85,16 @@ int main(int argc, char *argv[]){
     Options options;
     Cluster cluster(options,options2);
     cout << "----------------- done -----------------\n" ;
-    return 0;
-}
+
 
 // HOW TO PRINT OPTIONS2
 
-//    cout << "\t\t\tK.options2.size() "  << K.options2.size() << endl;
-//    for (std::map<string,string>::const_iterator it=K.options2.begin(); it!=K.options2.end(); ++it)
-//        std::cout << "\t\t\t" << it->first << " => " << it->second << '\n';
+    cout << "\t\t\toptions2.size() "  << options2.size() << endl;
+    for (map<string,string>::const_iterator it=options2.begin(); it!=options2.end(); ++it)
+        cout << "\t\t\t" << it->first << " => " << it->second << '\n';
+
+
+
+    return 0;
+}
+
