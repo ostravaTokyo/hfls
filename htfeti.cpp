@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
     options2["print_matrices"]                  =  "0";
 
     /* ker, cor, all                                            */
-    options2["typeBc"]                          =  "cor";
+    options2["typeBc"]                          =  "ker";
 
     /* true,  false                                             */
     options2["Ac_extended_by_kerGc"]            =  "false";
