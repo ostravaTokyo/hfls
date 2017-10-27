@@ -519,7 +519,7 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
 //    string path2matrix = folder+"/dump_" + nameOfMat + "_" +
 //                                                     to_string(indOfMat)+".txt";
 
-    char _str[128];
+    char _str[256];
     sprintf(_str,"%s/dump_%s_%d.txt",folder.c_str(),nameOfMat.c_str(),indOfMat);
     string path2matrix = _str;
 
@@ -1472,6 +1472,8 @@ void Matrix::getEigVal_DNS(Matrix &A, Matrix &S, int print_first_n){
 
 void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_last_n){
 
+    map <string, string> c_options2 = A_.options2;
+
     if (A_.n_row_cmprs > 3000){
         cout << "Matrix is too big to get SVD" << endl;
         return;
@@ -1498,7 +1500,7 @@ void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_la
     MKL_INT ldzA = A_.n_row_cmprs;
     info = LAPACKE_dspev (LAPACK_COL_MAJOR, JOBZ_, UPLO_,
             A_.n_row_cmprs, &(A.dense[0]), &(S.dense[0]), ZK_modif, ldzA);
-    S.printToFile(A_.label,"../data",444,true);
+    S.printToFile(A_.label,c_options2["path2data"],444,true);
     delete [] ZK_modif;
 
     for (int i = 0; i < S.n_row_cmprs; i++){
@@ -1517,6 +1519,9 @@ void Matrix::getSingularVal_DNS(Matrix &A, Matrix &S, int print_first_n){
 }
 
 void Matrix::getSingularVal_DNS(Matrix A, Matrix &S, int print_first_n, int print_last_n){
+
+
+    map <string, string> c_options2 = A.options2;
 
     if (A.n_row_cmprs > 2000){
         cout << "Matrix is too big to get SVD" << endl;
@@ -1538,7 +1543,7 @@ void Matrix::getSingularVal_DNS(Matrix A, Matrix &S, int print_first_n, int prin
     if (print_first_n != 0 && print_last_n != 0){
         cout << "\n\n#######  Singular values of " << A.label << " #######\n";
         Matrix::print_int_vector(S.dense,print_first_n,print_last_n);
-        S.printToFile(A.label,"../data",555,true);
+        S.printToFile(A.label,c_options2["path2data"],555,true);
     }
     delete [] U ; delete [] Vt; delete [] superb;
 
