@@ -187,7 +187,13 @@ public:
     void test_K_Kp_K_condition(Matrix &);
 
 
-    void createDirichletPreconditioner(const Matrix & ,const Matrix & ,Matrix &);
+    void createDirichletPreconditioner(const Matrix & ,
+                                       const Matrix & ,
+                                       Matrix &,
+                                       Matrix &,
+                                       Matrix &,
+                                       Matrix &
+                                       );
     void getSubDiagBlockmatrix(const Matrix & , Matrix & , int , int );
 
 };

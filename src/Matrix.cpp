@@ -1706,10 +1706,12 @@ void Matrix::test_K_Kp_K_condition(Matrix &Ks){
 
 int compareVecVec(const vector <int >& a, const vector <int>& b)  { return a[0] < b[0]; }
 
-void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
+void Matrix::createDirichletPreconditioner(const Matrix &Bf,
+                                           const Matrix & K,
+                                           Matrix &Krr_,
+                                           Matrix &Krs_,
+                                           Matrix &Kss_,
                                            Matrix &Precond){
-
-
 
 
     map <string, string> c_options2 = K.options2;
@@ -1820,7 +1822,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
 
     K_rs.getSubBlockmatrix_rs(K_modif,K_rs,i_start, nonsing_size,j_start,sc_size);
 
-    bool printCooOrDense = true;
+//    bool printCooOrDense = true;
 //           K_ss.printToFile("K_ss",c_options2["path2data"],order_number,printCooOrDense);
 
 
@@ -1845,33 +1847,32 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
 //    K_rs_copy.getBasicMatrixInfo();
     K_rs.label = "o";
 //    K_rs.getBasicMatrixInfo();
-    K_rs.CSRorCOO2DNS(false,false);
-//    K_rs.getBasicMatrixInfo();
-    K_rr.solve_system(K_rs,InvKrrKrs);
-//    InvKrrKrs.getBasicMatrixInfo();
-//    InvKrrKrs.printToFile("InvKrrKrs",c_options2["path2data"],order_number,printCooOrDense);
 
 
-    K_rs_copy.mult(InvKrrKrs,KsrInvKrrKrs,false);
+    if (c_options2.at("preconditioner").compare("Dirichlet_implicit") == 0 ){
+        Krr_ = K_rr;
+        Kss_ = K_ss;
+        Krs_ = K_rs;
 
+    }
+    else if (c_options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ){
+        K_rs.CSRorCOO2DNS(false,false);
+        K_rr.solve_system(K_rs,InvKrrKrs);
+        K_rs_copy.mult(InvKrrKrs,KsrInvKrrKrs,false);
 
-//    for (int i = 0 ; i < KsrInvKrrKrs.numel;i++)
-//        KsrInvKrrKrs.dense[i] = 0;
+        for (int i = 0; i < KsrInvKrrKrs.numel;i++)
+            KsrInvKrrKrs.dense[i] *= -1;
 
-    for (int i = 0; i < KsrInvKrrKrs.numel;i++)
-        KsrInvKrrKrs.dense[i] *= -1;
-
-//            Precond.printToFile("KsrInvKrrKrs",c_options2["path2data"],order_number,printCooOrDense);
-
-    for (int i = 0; i < n_row_cmprs; i++) {
-        for (int j = K_ss.i_ptr[i]; j < K_ss.i_ptr[i + 1]; j++) {
-            Precond.dense[i + K_ss.j_col[j] * K_ss.n_row_cmprs ] += K_ss.val[j];
-            if (K_ss.j_col[j] != i){
-                Precond.dense[K_ss.j_col[j] + i * K_ss.n_row_cmprs ] += K_ss.val[j];
+        for (int i = 0; i < n_row_cmprs; i++) {
+            for (int j = K_ss.i_ptr[i]; j < K_ss.i_ptr[i + 1]; j++) {
+                Precond.dense[i + K_ss.j_col[j] * K_ss.n_row_cmprs ] += K_ss.val[j];
+                if (K_ss.j_col[j] != i){
+                    Precond.dense[K_ss.j_col[j] + i * K_ss.n_row_cmprs ] += K_ss.val[j];
+                }
             }
         }
     }
-//    Precond.printToFile("Precond",c_options2["path2data"],order_number,printCooOrDense);
+
 
 }
 
