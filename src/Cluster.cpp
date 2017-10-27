@@ -1,10 +1,13 @@
 #include "Cluster.hpp"
 #include <unistd.h>
 #include <cstdlib>
+#include <stdio.h>
+
 #ifdef DISSECTION
 #include "Dissection.hpp"
 #endif
 
+#include <ctime>
 
 using namespace std;
 
@@ -12,6 +15,7 @@ using namespace std;
 Cluster::Cluster(Options options_, map <string,string> options2_)
 {
 
+    clock_t begin = clock();
     options = options_;
     options2 = options2_;
 
@@ -42,6 +46,11 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     K.resize(nSubClst);
 
     Preconditioner.resize(nSubClst);
+
+    Kss.resize(nSubClst);
+    Ksr.resize(nSubClst);
+    Krs.resize(nSubClst);
+    Krr.resize(nSubClst);
 
     rhs.resize(nSubClst);
     Fc.resize(nSubClst);
@@ -123,8 +132,14 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
         Preconditioner[d].order_number = d;
 
-        if (options2.at("preconditioner").compare("Dirichlet") == 0 )
-            Preconditioner[d].createDirichletPreconditioner(Bf[d],K[d],Preconditioner[d]);
+        if (options2.at("preconditioner").compare("Dirichlet") == 0 ){
+            Preconditioner[d].createDirichletPreconditioner(Bf[d],
+                                                            K[d],
+                                                            Krr[d],
+                                                            Krs[d],
+                                                            Kss[d],
+                                                            Preconditioner[d]);
+        }
 
 
         reduceZeroRows = true;
@@ -352,6 +367,16 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
     for (int i = 0 ; i < nSubClst; i++)
         K[i].FinalizeSolve(i);
+
+    clock_t end = clock();
+    time_total = double(end - begin) / CLOCKS_PER_SEC;
+
+
+    printf("Solver time:  %3.1f s.\n",time_solver);
+    printf("Total time:   %3.1f s.\n",time_total);
+
+
+
 }
 
 
@@ -1082,6 +1107,8 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
 
     for (int d = 0; d < nSubClst; d++){
 
+//        cout <<  "__LINE__" << __LINE__ << endl;
+
         if (options2.at("preconditioner").compare("Dirichlet") == 0 ){
             Vector  x_(xx[d].n_row_cmprs);
             x_.zero_dense(xx[d].n_row_cmprs);
@@ -1089,14 +1116,37 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
                x_.dense[i] = xx[d].dense[Bf[d].j_col_cmpr[i]];
             }
 
-            Vector y;
 
-            y.mat_mult_dense(Preconditioner[d],"N",x_,"N");
-            yy[d].zero_dense(xx[d].n_row_cmprs);
-            for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
-               yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
+            if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ){
+                Vector y;
+                y.mat_mult_dense(Preconditioner[d],"N",x_,"N");
+                yy[d].zero_dense(xx[d].n_row_cmprs);
+                for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
+                   yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
+                }
             }
+            else if (options2.at("preconditioner").compare("Dirichlet_implicit") == 0 ){
+ //               cout <<  "__LINE__" << __LINE__ << endl;
+                yy[d].zero_dense(xx[d].n_row_cmprs);
+                int nBf = Bf[d].j_col_cmpr.size();
+                Vector y(nBf);
+                y.zero_dense(nBf);
 
+                Kss[d].mult(x_,y,true);
+                for (int i = 0; i < nBf; i++){
+                   yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
+                }
+
+
+
+                Ksr[d].mult(x_,y,false);
+                Krr[d].solve_system(y,x_);
+                Ksr[d].mult(y,x_,true);
+
+                for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
+                   yy[d].dense[Bf[d].j_col_cmpr[i]] = -x_.dense[i];
+                }
+            }
         }
         else{
             K[d].mult(xx[d],yy[d],true);
@@ -1363,6 +1413,7 @@ void Cluster::scale(Vector & x){
 
 
 void Cluster::pcpg2(){
+      clock_t begin = clock();
 
     double eps_iter     = atof(options2["eps_iter"].c_str());
 
@@ -1434,6 +1485,10 @@ void Cluster::pcpg2(){
 
         printVTK(yy, xx, lambda, alpha, it);
     }
+    clock_t end = clock();
+    time_solver = double(end - begin) / CLOCKS_PER_SEC;
+
+//    printf("Solver time:  %3.1f s.\n",elapsed_secs);
 
     lambda.printToFile("lambda_",folder,0,true);
     // final solution (parameter 1000 is number > maxIter)

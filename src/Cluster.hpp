@@ -27,7 +27,14 @@ public:
     string folder;
     std::vector< Matrix> K;
     std::vector< Vector > rhs;
+
     std::vector< Matrix> Preconditioner;
+
+    std::vector< Matrix> Kss;
+    std::vector< Matrix> Ksr;
+    std::vector< Matrix> Krs;
+    std::vector< Matrix> Krr;
+
     std::vector< Matrix> R;
     std::vector< Matrix> Fc;
     std::vector< Matrix> Bc;
@@ -100,6 +107,9 @@ public:
     void pcpg();
     void pcpg2();
     void printVTK(vector < Vector > &, vector < Vector > &, Vector &, Vector &, int);
+
+    double time_solver;
+    double time_total;
 
 //    static double dot(Matrix &, Matrix &);
 //    static double apb(Matrix &, Matrix &, double, double);
