@@ -13,8 +13,8 @@ int main(int argc, char *argv[]){
 
     options2["eps_iter"]                        = "1e-4";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
-    options2["preconditioner"]                  = "lumped";
-    //options2["preconditioner"]                  = "Dirichlet_explicit";
+    //options2["preconditioner"]                  = "lumped";
+    options2["preconditioner"]                  = "Dirichlet_explicit";
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
     options2["poissons_ratio"]                  =  "0.3";
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]){
     options2["linear_solver"]                   =  "dissection";
 
     /* {0, 1, 2, 3 }                                            */
-    options2["print_matrices"]                  =  "0";
+    options2["print_matrices"]                  =  "5";
 
     /* ker, cor, all                                            */
     options2["typeBc"]                          =  "ker";
