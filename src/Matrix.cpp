@@ -1759,7 +1759,6 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf, const Matrix & K,
     // permutations made on matrix in COO format
     K_modif.CSR2COO();
 
-    bool printCooOrDense_ = true;
 //     K_modif.printToFile("K_modif_v1",c_options2["path2data"].c_str(),order_number,printCooOrDense_);
 
 
