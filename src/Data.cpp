@@ -297,7 +297,7 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate, double E
     double density = 2.;
 
     //double acceleration[] ={0.0,0.0, 98.10};
-    double acceleration[] ={0.0, 5 * 0.09810,9.8};
+    double acceleration[] ={0.0, 0 * 0.09810,9.8};
 
     double r, s, t;
     double Gt[6 * 24];
