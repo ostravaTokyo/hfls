@@ -1089,11 +1089,9 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
                x_.dense[i] = xx[d].dense[Bf[d].j_col_cmpr[i]];
             }
 
-//            x_.printToFile("x_",folder,0,true);
             Vector y;
 
             y.mat_mult_dense(Preconditioner[d],"N",x_,"N");
-
             yy[d].zero_dense(xx[d].n_row_cmprs);
             for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
                yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
