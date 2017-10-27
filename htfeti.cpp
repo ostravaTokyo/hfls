@@ -12,8 +12,9 @@ int main(int argc, char *argv[]){
     map<string,string > options2;
 
     options2["eps_iter"]                        = "1e-4";
-    /* Dirichlet, lumped */
-    options2["preconditioner"]                  = "Dirichlet";
+    /* Dirichlet_explicit, Dirichlet_implicit, lumped */
+    options2["preconditioner"]                  = "Dirichlet_implicit";
+    //options2["preconditioner"]                  = "Dirichlet_explicit";
     //options2["preconditioner"]                  = "lumped";
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
@@ -26,7 +27,7 @@ int main(int argc, char *argv[]){
     options2["print_matrices"]                  =  "0";
 
     /* ker, cor, all                                            */
-    options2["typeBc"]                          =  "ker";
+    options2["typeBc"]                          =  "cor";
 
     /* true,  false                                             */
     options2["Ac_extended_by_kerGc"]            =  "false";
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]){
         cout <<"###########################################################" << endl;
         cout << "if pardiso, kernel must be provided by analytical formula" << endl;
         cout <<"###########################################################" << endl;
-        options2["create_analytic_ker_K"] = true;
+        options2["create_analytic_ker_K"] = "true";
     }
 
 
@@ -89,9 +90,9 @@ int main(int argc, char *argv[]){
 
 // HOW TO PRINT OPTIONS2
 
-    cout << "\t\t\toptions2.size() "  << options2.size() << endl;
-    for (map<string,string>::const_iterator it=options2.begin(); it!=options2.end(); ++it)
-        cout << "\t\t\t" << it->first << " => " << it->second << '\n';
+//    cout << "\t\t\toptions2.size() "  << options2.size() << endl;
+//    for (map<string,string>::const_iterator it=options2.begin(); it!=options2.end(); ++it)
+//        cout << "\t\t\t" << it->first << " => " << it->second << '\n';
 
 
 
