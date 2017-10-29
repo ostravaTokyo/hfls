@@ -103,8 +103,8 @@ public:
     void Preconditioning(Vector const &, Vector &);
     void scale(Vector &);
 
+    void pcpg_old();
     void pcpg();
-    void pcpg2();
     void printVTK(vector < Vector > &, vector < Vector > &, Vector &, Vector &, int);
 
     double time_solver;

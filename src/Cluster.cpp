@@ -107,10 +107,6 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     cout << "boolean matrix is being created. ... \n" ;
     create_cluster_constraints(options, options2);
 
-
-
-
-
     cout << "subdomain:  ";
     for (int d = 0; d < K.size(); d++){
         cout << d <<" ";
@@ -363,7 +359,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
       }
 
       // conjugate gradient //
-      pcpg2();
+      pcpg();
 
 
 
@@ -1424,7 +1420,7 @@ void Cluster::scale(Vector & x){
 
 
 
-void Cluster::pcpg2(){
+void Cluster::pcpg(){
       clock_t begin = clock();
 
     double eps_iter     = atof(options2["eps_iter"].c_str());
@@ -1514,7 +1510,7 @@ void Cluster::pcpg2(){
 
 
 
-void Cluster::pcpg(){
+void Cluster::pcpg_old(){
 
     double eps_iter     = atof(options2["eps_iter"].c_str());
 
