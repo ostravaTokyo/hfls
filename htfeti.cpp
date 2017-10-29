@@ -10,8 +10,8 @@ int main(int argc, char *argv[]){
     map<string,string > options2;
 
     options2["eps_iter"]                        = "1e-4";
+    options2["max_iter"]                        = "200";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
-//    options2["preconditioner"]                  = "lumped";
     options2["preconditioner"]                  = "Dirichlet_implicit";
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
