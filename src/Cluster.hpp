@@ -31,7 +31,6 @@ public:
     std::vector< Matrix> Preconditioner;
 
     std::vector< Matrix> Kss;
-    std::vector< Matrix> Ksr;
     std::vector< Matrix> Krs;
     std::vector< Matrix> Krr;
 
