@@ -980,7 +980,6 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
         cntR += R[d].n_col;
     }
 
-//    gc.printToFile("gc",folder,0,true);
 
     Vector lam_alpha;
     lam_alpha = gc;
@@ -988,9 +987,6 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
 
 
     Ac_clust.solve_system(gc,lam_alpha);
-
-//    lam_alpha.printToFile("lam_alpha",folder,0,true);
-
 
 
     cntR = 0;
@@ -1014,7 +1010,6 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
             alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
         }
 
-//        alphac_d.printToFile("alpha",folder,d,true);
         Ralphac.mat_mult_dense(R[d],"N",alphac_d,"N");
         cntR += R[d].n_col;
 
@@ -1026,7 +1021,6 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
         for (int i = 0; i < x_out[d].n_row_cmprs; i++){
             x_out[d].dense[i] =  Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
         }
-//        x_out[d].printToFile("x_out",folder,d,true);
     }
 }
 
@@ -1363,9 +1357,11 @@ void Cluster::pcpg(){
     double gPz, gPz_prev, wFw, rho, gamma, norm_gPz0;
     Vector g0, d_rhs, e, iGTG_e, lambda, z, Pz;
     Vector Fw, Pg, g, w, w_prev;
-    vector < Vector > xx, yy;
     Vector beta, alpha;
-    xx.resize(nSubClst); yy.resize(nSubClst);
+
+    vector < Vector > xx, yy;
+    xx.resize(nSubClst);
+    yy.resize(nSubClst);
 
     xx[0].label = "test";
     mult_Kplus_f(rhs,xx);
@@ -1431,13 +1427,13 @@ void Cluster::pcpg(){
         w = Pz;
         w.add(w_prev,gamma);
 
-//        printVTK(yy, xx, lambda, alpha, it);
+        if (options2["vtkWithinIter"].compare("true") == 0)
+            printVTK(yy, xx, lambda, alpha, it);
     }
     clock_t end = clock();
     time_solver = double(end - begin) / CLOCKS_PER_SEC;
 
 
-    lambda.printToFile("lambda_",folder,0,true);
     // final solution (parameter 1000 is number > maxIter)
     printVTK(yy, xx, lambda, alpha, -1);
 
