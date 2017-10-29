@@ -31,7 +31,10 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
 
     /* mesh belonging to i-th cluster (currently, i=0 only)*/
-    mesh.createMesh(options, options2);
+    mesh.createMesh(options2);
+
+    mesh.ddm_metis(options2);
+
     nSubClst = mesh.nSubClst;
 
     Bc.resize(nSubClst);
@@ -203,10 +206,6 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
 
 
-    Fc_clust.sym_factor(options2["linear_solver"]);
-//    Matrix Fc_copy = Fc_clust;
-    Fc_clust.num_factor();
-//    Fc_clust.test_K_Kp_K_condition(Fc_copy);
 
 
 
@@ -256,53 +255,71 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     if (printMat > 0)
         kerGc.printToFile("kerGc",folder,0,printCooOrDense);
 
-    cout << "Ac_clust is being created ... \n" ;
-    bool flag0 = false;
-    if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
-        flag0 = true;
-    }
-    create_Ac_clust(flag0);
-    Ac_clust.options2 = options2;
-    Matrix S_Ac_clust;
-    Matrix::getEigVal_DNS(Ac_clust,S_Ac_clust,10,3);
 
-
-    if (printMat > 0)
-        Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
-
-    Ac_clust.order_number = 2000;
-
-    Ac_clust.diss_scaling = 1;
-    Ac_clust.sym_factor(options2["linear_solver"]);
-
-
-
-//    Matrix Ac_clust_copy;
-//    Ac_clust_copy = Ac_clust;
-    if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
-        Ac_clust.diss_scaling = 1;
-
-        if (options2["linear_solver"].compare("pardiso") == 0 ){
-            Ac_clust.iparm[9] = 8;
+    if (options2["Ac_clust_explicit"].compare("true") == 0 ){
+        cout << "Ac_clust is being created ... \n" ;
+        bool flag0 = false;
+        if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
+            flag0 = true;
         }
-        Ac_clust.num_factor();
+        create_Ac_clust(flag0);
+        Ac_clust.options2 = options2;
+        Matrix S_Ac_clust;
+        Matrix::getEigVal_DNS(Ac_clust,S_Ac_clust,10,3);
+    
+    
+        if (printMat > 0)
+            Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
+    
+        Ac_clust.order_number = 2000;
+    
+        Ac_clust.diss_scaling = 1;
+        Ac_clust.sym_factor(options2["linear_solver"]);
+    
+    
+    
+        if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
+            Ac_clust.diss_scaling = 1;
+    
+            if (options2["linear_solver"].compare("pardiso") == 0 ){
+                Ac_clust.iparm[9] = 8;
+            }
+            Ac_clust.num_factor();
+        }
+        else{
+            Matrix ker_Ac;
+            ker_Ac.label = "ker_Ac";
+            checkOrthogonality = true;
+            Ac_clust.num_factor(ker_Ac,checkOrthogonality);
+            //Ac_clust.num_factor();
+            fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
+                                                        __FILE__, __LINE__, ker_Ac.n_col);
+    
+            if (printMat > 0)
+                ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
+        }
     }
     else{
-        Matrix ker_Ac;
-        ker_Ac.label = "ker_Ac";
-        checkOrthogonality = true;
-        Ac_clust.num_factor(ker_Ac,checkOrthogonality);
-        //Ac_clust.num_factor();
-        fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
-                                                    __FILE__, __LINE__, ker_Ac.n_col);
+// ... in progress ...
+        Fc_clust.sym_factor(options2["linear_solver"]);
+        Fc_clust.num_factor();
+        Matrix Gc_full = Gc_clust;
+        Gc_full.CSRorCOO2DNS(false,false);
 
-        if (printMat > 0)
-            ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
+        Matrix iFc_Gc;
+        Fc_clust.solve_system(Gc_full,iFc_Gc);
+        Gc_clust.mult(iFc_Gc,Sc_clust,false);
+//        Sc_clust.printToFile("Sc_clust",folder,0,printCooOrDense);
+
+        Sc_clust.options2 = options2;
+        Matrix S_Sc_clust("Sc_eig_val");
+        Matrix::getEigVal_DNS(Sc_clust,S_Sc_clust,10,3);
+
+        exit (0);
     }
 
 
 
-//    Ac_clust.test_K_Kp_K_condition(Ac_clust_copy);
 
 
 
@@ -1397,7 +1414,6 @@ void Cluster::pcpg(){
     printf(  "|gPz0|  = %3.9e  \n\n", norm_gPz0);
     w = Pz;
 
-
     printf(" it.\t||gradient||\n");
     printf("==================\n");
 
@@ -1434,7 +1450,7 @@ void Cluster::pcpg(){
     time_solver = double(end - begin) / CLOCKS_PER_SEC;
 
 
-    // final solution (parameter 1000 is number > maxIter)
+    // final solution (last parameter -1 avoids numbering of vtk file)
     printVTK(yy, xx, lambda, alpha, -1);
 
 }
@@ -1451,20 +1467,12 @@ void Cluster::pcpg_old(){
     vector < Vector > xx, yy;
     Vector alpha;
     xx.resize(nSubClst); yy.resize(nSubClst);
-    // d_rhs = B * Kplus * f
 
+    // d_rhs = B * Kplus * f
     xx[0].label = "test";
     mult_Kplus_f(rhs,xx);
-
-//    for (int d = 0; d < nSubClst; d++){
-//        xx[d].printToFile("xx_drhs",folder,d,true);
-//    }
-
-
     mult_Bf(xx,d_rhs);
 
-
-//    d_rhs.printToFile("d_rhs",folder,0,true);
 
     bool new_feti_operator = true;
 
