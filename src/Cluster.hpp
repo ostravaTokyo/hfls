@@ -49,6 +49,7 @@ public:
     Data data;
 
     Matrix Fc_clust;
+    Matrix Sc_clust;
     Matrix Gc_clust;
     Matrix Ac_clust;
     Matrix Gf_clust;
