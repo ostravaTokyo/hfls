@@ -4,8 +4,6 @@
 #include "src/Cluster.hpp"
 #include <map>
 
-
-
 using namespace std;
 int main(int argc, char *argv[]){
 
@@ -13,8 +11,8 @@ int main(int argc, char *argv[]){
 
     options2["eps_iter"]                        = "1e-4";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
-    //options2["preconditioner"]                  = "lumped";
-    options2["preconditioner"]                  = "Dirichlet_explicit";
+//    options2["preconditioner"]                  = "lumped";
+    options2["preconditioner"]                  = "Dirichlet_implicit";
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
     options2["poissons_ratio"]                  =  "0.3";
@@ -23,7 +21,7 @@ int main(int argc, char *argv[]){
     options2["linear_solver"]                   =  "dissection";
 
     /* {0, 1, 2, 3 }                                            */
-    options2["print_matrices"]                  =  "5";
+    options2["print_matrices"]                  =  "0";
 
     /* ker, cor, all                                            */
     options2["typeBc"]                          =  "ker";
@@ -41,7 +39,6 @@ int main(int argc, char *argv[]){
     options2["create_analytic_ker_K"]           =  "false";
 
 
-
     options2["Nx"]                              =  "2";
     options2["Ny"]                              =  "2";
     options2["Nz"]                              =  "2";
@@ -49,9 +46,7 @@ int main(int argc, char *argv[]){
     options2["ny"]                              =  "5";
     options2["nz"]                              =  "5";
 
-
     printf("+++++++++++++++++++++++++++++++++++      %s\n", options2["path2data"].c_str());
-
 
     if (options2["linear_solver"] ==  "pardiso" &&
             options2["create_analytic_ker_K"] == "false"){
