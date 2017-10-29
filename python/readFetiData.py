@@ -228,6 +228,7 @@ for i in range(nSub - 1):
     else:
         Gf_g += Gf_p[i+1]
 
+weigth = np.loadtxt(path0+'/dump_weigth.txt')
 
 
 
