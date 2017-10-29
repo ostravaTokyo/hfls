@@ -48,7 +48,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     Preconditioner.resize(nSubClst);
 
     Kss.resize(nSubClst);
-    Ksr.resize(nSubClst);
+    Krs.resize(nSubClst);
     Krs.resize(nSubClst);
     Krr.resize(nSubClst);
 
@@ -132,13 +132,14 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
         Preconditioner[d].order_number = d;
 
-        if (options2.at("preconditioner").compare("Dirichlet") == 0 ){
-            Preconditioner[d].createDirichletPreconditioner(Bf[d],
-                                                            K[d],
-                                                            Krr[d],
-                                                            Krs[d],
-                                                            Kss[d],
+        if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ||
+            options2.at("preconditioner").compare("Dirichlet_implicit") == 0  ){
+            Preconditioner[d].createDirichletPreconditioner(Bf[d], K[d], Krr[d], Krs[d], Kss[d],
                                                             Preconditioner[d]);
+            if (printMat>3){
+                Preconditioner[d].printToFile("S",folder,d,printCooOrDense);
+            }
+
         }
 
 
@@ -213,8 +214,10 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     create_Fc_clust();
     Fc_clust.options2 = options2;
     Fc_clust.getBasicMatrixInfo();
-    if (printMat > 0)
+    if (printMat > 0){
         Fc_clust.printToFile("Fc_clust",folder,0,printCooOrDense);
+        Matrix::print1dArray(weigth.data(),weigth.size(),"weigth",folder);
+    }
 
     Matrix S_Fc_clust;
     Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
@@ -342,6 +345,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     }
 
 
+
 //    Ac_clust.test_K_Kp_K_condition(Ac_clust_copy);
 
 
@@ -349,16 +353,14 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
       //kerGc;
       create_Rf_and_Gf();
       create_GfTGf();
+      compute_invGfTGf();
       if (printMat>2){
           Gf_clust.printToFile("Gf_clust",folder,0,true);
           GfTGf.printToFile("GfTGf",folder,0,true);
           invGfTGf.printToFile("iGfTGf",folder,0,true);
           for (int d = 0; d < nSubClst; d++)
             Rf[d].printToFile("Rf",folder,d,true);
-
-
       }
-      compute_invGfTGf();
 
       // conjugate gradient //
       pcpg2();
@@ -806,7 +808,8 @@ void Cluster::create_cluster_constraints(const Options &options,
     bool Bf_addDirConstr        = true;
     create_Bc_or_Bf_in_CSR(Bf,Bf_full_rank,Bf_cornersOnlyOrAllDof,Bf_addDirConstr);
 
-    if (options2.at("preconditioner").compare("Dirichlet") == 0 ){
+    if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ||
+        options2.at("preconditioner").compare("Dirichlet_implicit") == 0   ){
             vector<int>::iterator it;
             for (int d = 0 ; d < nSubClst; d++){
                 Bf[d].j_col_cmpr = Bf[d].j_col;
@@ -1107,53 +1110,57 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
     xx.resize(nSubClst); yy.resize(nSubClst);
 
     scale(w_out);
-    mult_BfT(w_in,xx);
+    mult_BfT(w_out,xx);
 
 
     for (int d = 0; d < nSubClst; d++){
+        if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ||
+            options2.at("preconditioner").compare("Dirichlet_implicit") == 0    ){
 
-//        cout <<  "__LINE__" << __LINE__ << endl;
+            int nBf = Bf[d].j_col_cmpr.size();
+            int nK = K[d].n_row_cmprs;
+            Vector  x_cmpr;
+            x_cmpr.zero_dense(nBf);
 
-        if (options2.at("preconditioner").compare("Dirichlet") == 0 ){
-            Vector  x_(xx[d].n_row_cmprs);
-            x_.zero_dense(xx[d].n_row_cmprs);
-            for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
-               x_.dense[i] = xx[d].dense[Bf[d].j_col_cmpr[i]];
+            for (int i = 0; i < nBf; i++){
+               x_cmpr.dense[i] = xx[d].dense[Bf[d].j_col_cmpr[i]];
             }
 
-
             if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ){
-                Vector y;
-                y.mat_mult_dense(Preconditioner[d],"N",x_,"N");
+
+                Vector y_cmpr;
+                y_cmpr.mat_mult_dense(Preconditioner[d],"N",x_cmpr,"N");
                 yy[d].zero_dense(xx[d].n_row_cmprs);
                 for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
-                   yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
+                   yy[d].dense[Bf[d].j_col_cmpr[i]] = y_cmpr.dense[i];
                 }
             }
             else if (options2.at("preconditioner").compare("Dirichlet_implicit") == 0 ){
- //               cout <<  "__LINE__" << __LINE__ << endl;
-                yy[d].zero_dense(xx[d].n_row_cmprs);
-                int nBf = Bf[d].j_col_cmpr.size();
-                Vector y(nBf);
+                Vector y;
                 y.zero_dense(nBf);
 
-                Kss[d].mult(x_,y,true);
+                Kss[d].mult(x_cmpr,y,true);
+                yy[d].zero_dense(xx[d].n_row_cmprs);
                 for (int i = 0; i < nBf; i++){
                    yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
                 }
 
-
-
-                Ksr[d].mult(x_,y,false);
-                Krr[d].solve_system(y,x_);
-                Ksr[d].mult(y,x_,true);
-
+                xx[d].zero_dense(xx[d].n_row_cmprs);
+                Krs[d].mult(x_cmpr,xx[d],true);
+                x_cmpr.zero_dense(nBf);
+                Vector Y;
+                Y.zero_dense(nK);
+                Krr[d].solve_system(xx[d],Y);
+                x_cmpr.zero_dense(nBf);
+                Krs[d].mult(Y,x_cmpr,false);
+//
                 for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
-                   yy[d].dense[Bf[d].j_col_cmpr[i]] = -x_.dense[i];
+                   yy[d].dense[Bf[d].j_col_cmpr[i]] -= x_cmpr.dense[i];
                 }
             }
         }
         else{
+//               cout <<  "__LINE__" << __LINE__ << endl;
             K[d].mult(xx[d],yy[d],true);
         }
     }
@@ -1455,8 +1462,12 @@ void Cluster::pcpg2(){
     Projection(z,Pz,beta);
     gPz = Matrix::dot(g,Pz);
 
+    double norm_g0Pg0 = sqrt(Matrix::dot(g,Pg));
+
     norm_gPz0 = sqrt(gPz);
 
+    printf("\n|g0Pg0| = %3.9e  \n", norm_g0Pg0);
+    printf(  "|gPz0|  = %3.9e  \n\n", norm_gPz0);
     w = Pz;
 
 
