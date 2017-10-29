@@ -11,8 +11,16 @@ int main(int argc, char *argv[]){
 
     options2["eps_iter"]                        = "1e-4";
     options2["max_iter"]                        = "200";
+    options2["vtkWithinIter"]                   = "false";
+
+
+    options2["metis"]                           = "false";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
     options2["preconditioner"]                  = "Dirichlet_implicit";
+
+    options2["Ac_clust_explicit"]               = "true";
+
+
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
     options2["poissons_ratio"]                  =  "0.3";
@@ -45,6 +53,7 @@ int main(int argc, char *argv[]){
     options2["nx"]                              =  "5";
     options2["ny"]                              =  "5";
     options2["nz"]                              =  "5";
+    options2["nparts"]                          =  "5";
 
     printf("+++++++++++++++++++++++++++++++++++      %s\n", options2["path2data"].c_str());
 
@@ -74,6 +83,9 @@ int main(int argc, char *argv[]){
     }
     if (argc > 6) {
        options2["nz"]   =  (argv[6]);
+    }
+    if (argc > 7) {
+       options2["nparts"]   =  (argv[7]);
     }
 
     cout << argv[0] << endl;
