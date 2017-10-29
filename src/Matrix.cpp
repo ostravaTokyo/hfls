@@ -1024,17 +1024,10 @@ void Matrix::num_factor(Matrix &R, bool checkOrthogonality_){
         num_factor();
 
         bool printCooOrDense = true;
-#ifdef origOpt
-        if (!printed && options.print_matrices > 1){
-            printToFile("K_reg",options.path2data,order_number,printCooOrDense);
-            printed = true;
-        }
-#else
         if (!printed && atoi(options2["print_matrices"].c_str()) > 1){
             printToFile("K_reg",options2["path2data"],order_number,printCooOrDense);
             printed = true;
         }
-#endif
 
         for (int i = 0 ; i < tmp.size();i++)
             val[tmp[i]] *= 0.5;
