@@ -22,13 +22,8 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
 
 
-#ifdef  origOpt
-    int printMat = options.print_matrices;
-    folder = options.path2data;
-#else
     int printMat = atoi(options2["print_matrices"].c_str());
     folder = options2["path2data"];
-#endif
 
 
 
@@ -68,15 +63,9 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     cout << "ker(K) is being created ... \n" ;
 
 
-#ifdef  origOpt
-    if (options.solver_opt.create_analytic_ker_K){
-        data.create_analytic_ker_K(mesh,R);
-    }
-#else
     if (options2["create_analytic_ker_K"].compare("true") == 0){
         data.create_analytic_ker_K(mesh,R);
     }
-#endif
 
     printCooOrDense = true;
     checkOrthogonality = true;
@@ -90,13 +79,8 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
     for (int d = 0; d < K.size(); d++){
         K[d].order_number = d;
-#ifdef  origOpt
-        K[d].options = options;
-        K[d].sym_factor(options.solver_opt.solver);
-#else
         K[d].options2 = options2;
         K[d].sym_factor(options2["linear_solver"]);
-#endif
         R[d].label = "kerK";
 //        Matrix Ksing = K[d];
         K[d].num_factor(R[d],checkOrthogonality);
@@ -219,11 +203,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
 
 
-#ifdef origOpt
-    Fc_clust.sym_factor(options.solver_opt.solver);
-#else
     Fc_clust.sym_factor(options2["linear_solver"]);
-#endif
 //    Matrix Fc_copy = Fc_clust;
     Fc_clust.num_factor();
 //    Fc_clust.test_K_Kp_K_condition(Fc_copy);
@@ -239,11 +219,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
     cout << "GcTGc is being created ... \n" ;
 
-#ifdef origOpt
-    if (options.solver_opt.GcTGc_assembl_block_by_block){
-#else
     if (options2["GcTGc_assembl_block_by_block"].compare("true") == 0 ){
-#endif
         cout << " ... block version "<< endl;
         create_GcTGc_clust_sparse();
         GcTGc_clust = GcTGc_sparse_clust;
@@ -282,13 +258,9 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
     cout << "Ac_clust is being created ... \n" ;
     bool flag0 = false;
-#ifdef origOpt
-    flag0 = options.solver_opt.Ac_extended_by_kerGc;
-#else
     if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
         flag0 = true;
     }
-#endif
     create_Ac_clust(flag0);
     Ac_clust.options2 = options2;
     Matrix S_Ac_clust;
@@ -301,28 +273,16 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     Ac_clust.order_number = 2000;
 
     Ac_clust.diss_scaling = 1;
-#ifdef origOpt
-    Ac_clust.sym_factor(options.solver_opt.solver);
-#else
     Ac_clust.sym_factor(options2["linear_solver"]);
-#endif
 
 
 
 //    Matrix Ac_clust_copy;
 //    Ac_clust_copy = Ac_clust;
-#ifdef origOpt
-    if (options.solver_opt.Ac_extended_by_kerGc){
-#else
     if (options2["Ac_extended_by_kerGc"].compare("true") == 0 ) {
-#endif
         Ac_clust.diss_scaling = 1;
 
-#ifdef origOpt
-        if (options.solver_opt.solver == 0){
-#else
         if (options2["linear_solver"].compare("pardiso") == 0 ){
-#endif
             Ac_clust.iparm[9] = 8;
         }
         Ac_clust.num_factor();
@@ -760,23 +720,6 @@ void Cluster::create_cluster_constraints(const Options &options,
     }
 
 
-#ifdef origOpt
-    if (options.solver_opt.typeBc == 1 ){
-        create_Bc_weightedAverages_in_COO(Bc,options.solver_opt.Bc_fullRank);
-    }
-    else{
-        bool cornersOnlyOrAllDof;
-        if (options.solver_opt.typeBc == 0)
-            cornersOnlyOrAllDof = true;
-        else
-            cornersOnlyOrAllDof = false;
-
-        create_Bc_or_Bf_in_CSR(Bc,options.solver_opt.Bc_fullRank, cornersOnlyOrAllDof);
-    }
-
-    cout << "----------------------------------------------------------------" << endl;
-
-#else
     bool cornersOnlyOrAllDof;
 
     bool flag1 = false;
@@ -796,7 +739,6 @@ void Cluster::create_cluster_constraints(const Options &options,
             create_Bc_or_Bf_in_CSR(Bc,flag1, cornersOnlyOrAllDof);
     }
 
-#endif
 
 
     bool Bf_full_rank           = false;
@@ -1015,11 +957,7 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
     int ngc = nLam_c + nRBM_c;
 
 
-#ifdef origOpt
-    if (options.solver_opt.Ac_extended_by_kerGc)
-#else
     if (options2.at("Ac_extended_by_kerGc").compare("true") == 0 )
-#endif
         ngc += nRBM_f;
 
     gc.zero_dense(ngc);
@@ -1182,11 +1120,7 @@ void Cluster::mult_Ff(Vector const & w , Vector & Fw){
     Vector gc;
     int ngc = nLam_c + nRBM_c;
 
-#ifdef origOpt
-    if (options.solver_opt.Ac_extended_by_kerGc)
-#else
     if (options2.at("Ac_extended_by_kerGc").compare("true") == 0 )
-#endif
         ngc += nRBM_f;
 
     gc.zero_dense(ngc);
@@ -1502,11 +1436,10 @@ void Cluster::pcpg(){
     clock_t end = clock();
     time_solver = double(end - begin) / CLOCKS_PER_SEC;
 
-//    printf("Solver time:  %3.1f s.\n",elapsed_secs);
 
     lambda.printToFile("lambda_",folder,0,true);
     // final solution (parameter 1000 is number > maxIter)
-    printVTK(yy, xx, lambda, alpha, 1000);
+    printVTK(yy, xx, lambda, alpha, -1);
 
 }
 
