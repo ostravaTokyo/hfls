@@ -1424,6 +1424,7 @@ void Cluster::pcpg(){
       clock_t begin = clock();
 
     double eps_iter     = atof(options2["eps_iter"].c_str());
+    double max_iter     = atoi(options2["max_iter"].c_str());
 
     double gPz, gPz_prev, wFw, rho, gamma, norm_gPz0;
     Vector g0, d_rhs, e, iGTG_e, lambda, z, Pz;
@@ -1467,11 +1468,12 @@ void Cluster::pcpg(){
     w = Pz;
 
 
-    int max_iter = 200;
+    printf(" it.\t||gradient||\n");
+    printf("==================\n");
 
     for (int it = 0; it < max_iter; it++){
 
-        printf("it: %4d,      |Pg| = %3.9e \n",it + 1, sqrt(gPz) / norm_gPz0);
+        printf("%4d\t%3.9e \n",it + 1, sqrt(gPz) / norm_gPz0);
         if (sqrt(gPz) < eps_iter * norm_gPz0)
             break;
 
@@ -1495,7 +1497,7 @@ void Cluster::pcpg(){
         w = Pz;
         w.add(w_prev,gamma);
 
-        printVTK(yy, xx, lambda, alpha, it);
+//        printVTK(yy, xx, lambda, alpha, it);
     }
     clock_t end = clock();
     time_solver = double(end - begin) / CLOCKS_PER_SEC;
@@ -1574,7 +1576,7 @@ void Cluster::pcpg_old(){
 
 
         gPg = Matrix::dot(Pg,Pg);
-        printf("it: %4d,      |Pg| = %3.9e \n",it+1, sqrt(gPg) / norm_gPg0);
+        printf("%4d\t%3.9e \n",it+1, sqrt(gPg) / norm_gPg0);
 
         if (sqrt(gPg) < eps_iter * norm_gPg0)
             break;
