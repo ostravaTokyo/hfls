@@ -39,6 +39,7 @@ Matrix::Matrix(int n_row_, int n_col_, int nnz_, bool NorT)
 void Matrix::init()
 {
   label = "";
+  tmp_label = "";
   n_row = 0;
   n_col = 0;
   DNS_transposed = false;
@@ -472,7 +473,6 @@ void Matrix::DNS2COO(){
         nnz = (nnz - n_row_cmprs) * 0.5 + n_row_cmprs;
     }
 
-
     i_coo_cmpr.resize(nnz);
     j_col.resize(nnz);
     val.resize(nnz);
@@ -501,9 +501,33 @@ void Matrix::DNS2COO(){
         }
     }
     dense.clear();
-//    dense.shrink_to_fit();
     format = 0;
 }
+
+void Matrix::print1dArray(double u[], int nu, string nameOfMat,string folder){
+
+    char _str[256];
+    sprintf(_str,"%s/dump_%s.txt",folder.c_str(),nameOfMat.c_str());
+    string path2matrix = _str;
+
+
+    FILE *fp = NULL;
+    fp = fopen(path2matrix.c_str(), "w");
+    if (fp == NULL) {
+        cerr << "fail to open " << path2matrix.c_str() << "\n";
+    }
+
+    for (int i = 0 ; i < nu ; i++)
+        fprintf(fp, "%.16e\n", u[i]);
+
+
+
+    fclose(fp);
+
+}
+
+
+
 
 void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
                                                         bool _printCooOrDense)
@@ -516,32 +540,9 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
     }
 
     const int format_ = format;
-//    string path2matrix = folder+"/dump_" + nameOfMat + "_" +
-//                                                     to_string(indOfMat)+".txt";
-
     char _str[256];
     sprintf(_str,"%s/dump_%s_%d.txt",folder.c_str(),nameOfMat.c_str(),indOfMat);
     string path2matrix = _str;
-
-
-
-//    printf("+++++++++++++++++++++++++++++++++++      %s\n", folder.c_str());
-//
-//    struct stat s0 = {0};
-//
-//    if (!stat(folder.c_str(), &s0)){
-//        printf("'%s' is %sa directory.\n", folder.c_str(), (s0.st_mode & S_IFDIR)  : "" ? "not ");
-//  // (s0.st_mode & S_IFDIR) can be replaced with S_ISDIR(s.st_mode)
-//    }
-//    else{
-//        perror("stat()");
-//    }
-//    return 0;
-//
-//
-
-
-
 
 
     FILE *fp = NULL;
@@ -601,45 +602,6 @@ void Matrix::printToFile(string nameOfMat,string folder, int indOfMat,
     else{
         cout << " print matrix directly from dense is " << endl;
         cout << " not implemented yet " << endl;
-//        if (format < 2) {
-//            CSRorCOO2DNS(true,true);
-//        }
-//        cout << "=====format======" << format << "\n";
-//
-//        int _n_row, _ni, _nj, _nm;
-//        if (DNS_reducedZeroRows) {
-//            _n_row = n_row_cmprs;
-//        }
-//        else{
-//            _n_row = n_row;
-//        }
-//        if (DNS_transposed){
-//            _ni = n_col;
-//            _nj = _n_row;
-//            _nm = n_col;
-//        }
-//        else{
-//            _ni = _n_row;
-//            _nj = n_col;
-//            _nm = _n_row;
-//        }
-//
-//        for (int i = 0; i < _ni; i++) {
-//            for (int j = 0; j < _nj; j++){
-//                V = dense[i + j * _nm];
-//                fprintf(fp, "%.16f\t", V);
-//            }
-//            fprintf(fp, "\n");
-//        }
-//
-//        if (format_ != 2){
-//            if (format_ == 0) {
-//                DNS2COO();
-//            }
-//            else if (format_ == 1){
-//                DNS2CSR();
-//            }
-//        }
     }
 
     fclose(fp);
@@ -806,9 +768,18 @@ double Matrix::norm2()
     return sqrt(_norm2);
 }
 
+void Matrix::getBasicMatrixInfo(string str0){
+    tmp_label = str0;
+    getBasicMatrixInfo();
+}
+
 
 void Matrix::getBasicMatrixInfo(){
-    printf("< %s >              \n", label.c_str());
+
+    if (tmp_label.empty())
+        printf("< %s >              \n", label.c_str());
+    else
+        printf("< %s >              \n", tmp_label.c_str());
     printf("symmetric           %d (0: unsym, 1: sym. lower tr., 2: sym. upper tr.)\n", symmetric);
     printf("format              %d (0: coo, 1: csr, 2: dense)\n", format);
     printf("nnz:                %d \n", nnz);
@@ -1151,7 +1122,7 @@ void Matrix::sym_factor_pardiso(){
     iparm[6] = 0;         /* Not in use */
     iparm[7] = 2;         /* Max numbers of iterative refinement steps */
     iparm[8] = 0;         /* Not in use */
-    iparm[9] = 13;        /* Perturb the pivot elements with 1E-13 */
+    iparm[9] = 8;        /* Perturb the pivot elements with 1E-13 */
     iparm[10] = 1;        /* Use nonsymmetric permutation and scaling MPS */
     iparm[11] = 0;        /* Not in use */
     iparm[12] = 0;        /* Maximum weighted matching algorithm is switched-off
@@ -1827,18 +1798,25 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
 
     K_rs.getSubBlockmatrix_rs(K_modif,K_rs,i_start, nonsing_size,j_start,sc_size);
 
-//    bool printCooOrDense = true;
 //           K_ss.printToFile("K_ss",c_options2["path2data"],order_number,printCooOrDense);
 
 
 
 //    K_modif.getBasicMatrixInfo();
 //    K_rs.getBasicMatrixInfo();
-//    K_rs.printToFile("K_rs",c_options2["path2data"],order_number,printCooOrDense);
+
+
 
 
     K_rr.getSubDiagBlockmatrix(K_modif,K_rr,i_start, nonsing_size);
-//            K_rr.printToFile("K_rr",c_options2["path2data"],order_number,printCooOrDense);
+
+    if (atoi(c_options2["print_matrices"].c_str()) > 3){
+        bool printCooOrDense = true;
+        K_rs.printToFile("Krs",c_options2["path2data"],order_number,printCooOrDense);
+        K_ss.printToFile("Kss",c_options2["path2data"],order_number,printCooOrDense);
+        K_rr.printToFile("Krr",c_options2["path2data"],order_number,printCooOrDense);
+    }
+
 
 
     K_rr.options2 = c_options2;
@@ -1849,9 +1827,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
 
     Matrix K_rs_copy = K_rs;
     K_rs_copy.label = "K_rs_copy";
-//    K_rs_copy.getBasicMatrixInfo();
     K_rs.label = "o";
-//    K_rs.getBasicMatrixInfo();
 
 
     if (c_options2.at("preconditioner").compare("Dirichlet_implicit") == 0 ){

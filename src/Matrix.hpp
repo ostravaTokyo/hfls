@@ -75,6 +75,7 @@ public:
     bool DNS_reducedZeroRows;
     bool DNS_transposed;
     string label;
+    string tmp_label;
     int order_number;
     Options options;
     map < string, string > options2;
@@ -105,6 +106,7 @@ public:
     void getSubDiagBlockmatrix(const Matrix &, const Matrix &, Matrix &,int , int);
 
     void getBasicMatrixInfo();
+    void getBasicMatrixInfo(string);
 
     MKL_INT iparm[64];
     MKL_INT mtype;
@@ -181,6 +183,7 @@ public:
 
     static void getEigVal_DNS(Matrix &, Matrix &, int );
     static void getEigVal_DNS(Matrix  , Matrix &, int, int);
+    static void print1dArray(double [], int, string, string);
 
     static double dot(Matrix const &, Matrix const &);
     void add(Matrix &,double);
