@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "Options.hpp"
+#include "metis.h"
 
 
 using namespace std;
@@ -56,9 +57,12 @@ public:
     vector < int > cornerNodes;
     vector < int > cornerDOFs;
     vector < int > DirichletDOFs;
-    void createMesh(const Options &, map< string, string> & );
+    void createMesh(map< string, string> & );
     Material material;
     void SaveVTK(vector < double > ,string, int);
+    void ddm_metis(map <string, string> &);
+    int nElSubXYZ[3];
+    int nSubXYZ[3];
 };
 
 

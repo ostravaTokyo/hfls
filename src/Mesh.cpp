@@ -17,15 +17,15 @@ Mesh::~Mesh()
 
 
 
-void Mesh::createMesh(const Options &options, map <string, string> &options2){
+void Mesh::createMesh(map <string, string> &options2){
     // - geometry setting ()
     double length[] = {1.0, 1.0, 1.0}; // corresponds to python benchmark
     //double length[] = {1.0, 1.0, 1.0};
     double radius = 1050.0;
 
     // - decomposition
-    int nElSubXYZ[3];
-    int nSubXYZ[3];
+    nElSubXYZ[3];
+    nSubXYZ[3];
 
     nSubXYZ[0]      = atoi(options2["Nx"].c_str());
     nSubXYZ[1]      = atoi(options2["Ny"].c_str());
@@ -39,7 +39,6 @@ void Mesh::createMesh(const Options &options, map <string, string> &options2){
         cout << ":::::::::::::::::::" << nSubXYZ[i] << " " ;
     cout << endl;
 
-
     const char *tmp_char0 = options2["young_modulus"].c_str();
     char* pEnd0;
     material.young_modulus  = strtod (tmp_char0, &pEnd0);
@@ -48,8 +47,6 @@ void Mesh::createMesh(const Options &options, map <string, string> &options2){
     char* pEnd1;
     material.poissons_ratio = strtod (tmp_char1, &pEnd1);
 
-//    material.young_modulus  = stod(options2["young_modulus"]);
-//    material.poissons_ratio = stod(options2["poissons_ratio"]);
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //                                  GEOMETRY DEFINITION
@@ -220,26 +217,11 @@ void Mesh::createMesh(const Options &options, map <string, string> &options2){
             }
         }
     }
-/*
-    */
 }
 
-//void Mesh::feti_ddm_cluster(){
-//
-//
-//    if (nSubClst == 0){
-//        //nSubClst = nSubXYZ[0] * nSubXYZ[1] + nSubXYZ[2];
-//
-//}
 
 void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
 
-  // saving VTK --------------------------------------
-  //clock_t begin = clock();
-//#ifndef WIN32
-//  mode_t mode = 0777;
-//  mkdir("data", mode);
-//#endif
 
 //  string filename = str0 + "/box" + atoi(iter) + ".vtk";
   char char01[128];
@@ -293,3 +275,115 @@ void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
   fclose(fVTK);
 
 }
+
+
+void Mesh::ddm_metis(map <string, string> &options2) {
+
+    if (options2["metis"].compare("false") == 0){
+        return ;
+    }
+
+
+    int _nparts = atoi(options2["nparts"].c_str());
+    nSubClst = _nparts;
+
+    int nPointsLocal = points.size();
+    int nCellsLocal = elements.size();
+
+    int nPi;
+    int * eptr = new int[nCellsLocal + 1];
+    eptr[0] = 0;
+    for (int i = 0 ; i < nCellsLocal; i++){
+        nPi = 8;
+        eptr[i+1] = eptr[i] + nPi;
+    }
+    int * eind = new int[eptr[nCellsLocal]];
+    int cnt = 0;
+    int CellDim = 3;
+    for (int i = 0 ; i < nCellsLocal; i++){
+        nPi = 8;
+        for (int j = 0; j < nPi; j++){
+            eind[cnt] = elements[i].ind[j];
+            cnt ++;
+        }
+//        if (CellDim <cell->GetCellDimension()){
+//            CellDim  = cell->GetCellDimension();
+//        }
+    }
+
+    int ncommon = 2; /* ncommon = 2 for all other types ... */
+    if (CellDim == 2){
+        ncommon = 2;
+    }
+    else if (CellDim == 3){
+        ncommon = 3;
+    }
+
+    int options[METIS_NOPTIONS];
+    cout << " ----------   METIS_NOPTIONS " << METIS_NOPTIONS << endl;
+    options[METIS_OPTION_PTYPE    ] = METIS_PTYPE_RB;    // multilevel recursive bisectioning
+    options[METIS_OPTION_OBJTYPE  ] = METIS_OBJTYPE_CUT; // edge-cut minimization
+    options[METIS_OPTION_CTYPE    ] = METIS_CTYPE_RM;    // random matching
+    options[METIS_OPTION_IPTYPE   ] = METIS_IPTYPE_GROW; // grows a bisction using a greedy strategy
+    options[METIS_OPTION_RTYPE    ] = METIS_RTYPE_FM;    // FM-based cut refinement
+    options[METIS_OPTION_NCUTS    ] = 1 ;//
+    options[METIS_OPTION_NITER    ] = 10;/* Default value */
+    options[METIS_OPTION_SEED     ] = -1;/* Seed of random algo */
+    options[METIS_OPTION_UFACTOR  ] = 1;
+    options[METIS_OPTION_NUMBERING] = 0; // C-style numbering
+    options[METIS_OPTION_DBGLVL   ] = METIS_DBG_INFO;
+    options[METIS_OPTION_CONTIG   ] = 1;
+
+    int nparts = 1;
+    int objval;
+
+
+    if (_nparts > 0 ){
+       nparts = _nparts;
+    }
+
+    int *epart = new int [nCellsLocal];
+    int *npart = new int [eptr[nCellsLocal]];
+
+    if (nparts > 1){
+        METIS_PartMeshDual(&nCellsLocal,    // number of elements in the mesh       Y
+                           &nPointsLocal,   //                                      Y
+                           eptr,            //                                      Y
+                           eind,            //                                      Y
+                           (int *)NULL,     // vwgt                                 Y
+                           (int *)NULL,     // vsize                                Y
+                           &ncommon,        //                                      Y
+                           &nparts,         //                                      N
+                           (real_t*)NULL,   // tpwgts                               Y
+                           options,         //                                      Y
+                           &objval,         //                                      Y
+                           epart,           //                                      N
+                           npart);          //                                      Y
+    }
+    else {
+        for (int i = 0; i < nCellsLocal; i++)
+            epart[i] = 0;
+
+    }
+
+
+    double tuple[] = {0};
+    int _i;
+
+
+#define DBG0
+
+//    // if metis returns undecomposed graph, epart[i] = 1
+    for (int i = 0 ; i < nCellsLocal; i++){
+        /* global PartitionId */
+        elements[i].PartitionId = epart[i] ;
+    }
+
+    delete [] epart;
+    delete [] npart;
+    delete [] eptr;
+    delete [] eind;
+
+}
+
+
