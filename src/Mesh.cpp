@@ -27,29 +27,18 @@ void Mesh::createMesh(const Options &options, map <string, string> &options2){
     int nElSubXYZ[3];
     int nSubXYZ[3];
 
-#ifdef origOpt
-    for (int i = 0; i < 3; i++){
-        nElSubXYZ[i] = options.meshSetting.n[i];
-        nSubXYZ[i] = options.meshSetting.N[i];
-    }
-#else
     nSubXYZ[0]      = atoi(options2["Nx"].c_str());
     nSubXYZ[1]      = atoi(options2["Ny"].c_str());
     nSubXYZ[2]      = atoi(options2["Nz"].c_str());
     nElSubXYZ[0]    = atoi(options2["nx"].c_str());
     nElSubXYZ[1]    = atoi(options2["ny"].c_str());
     nElSubXYZ[2]    = atoi(options2["nz"].c_str());
-#endif
 
 
     for (int i = 0; i < 3 ; i ++)
         cout << ":::::::::::::::::::" << nSubXYZ[i] << " " ;
     cout << endl;
 
-#ifdef origOpt
-    material.young_modulus = options.young_modulus;
-    material.poissons_ratio = options.poissons_ratio;
-#else
 
     const char *tmp_char0 = options2["young_modulus"].c_str();
     char* pEnd0;
@@ -61,7 +50,6 @@ void Mesh::createMesh(const Options &options, map <string, string> &options2){
 
 //    material.young_modulus  = stod(options2["young_modulus"]);
 //    material.poissons_ratio = stod(options2["poissons_ratio"]);
-#endif
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //                                  GEOMETRY DEFINITION
@@ -255,7 +243,12 @@ void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
 
 //  string filename = str0 + "/box" + atoi(iter) + ".vtk";
   char char01[128];
-  sprintf(char01,"%s/box%d.vtk",str0.c_str(),iter  );
+  if (iter == -1){
+    sprintf(char01,"%s/box.vtk",str0.c_str());
+  }
+  else{
+    sprintf(char01,"%s/box%d.vtk",str0.c_str(),iter  );
+  }
   string filename = char01;
   FILE *fVTK = NULL;
   fVTK = fopen(filename.c_str(), "w");
