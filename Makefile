@@ -8,7 +8,8 @@ include ./Make.inc
 all:  
 	(cd src; make) 
 	$(LD) $(LDOPT) -o main htfeti.o \
-	src/*.o $(SHARED_COMPILER)
+	src/*.o $(SHARED_COMPILER) \
+	$(LIB_METIS)
 	-mkdir -p build
 	-mv main build/
 
