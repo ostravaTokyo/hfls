@@ -30,7 +30,7 @@ public:
     ~Data();
 
 
-    void fe_assemb_local_K_f(Mesh &);
+    void fe_assemb_local_K_f(Mesh &, map <string, string> &);
 
     void feti_symbolic(Mesh &, vector <Matrix> &);
     void feti_numeric(Mesh &, vector <Matrix> &, vector <Vector> &);
