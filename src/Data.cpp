@@ -11,16 +11,16 @@ Data::~Data()
 }
 
 
-void Data::fe_assemb_local_K_f(Mesh &mesh){
+void Data::fe_assemb_local_K_f(Mesh &mesh,map <string, string> &options2){
 
     Point coord[8];
     local_K_f_clust.resize(mesh.nElementsClst);
 
-    double E = mesh.material.young_modulus;
     double mu = mesh.material.poissons_ratio;
 
     for (int i = 0; i < mesh.nElementsClst; i++){
         Element &i_elem =  mesh.elements[i];
+        double E = mesh.material.young_modulus;
         for (int j = 0; j < 8; j++){
             int iii = i_elem.ind[j];
             //
@@ -32,10 +32,13 @@ void Data::fe_assemb_local_K_f(Mesh &mesh){
             local_K_f_clust[i].ieq[j + 8] = 3 * iii + 1;
             local_K_f_clust[i].ieq[j + 16] = 3 * iii + 2;
         }
+
+        if (mesh.elements[i].MaterialId == 0)
+            E *= atof(options2["ratio_mat"].c_str());
+
+
         stf_mtrx_solid45(local_K_f_clust[i], coord, E, mu);
     }
-
-//    delete [] coord;
 
 }
 
