@@ -59,7 +59,7 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 
 
     cout << "assembling of K, f ... \n" ;
-    data.fe_assemb_local_K_f(mesh);
+    data.fe_assemb_local_K_f(mesh,options2);
     cout << "symbolic factorization etc. ... \n" ;
     data.feti_symbolic(mesh,K);
     data.feti_numeric(mesh,K,rhs);
