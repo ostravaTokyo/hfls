@@ -11,10 +11,10 @@ int main(int argc, char *argv[]){
 
     options2["eps_iter"]                        = "1e-4";
     options2["max_iter"]                        = "200";
-    options2["vtkWithinIter"]                   = "false";
+    options2["vtkWithinIter"]                   = "true";
 
 
-    options2["metis"]                           = "false";
+    options2["metis"]                           = "true";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
     options2["preconditioner"]                  = "Dirichlet_implicit";
 
@@ -23,6 +23,7 @@ int main(int argc, char *argv[]){
 
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
+    options2["ratio_mat"]                       =  "100";
     options2["poissons_ratio"]                  =  "0.3";
 
     /* dissection | pardiso */
