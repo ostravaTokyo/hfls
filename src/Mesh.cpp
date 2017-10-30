@@ -1,4 +1,5 @@
 #include "Mesh.hpp"
+#include <math.h>       /* remainder */
 
 using namespace std;
 
@@ -209,7 +210,10 @@ void Mesh::createMesh(map <string, string> &options2){
                     for (int jj = JJ * nElSubXYZ[1]; jj <  (JJ + 1) * nElSubXYZ[1]; jj++){
                         for (int ii = II * nElSubXYZ[0]; ii <  (II + 1) * nElSubXYZ[0]; ii++){
                             cnt = ii + jj * nElxyz_all[0] + kk * (nElxyz_all[0] * nElxyz_all[1]);
-                            elements[cnt].PartitionId =  currentIdOfMat;;
+                            elements[cnt].PartitionId =  currentIdOfMat;
+                            elements[cnt].MaterialId =  remainder(currentIdOfMat,2);
+                       //     cout << elements[cnt].MaterialId  << " "
+                       //     << currentIdOfMat  << endl;
                         }
                     }
                 }
@@ -271,6 +275,11 @@ void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
   fprintf(fVTK, "LOOKUP_TABLE decomposition\n");
   for (int i = 0; i < nElementsClst; i++) {
     fprintf(fVTK, "%d\n", elements[i].PartitionId);
+  }
+  fprintf(fVTK, "SCALARS materialId int 1\n");
+  fprintf(fVTK, "LOOKUP_TABLE materialId\n");
+  for (int i = 0; i < nElementsClst; i++) {
+    fprintf(fVTK, "%d\n", elements[i].MaterialId);
   }
   fclose(fVTK);
 
