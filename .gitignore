@@ -32,6 +32,7 @@
 
 data*/*
 python/*.txt
+python/__pycache__/
 
 build*/*
 
@@ -51,3 +52,4 @@ main
 #dissection
 dissection*.log
 singularindex*data
+*.png
