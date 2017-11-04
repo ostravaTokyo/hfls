@@ -23,11 +23,11 @@ int main(int argc, char *argv[]){
 
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
-    options2["ratio_mat"]                       =  "100";
+    options2["ratio_mat"]                       =  "50";
     options2["poissons_ratio"]                  =  "0.3";
 
     /* dissection | pardiso */
-    options2["linear_solver"]                   =  "dissection";
+    options2["linear_solver"]                   =  "pardiso";
 
     /* {0, 1, 2, 3 }                                            */
     options2["print_matrices"]                  =  "0";
