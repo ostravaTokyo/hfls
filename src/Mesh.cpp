@@ -315,9 +315,6 @@ void Mesh::ddm_metis(map <string, string> &options2) {
             eind[cnt] = elements[i].ind[j];
             cnt ++;
         }
-//        if (CellDim <cell->GetCellDimension()){
-//            CellDim  = cell->GetCellDimension();
-//        }
     }
 
     int ncommon = 2; /* ncommon = 2 for all other types ... */
@@ -376,15 +373,10 @@ void Mesh::ddm_metis(map <string, string> &options2) {
     }
 
 
-    double tuple[] = {0};
-    int _i;
 
 
-#define DBG0
 
-//    // if metis returns undecomposed graph, epart[i] = 1
     for (int i = 0 ; i < nCellsLocal; i++){
-        /* global PartitionId */
         elements[i].PartitionId = epart[i] ;
     }
 
