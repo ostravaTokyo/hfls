@@ -363,8 +363,23 @@ void Matrix::dummyFunction(int n_row_, int I, int J, double V)
     }
 }
 
+
 void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_){
+   int dbg_ = -1;
+   CSRorCOO2DNS(reduceZeroRows_, transpose_,dbg_);
+
+}
+
+
+void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_,int dbg){
 /*                                                                            */
+
+    if (dbg > 0){
+        cout << "=============================================="<< endl;
+        cout << " " << label << " " << endl;
+        cout << "=============================================="<< endl;
+    }
+
     if (format == 2){
         /* matrix is in required format, nothing to do                        */
         return;
@@ -385,7 +400,7 @@ void Matrix::CSRorCOO2DNS(bool reduceZeroRows_, bool transpose_){
 
 
     if (l2g_i_coo.size() == 0){
-        l2g_i_coo.resize(nnz);
+        l2g_i_coo.resize(n_row_cmprs);
         for (int i = 0; i < n_row_cmprs; i++){
             l2g_i_coo[i] = i;
         }
@@ -1559,6 +1574,15 @@ double Matrix::dot(Matrix const &x, Matrix const &y){
 }
 
 
+double Matrix::dot(double *x, double *y, int n){
+  double dot_xy = 0.0;
+  for (int i = 0; i< n; i++){
+    dot_xy+=x[i]*y[i];
+  }
+  return dot_xy;
+}
+
+
 
 void Matrix::add(Matrix &v, double a){
 
@@ -1695,7 +1719,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
 
 
 
-    vector <int> perm_vec_full (  K.n_row);
+    vector <int> perm_vec_full (  K.n_row_cmprs);
     vector <int> perm_vec_diff (  K.n_row_cmprs);
     vector <int> I_row_indices_p (K.nnz);
     vector <int> J_col_indices_p (K.nnz);
@@ -1781,23 +1805,14 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
     Matrix &KsrInvKrrKrs = Precond;
     KsrInvKrrKrs.label = "KsrInvKrrKrs";
 
-    Matrix InvKrrKrs("InvKrrKrs");
+//    Matrix InvKrrKrs("InvKrrKrs");
 
     int i_start = 0;
     int nonsing_size = K_modif.n_row - sc_size - i_start;
     int j_start = nonsing_size;
 
     K_ss.getSubDiagBlockmatrix(K_modif,K_ss,nonsing_size,sc_size);
-
     K_rs.getSubBlockmatrix_rs(K_modif,K_rs,i_start, nonsing_size,j_start,sc_size);
-
-//           K_ss.printToFile("K_ss",c_options2["path2data"],order_number,printCooOrDense);
-
-
-
-//    K_modif.getBasicMatrixInfo();
-//    K_rs.getBasicMatrixInfo();
-
 
 
 
@@ -1830,6 +1845,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
 
     }
     else if (c_options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ){
+        Matrix InvKrrKrs;
         K_rs.CSRorCOO2DNS(false,false);
         K_rr.solve_system(K_rs,InvKrrKrs);
         K_rs_copy.mult(InvKrrKrs,KsrInvKrrKrs,false);
@@ -1846,8 +1862,6 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
             }
         }
     }
-
-
 }
 
 
@@ -1950,4 +1964,524 @@ void Matrix::getSubDiagBlockmatrix(const Matrix & A_in, Matrix & A_out, int i_st
     }
     A_out.i_ptr[i+1]=offset+ijcnt;
   }
+}
+
+
+void Matrix::get_kernel_from_K(Matrix &K, Matrix &Kplus_R){
+    int dbg = -1;
+    get_kernel_from_K(K, Kplus_R,dbg);
+}
+
+
+void Matrix::get_kernel_from_K(Matrix &K, Matrix &Kplus_R, int dbg){
+
+//
+// Routine calculates kernel Kplus_R of K satisfied euqality K * Kplus_R = O,
+// where O is zero matrix, and it makes the matrix K non-singular (K_reg)
+// utilizing spectral conditions of Schur complement. Then ||K-K*inv(K_reg)*K||=0.0
+//
+//
+// rev. 2016-02-03 (A.M.)
+//==============================================================================
+//
+
+typedef int  eslocal;
+#define SEQ_VECTOR vector
+//
+//    1) diagonalScaling
+//  reducing of big jump coefficient effect (TODO include diagonal scaling into whole ESPRESO)
+//BOOL DIAGONALSCALING                                  = true;
+  bool diagonalScaling                                  = true;
+
+//    2) permutVectorActive
+//  random selection of singular DOFs
+// 0 - no permut., 1 - std::vector shuffle, 2 - generating own random sequence -
+//ESLOCAL PERMUTVECTORACTIVE                            = 1;
+  eslocal permutVectorActive                            = 1;
+
+//    3) use_null_pivots_or_s_set
+  // NtN_Mat from null pivots or fixing DOFs
+//BOOL USE_NULL_PIVOTS_OR_S_SET                         = TRUE;
+  bool use_null_pivots_or_s_set                         = true;
+
+//    4) diagonalRegularization
+//  regularization only on diagonal elements (big advantage: patern of K and K_regular is the same !!!)
+//  size of set 's' = defect(K)
+//  It's is active, only if and only if 'use_null_pivots_or_s_set = true'
+//BOOL DIAGONALREGULARIZATION                           = TRUE;
+  bool diagonalRegularization                           = true;
+
+
+//    6) get_n_first_and_n_last_eigenvals_from_dense_S
+// get and print 2*n S eigenvalues
+//ESLOCAL GET_N_FIRST_AND_N_LAST_EIGENVALS_FROM_DENSE_S = 0;
+  eslocal get_n_first_and_n_last_eigenvals_from_dense_S = 0;
+
+
+//    8) fixing_nodes_or_dof
+// non-singular part determined by fixing nodes (FN),
+// min(fixing_nodes_or_dof)>=3; if variable is nonzero,
+// parameter sc_size is set to fixing_nodes_or_dof*dofPerNode
+//ESLOCAL FIXING_NODES_OR_DOF                           = 0;
+  eslocal fixing_nodes_or_dof = 0;
+//ESLOCAL DOFPERNODE                                    = 3;
+  eslocal dofPerNode                                    = 3;
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+
+//    2) check_nonsing
+// if check_nonsing>0, checking of K_rr non-singularity is activated and it is repeated
+// (check_nonsing) times.
+//ESLOCAL CHECK_NONSING                                 = 0;
+  eslocal check_nonsing                                 = 0;
+
+//    3) max_size_of_dense_matrix_to_get_eigs
+// if size of K is less then CHECK_N..., K is converted to dense format to get eigenvalues.
+//ESLOCAL MAX_SIZE_OF_DENSE_MATRIX_TO_GET_EIGS          = 2500;
+  eslocal max_size_of_dense_matrix_to_get_eigs          = 2500;
+
+//    4) sc_size
+// specification of size of Schur complement used for detection of zero eigenvalues.
+//eslocal  sc_size >= expected defect 'd' (e.g. in elasticity d=6).
+//ESLOCAL SC_SIZE                                       = 50;
+  eslocal sc_size                                       = 50;
+
+//    5) twenty
+// testing last twenty eigenvalues of S to distinguish, if d-last ones are zero or not.
+//ESLOCAL TWENTY                                        = 20;
+  eslocal twenty                                        = 20;
+  // twenty eigenvalues are ascendly ordered in d = d[0],d[1], ..., d[n-2],d[n-1]
+
+//    6) jump_in_eigenvalues_alerting_singularity
+// if d[i]/d[i+1]< jump_in_eigenvalues_alerting_singularity, d[i] is last nonzero eigenvalue
+//DOUBLE JUMP_IN_EIGENVALUES_ALERTING_SINGULARITY       = 1.0E-5;
+  double jump_in_eigenvalues_alerting_singularity       = 1.0e-5;
+
+// ///////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////
+
+
+
+
+  map <string, string> c_options2 = K.options2;
+
+
+
+  if (!use_null_pivots_or_s_set) diagonalRegularization=false;
+
+
+  //TODO if K.rows<=sc_size, use directly input K instead of S
+  //
+  int n_nodsSub = 0;
+//  double rho = K.val[0];
+  if (fixing_nodes_or_dof>0){
+    sc_size = fixing_nodes_or_dof*dofPerNode;
+    n_nodsSub = round(K.n_row_cmprs/dofPerNode);
+  }
+  //
+  //##########################################################################################
+  //
+  Matrix S1;
+  Matrix K_rr;
+  Matrix K_rs;
+  eslocal i_start = 0;
+
+  if (K.n_row_cmprs < sc_size){
+      sc_size = K.n_row;
+    fixing_nodes_or_dof=0;
+  }
+
+
+
+
+  eslocal nonsing_size = K.n_row_cmprs- sc_size - i_start;
+  eslocal j_start = nonsing_size;
+  SEQ_VECTOR <eslocal > permVec;
+
+  permVec.resize(K.n_row_cmprs);
+  SEQ_VECTOR < SEQ_VECTOR < eslocal > > vec_I1_i2(K.n_row_cmprs, SEQ_VECTOR<eslocal >(2, 1));
+  eslocal offset = 0;
+  //
+
+  eslocal *I_row_indices_p = new eslocal [K.nnz] ;
+  eslocal *J_col_indices_p = new eslocal [K.nnz] ;
+  SEQ_VECTOR <eslocal > tmp_vec_s;
+  tmp_vec_s.resize(sc_size);
+  eslocal v1, n_mv, cnt_permut_vec;
+  SEQ_VECTOR <eslocal >::iterator it;
+  SEQ_VECTOR <eslocal > fix_dofs;
+  fix_dofs.resize(sc_size);
+  Matrix K_modif;
+
+  double di=1,dj=1;
+  eslocal cnt_iter_check_nonsing=0;
+
+  K_modif = K; // TODO not necessary to do
+
+
+
+  SEQ_VECTOR <double> tmp_approx_max_eig;
+  tmp_approx_max_eig.resize(K.n_row_cmprs);
+
+  // diagonal scaling of K_modif:
+  // K_modif[i,j] = K_modif[i,j]/sqrt(K_modif[i,i]*K_modif[j,j]);
+  for (eslocal i = 0;i<K_modif.n_row_cmprs;i++){
+    if (diagonalScaling) {
+      di=K_modif.val[K_modif.i_ptr[i]-offset];
+    }
+    for (eslocal j = K_modif.i_ptr[i];j<K_modif.i_ptr[i+1];j++){
+      if (diagonalScaling) {
+        dj=K_modif.val[
+          K_modif.i_ptr[K_modif.j_col[j-offset]-offset]-offset];
+      }
+      K_modif.val[j-offset]/=sqrt(di*dj);
+      tmp_approx_max_eig[i]+=fabs(K.val[j-offset]);
+    }
+  }
+
+
+  if (permutVectorActive<3){
+    // set row permVec = {0,1,2,3,4,...,K.rows};
+    if (fixing_nodes_or_dof==0 || (permutVectorActive==0)){
+      for (eslocal i=0; i<K.n_row_cmprs; ++i) { permVec[i]=i;} // 0 1 2 K.rows-1
+    }
+    else
+    {
+      for (eslocal i=0; i<n_nodsSub; ++i) { permVec[i]=i;} // 0 1 2 n_nodsSub-1
+    }
+  }
+//
+  if (permutVectorActive==1){
+    srand(time(NULL));
+//    srand(0); // random will be constant until next compiling
+
+    if (fixing_nodes_or_dof==0){
+      random_shuffle ( permVec.begin(), permVec.end() );
+    }
+    else
+    {
+      std::srand(std::time(0));
+      std::random_shuffle ( permVec.begin(), permVec.begin()+n_nodsSub);
+      for (eslocal i=n_nodsSub;i>0;i--){
+        for (eslocal j=0;j<dofPerNode;j++){
+          permVec[dofPerNode*i-1-j] = dofPerNode*permVec[i-1]+j;
+        }
+      }
+    }
+
+    sort(permVec.begin(),permVec.begin()+nonsing_size);
+    sort(permVec.begin()+nonsing_size,permVec.end());
+  }
+  else if (permutVectorActive==2){
+    // random permutation
+    n_mv = 0;                     // n_mv = size(unique(tmp_vec_s)) has to be equal to sc_size
+    cnt_permut_vec=0;
+    srand(time(NULL));
+    // loop controls, if series 'tmp_vec_s' with unique integers has suffisciant dimension.
+    // If not, missing numbers are added and checked again.
+    do {
+      for (eslocal i = 0;i<(sc_size-n_mv);i++){
+        v1 = rand() % K_modif.n_row_cmprs;
+        tmp_vec_s[n_mv+i]=v1;
+      }
+      it=tmp_vec_s.begin();
+      std::sort(tmp_vec_s.begin(), tmp_vec_s.end());
+      it = std::unique(tmp_vec_s.begin(), tmp_vec_s.end());
+      n_mv = distance(tmp_vec_s.begin(),it);
+      cnt_permut_vec++;
+   } while (n_mv != sc_size && cnt_permut_vec < 100);
+    //
+    eslocal ik=0,cnt_i=0;
+    for (eslocal i = 0;i<permVec.size();i++){
+      if (i==tmp_vec_s[ik]){
+        permVec[ik+nonsing_size]=tmp_vec_s[ik];
+        ik++;
+      }
+      else{
+        permVec[cnt_i]=i;
+        cnt_i++;
+      }
+    }
+  }
+
+
+  //      r = permVec[0:nonsing_size-1]     (singular DOFs)
+  //      s = permVec[nonsing_size:end-1]   (non-singular DOFs)
+  if (permutVectorActive>0){
+//
+    for (eslocal i = 0; i < K.n_row_cmprs;i++){
+      vec_I1_i2[i][0]=permVec[i];
+      vec_I1_i2[i][1]=i; // position to create revers permutation
+    }
+//
+
+
+
+
+
+
+    sort(vec_I1_i2.begin(), vec_I1_i2.end(), compareVecVec);
+
+    // permutations made on matrix in COO format
+    K_modif.CSR2COO();
+
+
+    vector < int_int_dbl > tmpVec(K.nnz);
+
+    int I_index,J_index;
+    bool unsymmetric = false;
+    for (int i = 0;i<K_modif.nnz;i++){
+       I_index = vec_I1_i2[K_modif.i_coo_cmpr[i]][1];
+       J_index = vec_I1_i2[K_modif.j_col[i]][1];
+       if (unsymmetric || I_index<=J_index){
+         I_row_indices_p[i]=I_index;
+         J_col_indices_p[i]=J_index;
+         tmpVec[i].I =  I_index;
+         tmpVec[i].J =  J_index;
+       }
+       else{
+         I_row_indices_p[i]=J_index;
+         J_col_indices_p[i]=I_index;
+         tmpVec[i].I =  J_index;
+         tmpVec[i].J =  I_index;
+       }
+       tmpVec[i].V =  K_modif.val[i];
+     }
+
+
+    for (int i = 0; i < K_modif.nnz; i++){
+       K_modif.i_coo_cmpr[i] = tmpVec[i].I;
+       K_modif.j_col[i]      = tmpVec[i].J;
+    }
+
+    K_modif.sortAndUniqueCOO(tmpVec);
+    K_modif.COO2CSR();
+
+  }
+
+//
+    for (eslocal i = 0;i<sc_size;i++) fix_dofs[i]=permVec[nonsing_size + i] + offset;
+    K_rr.getSubDiagBlockmatrix(K_modif,K_rr,i_start, nonsing_size);
+    cnt_iter_check_nonsing++;
+
+  delete [] I_row_indices_p;
+  delete [] J_col_indices_p;
+//
+  K_rs.getSubBlockmatrix_rs(K_modif,K_rs,i_start, nonsing_size,j_start,sc_size);
+  K_rr.options2 = c_options2;
+  Matrix K_rs_copy = K_rs;
+
+
+  if (dbg > 0){
+    cout << "\t\t\toptions2.size() "  << c_options2.size() << endl;
+    for (map<string,string>::const_iterator it=c_options2.begin(); it!=c_options2.end(); ++it)
+        cout << "\t\t\t" << it->first << " => " << it->second << '\n';
+
+  }
+
+
+
+    S1.getSubDiagBlockmatrix(K_modif,S1,nonsing_size,sc_size);
+    Matrix KsrInvKrrKrs;
+
+    if (dbg>0){
+        fprintf(stderr, "\n\n\n%s %d : \n\n\n\n", __FILE__, __LINE__);
+        cout << K_rr.n_col << endl;
+    }
+
+
+  if (K_rr.n_col!=0)
+  {
+      cout << "   =====  " << c_options2["linear_solver"] << endl;
+      K_rr.sym_factor(c_options2["linear_solver"]);
+      Matrix _R;
+      bool checkOrthogonality_ = true;
+      K_rr.num_factor(_R,checkOrthogonality_);
+
+
+
+      Matrix InvKrrKrs;
+      K_rs_copy.label = "K_rs_copy";
+      K_rs.label = "o";
+
+      K_rs.CSRorCOO2DNS(false,false);
+      K_rr.solve_system(K_rs,InvKrrKrs);
+      K_rs_copy.mult(InvKrrKrs,KsrInvKrrKrs,false);
+    }
+  S1.CSRorCOO2DNS(false,false);
+
+    if (K_rr.n_col!=0){
+        for (int i = 0; i < S1.n_row_cmprs; i++) {
+            for (int j = 0; j < S1.n_row_cmprs; j++) {
+                S1.dense[i + j * S1.n_row_cmprs ] -=
+                    KsrInvKrrKrs.dense[i + j * S1.n_row_cmprs ];
+            }
+        }
+    }
+
+  int n_S2 = (S1.n_row_cmprs + 1) * S1.n_row_cmprs * 0.5;
+  double *S2 = new double[n_S2];
+
+  int cnt = 0;
+  for (int j = 0; j<S1.n_col; j++){
+    for (int i = 0; i<=j; i++){
+        S2[cnt] = S1.dense[i + j * S1.n_row_cmprs];
+//        printf("%d %d %e \n", i, j,S1.dense[i + j * S1.n_row_cmprs]);
+        cnt++;
+    }
+  }
+
+
+// EIGENVALUES AND EIGENVECTORS OF SCHUR COMPLEMENT
+  char JOBZ = 'V';
+  char UPLO = 'U';
+  double *W = new double[S1.n_col];
+  double *Z = new double[S1.n_col*S1.n_col];
+  MKL_INT info;
+  MKL_INT ldz = S1.n_col;
+  info = LAPACKE_dspev (LAPACK_COL_MAJOR, JOBZ, UPLO, S1.n_col, &(S2[0]), W, Z, ldz);
+  if (info){
+    cout <<"info = " << info << " something wrong with Schur complement in SparseSolverCPU::generalIinverse" << endl;
+  }
+  delete [] S2;
+// IDENTIFICATIONS OF ZERO EIGENVALUES
+  eslocal defect_K_in;// R_s_cols;
+  double ratio;
+  eslocal itMax = twenty < S1.n_row_cmprs ? twenty : S1.n_row_cmprs;
+  for (eslocal i = itMax-1; i > 0;i--){
+    ratio = fabs(W[i-1]/W[i]);
+    if (ratio < jump_in_eigenvalues_alerting_singularity){
+      defect_K_in=i;
+      break;
+    }
+  }
+  if (get_n_first_and_n_last_eigenvals_from_dense_S!=0){
+    int i1i = get_n_first_and_n_last_eigenvals_from_dense_S;
+    if (i1i>S1.n_row_cmprs){i1i=S1.n_row_cmprs;}
+    cout<<"eigenvals of S d{1:" << i1i << "} and d{" <<
+         S1.n_row_cmprs-get_n_first_and_n_last_eigenvals_from_dense_S+2 << ":"<< S1.n_row_cmprs<< "}\n";
+
+    for (eslocal i = 0 ; i < S1.n_row_cmprs; i++){
+      if (i < get_n_first_and_n_last_eigenvals_from_dense_S ||
+            i > S1.n_row_cmprs-get_n_first_and_n_last_eigenvals_from_dense_S){
+        cout<< i+1 <<":\t"<< W[i] << "\n";
+      }
+    }
+  }
+// --------------- CREATING KERNEL R_s FOR SINGULAR PART (SCHUR COMPLEMENT)
+  Matrix R_s;
+  R_s.zero_dense(S1.n_row_cmprs, defect_K_in);
+  eslocal cntR=0;
+  for (eslocal j = 0; j < defect_K_in; j++){
+    for (eslocal i = 0; i < R_s.n_row_cmprs; i++){
+        R_s.dense[j*R_s.n_row_cmprs+ i] = Z[j*R_s.n_row_cmprs+ i];
+        cntR++;
+    }
+  }
+// --------------- CREATING KERNEL R_r FOR NON-SINGULAR PART
+  Matrix R_r, KrsRs;
+  R_r.zero_dense(K_rr.n_row_cmprs,defect_K_in);
+  KrsRs.zero_dense(K_rr.n_row_cmprs,defect_K_in);
+  if (K_rr.n_col!=0){
+    K_rs_copy.mult(R_s,KrsRs,true);
+    K_rr.solve_system(KrsRs,R_r);
+  }
+               //                                               |
+//// --------------- CREATING WHOLE KERNEL Kplus_R = [ (R_r)^T (R_s)^T ]^T
+
+  Kplus_R.zero_dense(K.n_row_cmprs,defect_K_in);
+  cntR=0;
+  int R_r_rows = R_r.n_row_cmprs;
+  for (eslocal j = 0; j < Kplus_R.n_col; j++){
+    for (eslocal i = 0; i < R_r_rows; i++){
+      if (diagonalScaling){
+        di=K.val[K.i_ptr[permVec[i]]-offset];
+      }
+      Kplus_R.dense[j*Kplus_R.n_row_cmprs + permVec[i]] = R_r.dense[j*R_r_rows + i]/sqrt(di);
+      cntR++;
+    }
+    for (eslocal i = 0; i < R_s.n_row_cmprs; i++){
+      if (diagonalScaling){
+        di=K.val[K.i_ptr[permVec[i+R_r_rows]]-offset];
+      }
+      Kplus_R.dense[j*Kplus_R.n_row_cmprs + permVec[i+R_r_rows]] =-R_s.dense[j*R_s.n_row_cmprs + i]/sqrt(di);
+      cntR++;
+    }
+  }
+
+
+  Matrix::GramSchmidtOrtho(Kplus_R);
+  SEQ_VECTOR <eslocal > null_pivots1;
+  Kplus_R.getNullPivots(null_pivots1);
+
+// norm of product K*R: second matrix has to be in dense format!!!
+//11 - max(eig(K))
+//
+//  std::vector <double>::iterator  it2;
+//  it2 = std::max_element(tmp_approx_max_eig.begin(),tmp_approx_max_eig.end(),compareDouble);
+//  double lmx_K_approx       = *it2;
+//  double tmp_Norm_K_R       = Matrix::getNorm_K_R(K,Kplus_R);
+//  double norm_KR_d_pow_2_approx   = (tmp_Norm_K_R*tmp_Norm_K_R)/(lmx_K_approx*lmx_K_approx);
+//  int defect_d                 = Kplus_R.n_col;
+
+
+//  double rho = lmx_K_approx;
+//  cout << "max sigma approx:        " << rho << "\n";
+//  cout << "defect(K):               " << defect_K_in <<"\n";
+//  cout << "norm_KR_approx:          " << sqrt(norm_KR_d_pow_2_approx) <<"\n";
+
+
+//
+  delete [] W;
+  delete [] Z;
+}
+
+void Matrix::GramSchmidtOrtho(Matrix &R_in){
+    int rows = R_in.n_row_cmprs;
+    int cols = R_in.n_col;
+  double *w = new double [rows];
+  double *R = new double [cols*cols];
+  memset(R,0,(cols*cols) * sizeof(double));
+
+  for (int j = 0;j<cols;j++){
+    memcpy( w, &(R_in.dense[j*rows]) , sizeof( double ) * rows);
+    for (int i = 0;i<j;i++){
+      R[j*cols+i] = Matrix::dot(w, &(R_in.dense[i*rows]),rows);
+      for (int k=0;k<rows;k++){
+        w[k]-=R_in.dense[i*rows+k]*R[j*cols+i];
+      }
+    }
+    R[j*cols+j] = sqrt(Matrix::dot(w,w,rows));
+    for (int k=0;k<rows;k++){
+      R_in.dense[j*rows+k] = w[k]/R[j*cols+j];
+    }
+  }
+  delete [] w;
+  delete [] R;
+}
+
+
+
+
+double Matrix::getNorm_K_R(Matrix & K, Matrix &R_in_dense_format){
+
+      double norm_AR_row=0,norm_AR = 0;
+      double * AR =  new double [K.n_row_cmprs];
+
+
+      for (int i = 0;i<R_in_dense_format.n_col;i++){
+        memset(AR,0,R_in_dense_format.n_row_cmprs * sizeof(double));
+        K.mult(R_in_dense_format.dense.data(), AR, true , 1 , -1);
+        norm_AR_row=0.0;
+        for (int j = 0; j < R_in_dense_format.n_row_cmprs;j++){
+          norm_AR_row+=AR[j]*AR[j];
+        }
+        norm_AR+=norm_AR_row;
+      }
+      norm_AR=sqrt(norm_AR);
+      delete [] AR;
+      return norm_AR;
 }

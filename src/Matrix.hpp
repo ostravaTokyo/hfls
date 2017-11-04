@@ -18,13 +18,17 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "omp.h"
+#include <ctime>
+#include <stack>
+#include <time.h>
 
 
 #ifdef DISSECTION
 #include "Dissection.hpp"
 #endif
 
-#include "Options.hpp"
+//#include "Options.hpp"
 
 
 
@@ -77,7 +81,6 @@ public:
     string label;
     string tmp_label;
     int order_number;
-    Options options;
     map < string, string > options2;
     bool printed;
 
@@ -91,6 +94,7 @@ public:
     void COO2CSR();
     void CSR2COO();
     void CSRorCOO2DNS(bool, bool);
+    void CSRorCOO2DNS(bool, bool, int);
     void dummyFunction(int,int, int, double);
     void DNS2CSR();
     void DNS2COO();
@@ -136,9 +140,9 @@ public:
 
 
     void sym_factor();
-    void numeric_factorization();
-    void numeric_factorization(Matrix &);
-    void numeric_factorization(Matrix &,bool);
+//    void numeric_factorization();
+//    void numeric_factorization(Matrix &);
+//    void numeric_factorization(Matrix &,bool);
 
 
     void sym_factor_pardiso();
@@ -198,6 +202,12 @@ public:
                                        Matrix &
                                        );
     void getSubDiagBlockmatrix(const Matrix & , Matrix & , int , int );
+    static void get_kernel_from_K(Matrix &,  Matrix &, int);
+    static void get_kernel_from_K(Matrix &,  Matrix & );
+    static void GramSchmidtOrtho(Matrix &);
+    static double dot(double *, double*, int);
+
+    static double getNorm_K_R(Matrix & , Matrix &);
 
 };
 
