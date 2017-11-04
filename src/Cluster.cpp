@@ -12,11 +12,12 @@
 using namespace std;
 
 
-Cluster::Cluster(Options options_, map <string,string> options2_)
+//Cluster::Cluster(Options options_, map <string,string> options2_)
+Cluster::Cluster(map <string,string> options2_)
 {
 
     clock_t begin = clock();
-    options = options_;
+    //options = options_;
     options2 = options2_;
 
     bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
@@ -66,23 +67,33 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
     cout << "ker(K) is being created ... \n" ;
 
 
-    if (options2["create_analytic_ker_K"].compare("true") == 0){
-        data.create_analytic_ker_K(mesh,R);
+    for (int d = 0; d < K.size(); d++)
+        K[d].options2 = options2;
+
+
+    if (options2["linear_solver"].compare("pardiso") == 0){
+        if (0){
+            data.create_analytic_ker_K(mesh,R);
+        }
+        else {
+            for (int d = 0; d < K.size(); d++){
+                Matrix::get_kernel_from_K(K[d],R[d]);
+            }
+        }
     }
+
 
     printCooOrDense = true;
     checkOrthogonality = true;
 
     neqClst = 0;
-    for (int d = 0; d < K.size(); d++){
+    for (int d = 0; d < K.size(); d++)
         neqClst += K[d].n_row_cmprs;
-    }
 
 //    Matrix::testSolver(folder, 1);
 
     for (int d = 0; d < K.size(); d++){
         K[d].order_number = d;
-        K[d].options2 = options2;
         K[d].sym_factor(options2["linear_solver"]);
         R[d].label = "kerK";
 //        Matrix Ksing = K[d];
@@ -90,9 +101,13 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 //        K[d].test_K_Kp_K_condition(Ksing);
     }
 
+
+
+
+
     // constraints must wait for factorization (to use R)
     cout << "boolean matrix is being created. ... \n" ;
-    create_cluster_constraints(options, options2);
+    create_cluster_constraints(options2);
 
     cout << "subdomain:  ";
     for (int d = 0; d < K.size(); d++){
@@ -243,8 +258,15 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
 //    Matrix ker_GcT;
     kerGc.label = "kerGc";
     GcTGc_clust.order_number = 1000;
-    GcTGc_clust.sym_factor(1);
+    GcTGc_clust.sym_factor(options2["linear_solver"]);
     checkOrthogonality = true;
+
+
+
+    if (options2["linear_solver"].compare("pardiso") == 0){
+        Matrix::get_kernel_from_K(GcTGc_clust,kerGc);
+    }
+
     GcTGc_clust.num_factor(kerGc,checkOrthogonality );
     nRBM_f = kerGc.n_col;
     fprintf(stderr, "%s %d : ## GcTGc_clust: kernel dimension = %d\n",
@@ -291,7 +313,6 @@ Cluster::Cluster(Options options_, map <string,string> options2_)
             ker_Ac.label = "ker_Ac";
             checkOrthogonality = true;
             Ac_clust.num_factor(ker_Ac,checkOrthogonality);
-            //Ac_clust.num_factor();
             fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
                                                         __FILE__, __LINE__, ker_Ac.n_col);
     
@@ -643,13 +664,10 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
             cnt++;
         }
     }
-    //else {
-    //}
 
     Ac_clust.sortAndUniqueCOO(tmpVec);
     tmpVec.clear();
     vector < int_int_dbl >().swap(tmpVec);
-   // tmpVec.shrink_to_fit();
 
 
     if (Ac_nonsingular){
@@ -663,34 +681,11 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
     Ac_clust.n_col = Ac_clust.n_row;
 
     Ac_clust.COO2CSR();
-#if 0
-    int init_nnz = Ac_clust.nnz;
-    int new_nnz = init_nnz + Gc_clust.n_col;
-    /* n_row = n_row_cmprs = n_col */
-    Ac_clust.nnz = new_nnz;
-    Ac_clust.n_row = Ac_clust.n_col;
-    Ac_clust.n_row_cmprs = Ac_clust.n_col;
-    /* update sizes of sparse structures*/
-    Ac_clust.i_ptr.resize(Ac_clust.n_col + 1);
-    Ac_clust.j_col.resize(new_nnz);
-    Ac_clust.val.resize(new_nnz);
-    Ac_clust.l2g_i_coo.resize(Ac_clust.n_col);
-
-
-    for (int i = 0; i < Gc_clust.n_col; i++){
-        Ac_clust.i_ptr[Fc_clust.n_col + 1 + i] = init_nnz + 1 + i;
-        Ac_clust.j_col[init_nnz + i] = Fc_clust.n_row + i;
-        Ac_clust.val[init_nnz + i] = 0;
-        Ac_clust.l2g_i_coo[Fc_clust.n_row + i] = Fc_clust.n_row + i;
-    }
-    Ac_clust.i_ptr[Ac_clust.n_row] = new_nnz;
-#endif
 }
 
 
 
-void Cluster::create_cluster_constraints(const Options &options,
-                                         const map< string, string> &options2){
+void Cluster::create_cluster_constraints(const map< string, string> &options2){
 
     vector < vector < int > > subDOFset;
     vector<int>::iterator it;
@@ -1414,8 +1409,9 @@ void Cluster::pcpg(){
     printf(  "|gPz0|  = %3.9e  \n\n", norm_gPz0);
     w = Pz;
 
+    printf("=======================\n");
     printf(" it.\t||gradient||\n");
-    printf("==================\n");
+    printf("=======================\n");
 
     for (int it = 0; it < max_iter; it++){
 
