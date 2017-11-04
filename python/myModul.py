@@ -358,7 +358,7 @@ def pcgp(F, d, G, e, Prec, eps0, maxIt,disp):
         
         #print('....',np.log10(normed_gi/vec_normed_g[:i+1].min()),end=' ')
         if np.log10(normed_gi/vec_normed_g[:i+1].min()) > 2:
-            print('... stagnate',end=' ')
+            print('... stagnate')
             break
         
         if disp:
@@ -413,7 +413,7 @@ def cg(A,b,x0,R,eps0,maxIt,Prec,disp=False):
         
         #print('....',np.log10(normed_gi/vec_normed_g[:i+1].min()),end=' ')
         if np.log10(normed_gi/vec_normed_g[:i+1].min()) > 2:
-            print('... stagnate',end=' ')
+            print('... stagnate')
             break        
         
         

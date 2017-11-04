@@ -33,6 +33,7 @@
 data*/*
 python/*.txt
 python/__pycache__/
+*.pyc
 
 build*/*
 

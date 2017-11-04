@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include "src/Options.hpp"
 #include "src/Cluster.hpp"
 #include <map>
 
@@ -23,14 +22,14 @@ int main(int argc, char *argv[]){
 
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
-    options2["ratio_mat"]                       =  "50";
+    options2["ratio_mat"]                       =  "1";
     options2["poissons_ratio"]                  =  "0.3";
 
     /* dissection | pardiso */
     options2["linear_solver"]                   =  "pardiso";
 
     /* {0, 1, 2, 3 }                                            */
-    options2["print_matrices"]                  =  "0";
+    options2["print_matrices"]                  =  "1";
 
     /* ker, cor, all                                            */
     options2["typeBc"]                          =  "ker";
@@ -45,7 +44,7 @@ int main(int argc, char *argv[]){
     options2["Bc_fullRank"]                     =  "true";
 
     /* true, false                                              */
-    options2["create_analytic_ker_K"]           =  "false";
+//    options2["create_analytic_ker_K"]           =  "false";
 
 
     options2["Nx"]                              =  "2";
@@ -58,13 +57,13 @@ int main(int argc, char *argv[]){
 
     printf("+++++++++++++++++++++++++++++++++++      %s\n", options2["path2data"].c_str());
 
-    if (options2["linear_solver"] ==  "pardiso" &&
-            options2["create_analytic_ker_K"] == "false"){
-        cout <<"###########################################################" << endl;
-        cout << "if pardiso, kernel must be provided by analytical formula" << endl;
-        cout <<"###########################################################" << endl;
-        options2["create_analytic_ker_K"] = "true";
-    }
+//    if (options2["linear_solver"] ==  "pardiso" &&
+//            options2["create_analytic_ker_K"] == "false"){
+//        cout <<"###########################################################" << endl;
+//        cout << "if pardiso, kernel must be provided by analytical formula" << endl;
+//        cout <<"###########################################################" << endl;
+//        options2["create_analytic_ker_K"] = "true";
+//    }
 
 
     if (argc > 1) {
@@ -90,8 +89,8 @@ int main(int argc, char *argv[]){
     }
 
     cout << argv[0] << endl;
-    Options options;
-    Cluster cluster(options,options2);
+//    Options options;
+    Cluster cluster(options2);
     cout << "----------------- done -----------------\n" ;
 
 
