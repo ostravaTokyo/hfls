@@ -411,21 +411,21 @@ void Cluster::create_GcTGc(){
     GcTGc.format= 0;
     GcTGc.nnz = cnt;
 
-    vector < int_int_dbl > tmpVec;
+    vector < TRIPLET > triplet;
 
-    tmpVec.resize(cnt);
+    triplet.resize(cnt);
     cnt = 0;
     for (int i = 0; i < nncol ; i++) {
       for (int j = 0; j < nncol ; j++) {
     if (GcTGcmask[i + j * nncol] == 1) {
-      tmpVec[cnt].I = i;
-      tmpVec[cnt].J = j;
-      tmpVec[cnt].V = GcTGcdense[i + j * nncol];
+      triplet[cnt].I = i;
+      triplet[cnt].J = j;
+      triplet[cnt].V = GcTGcdense[i + j * nncol];
       cnt++;
     }
       }
     }
-    GcTGc.sortAndUniqueCOO(tmpVec);
+    GcTGc.sortAndUniqueCOO(triplet);
     GcTGc.n_row = nncol;
     GcTGc.n_row_cmprs = nncol;
     GcTGc.n_col = nncol;
@@ -452,7 +452,7 @@ void Cluster::create_GcTGc_clust_sparse(){
     GcTGc_sparse_clust.nnz = 0;
     GcTGc_sparse_clust.symmetric = 2;
     GcTGc_sparse_clust.format= 0;
-    vector < int_int_dbl > tmpVec;
+    vector < TRIPLET > triplet;
     vector < int > blockPointer;
     blockPointer.resize(nSubClst);
     blockPointer[0] = 0;
@@ -466,7 +466,7 @@ void Cluster::create_GcTGc_clust_sparse(){
         Gc_i.CSRorCOO2DNS(true,false);
         Gii.mat_mult_dense(Gc_i,"T",Gc_i,"N");
 	//        Gii.label = "Gii";
-        Matrix::updateCOOstructure( tmpVec,
+        Matrix::updateCOOstructure( triplet,
                                 Gii,blockPointer[i],blockPointer[i]);
         for (int j = 0 ; j < neighbours[i].size(); j++){
             ind_neigh = neighbours[i][j];
@@ -481,7 +481,7 @@ void Cluster::create_GcTGc_clust_sparse(){
                 G_i.submatrix_row_selector(Gc[i],overlap);
                 G_j.submatrix_row_selector(Gc[ind_neigh],overlap);
                 GiTGj.mat_mult_dense(G_i,"T",G_j,"N");
-                Matrix::updateCOOstructure( tmpVec,
+                Matrix::updateCOOstructure( triplet,
                                             GiTGj,
                                             blockPointer[i],
                                             blockPointer[ind_neigh]);
@@ -490,7 +490,7 @@ void Cluster::create_GcTGc_clust_sparse(){
                 Gc[i].n_col * Gc[ind_neigh].n_col;
         }
     }
-    GcTGc_sparse_clust.sortAndUniqueCOO(tmpVec);
+    GcTGc_sparse_clust.sortAndUniqueCOO(triplet);
     GcTGc_sparse_clust.n_col = GcTGc_sparse_clust.n_row;
     GcTGc_sparse_clust.COO2CSR();
 }
@@ -526,8 +526,8 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
 
     A_clust.format = 0;
 
-    vector < int_int_dbl > tmpVec;
-    tmpVec.resize(init_nnz);
+    vector < TRIPLET > triplet;
+    triplet.resize(init_nnz);
 
     A_clust.n_col = 0;
 
@@ -549,9 +549,9 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
             if (A_clust.symmetric == 0 ||
                     (A_clust.symmetric == 1 && _j <= _i) ||
                     (A_clust.symmetric == 2 && _i <= _j)    ){
-                tmpVec[cnt].I = _i;
-                tmpVec[cnt].J = _j;
-                tmpVec[cnt].V = A_i[d].val[i];
+                triplet[cnt].I = _i;
+                triplet[cnt].J = _j;
+                triplet[cnt].V = A_i[d].val[i];
                 cnt++;
             }
         }
@@ -559,12 +559,12 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
     }
     /* updated on nnz */
     A_clust.nnz = cnt;
-    tmpVec.resize(A_clust.nnz);
-    A_clust.sortAndUniqueCOO(tmpVec);
-    /* tmpVec released from the memory */
-    tmpVec.clear();
-    vector < int_int_dbl >().swap(tmpVec);
-   // tmpVec.shrink_to_fit();
+    triplet.resize(A_clust.nnz);
+    A_clust.sortAndUniqueCOO(triplet);
+    /* triplet released from the memory */
+    triplet.clear();
+    vector < TRIPLET >().swap(triplet);
+   // triplet.shrink_to_fit();
 
     /* both Fc or Gc do not have compressed rows,
      * therefore n_row = n_row_cmprs                        */
@@ -606,35 +606,35 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
         Ac_clust.nnz += kerGc.numel + kerGc.n_col;
 
 
-    vector < int_int_dbl > tmpVec;
-    tmpVec.resize(Ac_clust.nnz);
+    vector < TRIPLET > triplet;
+    triplet.resize(Ac_clust.nnz);
 
     int cnt = 0;
 
 
-    //  Ac[0,1]
+    //  Ac[0,0]
     for (int i = 0; i < Fc_clust.n_row; i++) {
         for (int j = Fc_clust.i_ptr[i]; j < Fc_clust.i_ptr[i + 1]; j++) {
-            tmpVec[cnt].I = i;
-            tmpVec[cnt].J = Fc_clust.j_col[j];
-            tmpVec[cnt].V = Fc_clust.val[j];
+            triplet[cnt].I = i;
+            triplet[cnt].J = Fc_clust.j_col[j];
+            triplet[cnt].V = Fc_clust.val[j];
             cnt++;
         }
     }
     //  Ac[0,1]
     for (int i = 0; i < Gc_clust.n_row; i++) {
         for (int j = Gc_clust.i_ptr[i]; j < Gc_clust.i_ptr[i + 1]; j++) {
-            tmpVec[cnt].I = i;
-            tmpVec[cnt].J = Gc_clust.j_col[j] + Fc_clust.n_col;
-            tmpVec[cnt].V = Gc_clust.val[j];
+            triplet[cnt].I = i;
+            triplet[cnt].J = Gc_clust.j_col[j] + Fc_clust.n_col;
+            triplet[cnt].V = Gc_clust.val[j];
             cnt++;
         }
     }
     //  Ac[1,1]
     for (int i = 0; i < Gc_clust.n_col; i++){
-        tmpVec[cnt].I = i + Fc_clust.n_row;
-        tmpVec[cnt].J = i + Fc_clust.n_row;
-        tmpVec[cnt].V = 0.0;
+        triplet[cnt].I = i + Fc_clust.n_row;
+        triplet[cnt].J = i + Fc_clust.n_row;
+        triplet[cnt].V = 0.0;
         cnt++;
     }
 
@@ -642,24 +642,24 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
     //  Ac[1,2]
         for (int i = 0; i < kerGc.n_row; i++) {
             for (int j = 0; j < kerGc.n_col; j++) {
-                tmpVec[cnt].I = i + Fc_clust.n_row;
-                tmpVec[cnt].J = j + Fc_clust.n_col + Gc_clust.n_col;
-                tmpVec[cnt].V = kerGc.dense[i + j * kerGc.n_row];
+                triplet[cnt].I = i + Fc_clust.n_row;
+                triplet[cnt].J = j + Fc_clust.n_col + Gc_clust.n_col;
+                triplet[cnt].V = kerGc.dense[i + j * kerGc.n_row];
                 cnt++;
             }
         }
     //  Ac[2,2]
         for (int i = 0; i < kerGc.n_col; i++){
-            tmpVec[cnt].I = i + Fc_clust.n_row + Gc_clust.n_col;
-            tmpVec[cnt].J = i + Fc_clust.n_row + Gc_clust.n_col;
-            tmpVec[cnt].V = 0.0;
+            triplet[cnt].I = i + Fc_clust.n_row + Gc_clust.n_col;
+            triplet[cnt].J = i + Fc_clust.n_row + Gc_clust.n_col;
+            triplet[cnt].V = 0.0;
             cnt++;
         }
     }
 
-    Ac_clust.sortAndUniqueCOO(tmpVec);
-    tmpVec.clear();
-    vector < int_int_dbl >().swap(tmpVec);
+    Ac_clust.sortAndUniqueCOO(triplet);
+    triplet.clear();
+    vector < TRIPLET >().swap(triplet);
 
 
     if (Ac_nonsingular){

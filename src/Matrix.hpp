@@ -41,7 +41,7 @@
 
 using namespace std;
 
-struct int_int_dbl
+struct TRIPLET
 {
     int I;
     int J;
@@ -104,7 +104,7 @@ public:
     void FinalizeSolve(int);
     void setZero();
     void getNullPivots(vector < int > & );
-    void sortAndUniqueCOO(vector < int_int_dbl > &);
+    void sortAndUniqueCOO(vector < TRIPLET > &);
     void submatrix_row_selector(Matrix &, vector <int> &);
     void getSubBlockmatrix_rs(Matrix &, Matrix &, int, int, int, int);
     void getSubDiagBlockmatrix(const Matrix &, const Matrix &, Matrix &,int , int);
@@ -173,10 +173,10 @@ public:
 
     double norm2();
 
-    static bool cmp_int_int_I(int_int_dbl ,int_int_dbl );
-    static bool cmp_int_int_J(int_int_dbl ,int_int_dbl );
+    static bool cmp_int_int_I(TRIPLET ,TRIPLET );
+    static bool cmp_int_int_J(TRIPLET ,TRIPLET );
     static bool compareDouble(double, double);
-    static void updateCOOstructure(vector <int_int_dbl > &, Matrix &, int, int);
+    static void updateCOOstructure(vector <TRIPLET > &, Matrix &, int, int);
 
     static bool test_of_Bc_constraints(Matrix &);
 

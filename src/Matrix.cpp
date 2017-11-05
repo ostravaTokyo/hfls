@@ -58,9 +58,9 @@ Matrix::~Matrix()
 {}
 
 
-bool Matrix::cmp_int_int_I(int_int_dbl a,int_int_dbl b)
+bool Matrix::cmp_int_int_I(TRIPLET a,TRIPLET b)
 { return (a.I < b.I); }
-bool Matrix::cmp_int_int_J(int_int_dbl a,int_int_dbl b)
+bool Matrix::cmp_int_int_J(TRIPLET a,TRIPLET b)
 { return (a.J < b.J); }
 
 bool Matrix::compareDouble(double i, double j)
@@ -191,16 +191,16 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
 //            val.shrink_to_fit();
         }
 /* Sorting [I, J, V]  --------------------------------------------------------*/
-        vector < int_int_dbl > tmpVec;
-        tmpVec.resize(i_coo_cmpr.size());
+        vector < TRIPLET > triplet;
+        triplet.resize(i_coo_cmpr.size());
         for (int i = 0; i < i_coo_cmpr.size();i++){
-            tmpVec[i].I = i_coo_cmpr[i];
-            tmpVec[i].J = j_col[i];
-            tmpVec[i].V = val[i];
+            triplet[i].I = i_coo_cmpr[i];
+            triplet[i].J = j_col[i];
+            triplet[i].V = val[i];
         }
-        sortAndUniqueCOO(tmpVec);
-        tmpVec.clear();
-//        tmpVec.shrink_to_fit();
+        sortAndUniqueCOO(triplet);
+        triplet.clear();
+//        triplet.shrink_to_fit();
 
         if (format_ == 1){
             COO2CSR();
@@ -210,28 +210,28 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
 }
 
 
-void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
+void Matrix::sortAndUniqueCOO(vector <TRIPLET> &triplet){
 /* sort according to index I -------------------------------------------------*/
-    sort(tmpVec.begin(),tmpVec.end(),Matrix::cmp_int_int_I);
+    sort(triplet.begin(),triplet.end(),Matrix::cmp_int_int_I);
 /* partial sorting according to index J (per sets with same I)----------------*/
 
-  nnz = tmpVec.size();
+  nnz = triplet.size();
 
     int startInd = 0, endInd = 1;
-    int tmpVecIprev = tmpVec[0].I;
+    int tripletIprev = triplet[0].I;
     for (int i = 1 ; i < nnz; i ++){
-        if (tmpVec[i].I == tmpVecIprev){
+        if (triplet[i].I == tripletIprev){
             endInd++;
         }
-        if (tmpVec[i].I != tmpVecIprev || (tmpVec[i].I == tmpVecIprev &&
+        if (triplet[i].I != tripletIprev || (triplet[i].I == tripletIprev &&
                  i == nnz - 1))
         {
-            sort(tmpVec.begin() + startInd,
-                              tmpVec.begin() + (endInd  ),Matrix::cmp_int_int_J);
+            sort(triplet.begin() + startInd,
+                              triplet.begin() + (endInd  ),Matrix::cmp_int_int_J);
             startInd = i;
             endInd = i + 1;
         }
-        tmpVecIprev = tmpVec[i].I;
+        tripletIprev = triplet[i].I;
     }
 
 
@@ -241,38 +241,38 @@ void Matrix::sortAndUniqueCOO(vector <int_int_dbl> &tmpVec){
     int counter = 0;
     int cnt_j = -1;
 
-    if (l2g_i_coo.size() != tmpVec.size()){
-        l2g_i_coo.resize(tmpVec.size());
+    if (l2g_i_coo.size() != triplet.size()){
+        l2g_i_coo.resize(triplet.size());
     }
-    if (i_coo_cmpr.size() != tmpVec.size()){
-        i_coo_cmpr.resize(tmpVec.size());
+    if (i_coo_cmpr.size() != triplet.size()){
+        i_coo_cmpr.resize(triplet.size());
     }
-    if (j_col.size() != tmpVec.size()){
-        j_col.resize(tmpVec.size());
+    if (j_col.size() != triplet.size()){
+        j_col.resize(triplet.size());
     }
-    if (val.size() != tmpVec.size()){
-        val.resize(tmpVec.size());
+    if (val.size() != triplet.size()){
+        val.resize(triplet.size());
     }
 
 
     int init_nnz = nnz;
     for (int i = 0 ; i < init_nnz; i ++){
-        if (prevInd_I != tmpVec[i].I){
-            l2g_i_coo[counter] = tmpVec[i].I;
+        if (prevInd_I != triplet[i].I){
+            l2g_i_coo[counter] = triplet[i].I;
             counter++;
         }
-        if (prevInd_I == tmpVec[i].I && prevInd_J == tmpVec[i].J){
-            val[cnt_j] += tmpVec[i].V;
+        if (prevInd_I == triplet[i].I && prevInd_J == triplet[i].J){
+            val[cnt_j] += triplet[i].V;
             nnz--;
         }
         else {
             cnt_j++;
-            i_coo_cmpr[cnt_j] = tmpVec[i].I ;
-            j_col[cnt_j] = tmpVec[i].J;
-            val[cnt_j] = tmpVec[i].V;
+            i_coo_cmpr[cnt_j] = triplet[i].I ;
+            j_col[cnt_j] = triplet[i].J;
+            val[cnt_j] = triplet[i].V;
         }
-        prevInd_I = tmpVec[i].I;
-        prevInd_J = tmpVec[i].J;
+        prevInd_I = triplet[i].I;
+        prevInd_J = triplet[i].J;
     }
 
     l2g_i_coo.resize(counter );
@@ -1390,17 +1390,17 @@ void Matrix::testSolver(string folder, int pardiso_0_dissection_1){
 #endif
 }
 
-void Matrix::updateCOOstructure(vector <int_int_dbl >& vec_, Matrix &denseMat,int i_shift, int j_shift){
+void Matrix::updateCOOstructure(vector <TRIPLET >& vec_, Matrix &denseMat,int i_shift, int j_shift){
 
 
-    int_int_dbl i_tmpvec;
+    TRIPLET i_triplet;
     for (int j = 0; j < denseMat.n_col;j++){
         for (int i = 0; i < denseMat.n_row_cmprs;i++){
-            i_tmpvec.I = i_shift + i;
-            i_tmpvec.J = j_shift + j;
-            i_tmpvec.V = denseMat.dense[i + j * denseMat.n_row_cmprs ];
-            if (i_tmpvec.J >= i_tmpvec.I && i_tmpvec.V != 0){
-                vec_.push_back(i_tmpvec);
+            i_triplet.I = i_shift + i;
+            i_triplet.J = j_shift + j;
+            i_triplet.V = denseMat.dense[i + j * denseMat.n_row_cmprs ];
+            if (i_triplet.J >= i_triplet.I && i_triplet.V != 0){
+                vec_.push_back(i_triplet);
             }
         }
     }
@@ -1724,7 +1724,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
     vector <int> I_row_indices_p (K.nnz);
     vector <int> J_col_indices_p (K.nnz);
 
-    vector < int_int_dbl > tmpVec(K.nnz);
+    vector < TRIPLET > triplet(K.nnz);
 
 
 
@@ -1765,30 +1765,30 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
        if (unsymmetric || I_index<=J_index){
          I_row_indices_p[i]=I_index;
          J_col_indices_p[i]=J_index;
-         tmpVec[i].I =  I_index;
-         tmpVec[i].J =  J_index;
+         triplet[i].I =  I_index;
+         triplet[i].J =  J_index;
        }
        else{
          I_row_indices_p[i]=J_index;
          J_col_indices_p[i]=I_index;
-         tmpVec[i].I =  J_index;
-         tmpVec[i].J =  I_index;
+         triplet[i].I =  J_index;
+         triplet[i].J =  I_index;
        }
-       tmpVec[i].V =  K_modif.val[i];
+       triplet[i].V =  K_modif.val[i];
      }
 
 
 
     for (int i = 0; i < K_modif.nnz; i++){
-       K_modif.i_coo_cmpr[i] = tmpVec[i].I;
-       K_modif.j_col[i]      = tmpVec[i].J;
+       K_modif.i_coo_cmpr[i] = triplet[i].I;
+       K_modif.j_col[i]      = triplet[i].J;
     }
 
 //     K_modif.printToFile("K_modif_v2",c_options2["path2data"],order_number,printCooOrDense_);
 
 
 //
-    K_modif.sortAndUniqueCOO(tmpVec);
+    K_modif.sortAndUniqueCOO(triplet);
 
 //     K_modif.printToFile("K_modif_v3",c_options2["path2data"],order_number,printCooOrDense_);
 
@@ -2229,7 +2229,7 @@ typedef int  eslocal;
     K_modif.CSR2COO();
 
 
-    vector < int_int_dbl > tmpVec(K.nnz);
+    vector < TRIPLET > triplet(K.nnz);
 
     int I_index,J_index;
     bool unsymmetric = false;
@@ -2239,25 +2239,25 @@ typedef int  eslocal;
        if (unsymmetric || I_index<=J_index){
          I_row_indices_p[i]=I_index;
          J_col_indices_p[i]=J_index;
-         tmpVec[i].I =  I_index;
-         tmpVec[i].J =  J_index;
+         triplet[i].I =  I_index;
+         triplet[i].J =  J_index;
        }
        else{
          I_row_indices_p[i]=J_index;
          J_col_indices_p[i]=I_index;
-         tmpVec[i].I =  J_index;
-         tmpVec[i].J =  I_index;
+         triplet[i].I =  J_index;
+         triplet[i].J =  I_index;
        }
-       tmpVec[i].V =  K_modif.val[i];
+       triplet[i].V =  K_modif.val[i];
      }
 
 
     for (int i = 0; i < K_modif.nnz; i++){
-       K_modif.i_coo_cmpr[i] = tmpVec[i].I;
-       K_modif.j_col[i]      = tmpVec[i].J;
+       K_modif.i_coo_cmpr[i] = triplet[i].I;
+       K_modif.j_col[i]      = triplet[i].J;
     }
 
-    K_modif.sortAndUniqueCOO(tmpVec);
+    K_modif.sortAndUniqueCOO(triplet);
     K_modif.COO2CSR();
 
   }

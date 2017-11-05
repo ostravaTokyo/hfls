@@ -13,7 +13,7 @@ int main(int argc, char *argv[]){
     options2["vtkWithinIter"]                   = "true";
 
 
-    options2["metis"]                           = "true";
+    options2["metis"]                           = "false";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
     options2["preconditioner"]                  = "Dirichlet_implicit";
 
