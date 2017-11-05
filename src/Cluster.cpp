@@ -605,14 +605,6 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
     if (Ac_nonsingular)
         Ac_clust.nnz += kerGc.numel + kerGc.n_col;
 
-//    if (Ac_nonsingular){
-//        Ac_clust.nnz = Fc_clust.nnz + Gc_clust.nnz + Gc_clust.n_col +
-//                                                            kerGc.numel + kerGc.n_col;
-//    }
-//    else
-//    {
-//        Ac_clust.nnz = Fc_clust.nnz + Gc_clust.nnz + Gc_clust.n_col;
-//    }
 
     vector < int_int_dbl > tmpVec;
     tmpVec.resize(Ac_clust.nnz);
