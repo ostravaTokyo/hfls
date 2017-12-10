@@ -18,8 +18,7 @@ void Cluster::set_nLam_f(int n) { nLam_f = n; }
 void Cluster::set_nRBM_f(int n) { nRBM_f = n; }
 void Cluster::set_nRBM_c(int n) { nRBM_c = n; }
 
-//Cluster::Cluster(Options options_, map <string,string> options2_)
-void Cluster::initialization(map <string,string> options2_,Mesh &mesh)
+void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
 {
 
     clock_t begin = clock();
@@ -40,7 +39,8 @@ void Cluster::initialization(map <string,string> options2_,Mesh &mesh)
 //    /* mesh belonging to i-th cluster (currently, i=0 only)*/
 //    mesh.createMesh(options2);
 //    mesh.ddm_metis(options2);
-    set_nSubClst(mesh.nSubClst);
+    mesh = &m_mesh;
+    set_nSubClst(mesh->nSubClst);
 
     nSubClst = get_nSubClst();
 
@@ -851,14 +851,14 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
             global_DOF = it1->first;
 
             if (cornersOnlyOrAllDof){
-                it = find (mesh.cornerDOFs.begin(), mesh.cornerDOFs.end(), global_DOF);
-                if (it == mesh.cornerDOFs.end())
+                it = find (mesh->cornerDOFs.begin(), mesh->cornerDOFs.end(), global_DOF);
+                if (it == mesh->cornerDOFs.end())
                     continue;
             }
 
             if (addDirConstr){
-                it = find (mesh.DirichletDOFs.begin(), mesh.DirichletDOFs.end(), global_DOF);
-                if (it != mesh.DirichletDOFs.end()){
+                it = find (mesh->DirichletDOFs.begin(), mesh->DirichletDOFs.end(), global_DOF);
+                if (it != mesh->DirichletDOFs.end()){
 
 //                    j_col_Bc_curr = data.g2l[d][global_DOF];
 //                    Bc_[d].l2g_i_coo.push_back(cntLam);
@@ -903,10 +903,11 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
         }
     }
 
+
     if (addDirConstr){
         for (int d = 0; d < Bc_.size(); d++){
-            for (int i = 0; i < mesh.DirichletDOFs.size();i++){
-                int dirDof = mesh.DirichletDOFs[i];
+            for (int i = 0; i < mesh->DirichletDOFs.size();i++){
+                int dirDof = mesh->DirichletDOFs[i];
                 if (dirDof >= 0){
                     it = find (data.l2g[d].begin(), data.l2g[d].end(), dirDof);
                     if (it != data.l2g[d].end()){
@@ -959,6 +960,12 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
 }
 
 void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
+
+    int dbg = -1;
+    Cluster::mult_Kplus_f(rhs_in ,x_out,dbg);
+}
+
+void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out,int dbg){
 
     int nSubClst = get_nSubClst();
     // gc will be allocated onece at the beginning of Cluster.cpp //
@@ -1618,14 +1625,14 @@ void Cluster::pcpg_old(){
     }
 
     vector < double > solution;
-    solution.resize(mesh.nPoints * 3, 0 );
+    solution.resize(mesh->nPoints * 3, 0 );
 
     for (int d = 0 ; d < nSubClst; d++){
         for (int i = 0; i < xx[d].n_row_cmprs; i++){
             solution[data.l2g[d][i]] = xx[d].dense[i];
         }
     }
-    mesh.SaveVTK(solution, folder,0);
+    mesh->SaveVTK(solution, folder,0);
     }
 // ================================================================
 
@@ -1661,13 +1668,13 @@ void Cluster::printVTK(vector < Vector > & yy, vector <Vector > & xx, Vector &la
 
 
         vector < double > solution;
-        solution.resize(mesh.nPoints * 3, 0 );
+        solution.resize(mesh->nPoints * 3, 0 );
 
         for (int d = 0 ; d < nSubClst; d++){
             for (int i = 0; i < xx[d].n_row_cmprs; i++){
                 solution[data.l2g[d][i]] = xx[d].dense[i];
             }
         }
-        mesh.SaveVTK(solution, folder,it);
+        mesh->SaveVTK(solution, folder,it);
 }
 
