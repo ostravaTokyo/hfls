@@ -209,15 +209,37 @@ void Mesh::createMesh(map <string, string> &options2){
         }
     }
 
-
-    int nDirDOFs =  3 * (nElSubXYZ[0] * nSubXYZ[0] + 1) * (nElSubXYZ[1] * nSubXYZ[1] + 1);
+    int nDirDOFs;
+#if 0
+    nDirDOFs =  3 * (nElSubXYZ[0] * nSubXYZ[0] + 1) * (nElSubXYZ[1] * nSubXYZ[1] + 1);
 
     DirichletDOFs.resize(nDirDOFs);
 
-    for (int i = 0; i < nDirDOFs; i++)
+    for (int i = 0; i < nDirDOFs; i++){
         DirichletDOFs[i] = i;
-//    cout << "==========" << endl;
+    }
+#else
 
+    double eps0 = 1e-8;
+    int np =  points.size();
+
+    vector <int> dirDOFs;
+    for (int i = 0; i < np; i++){
+        if (fabs(points[i].get_x()) < eps0)
+            dirDOFs.push_back(3 * i + 0);
+        if (fabs(points[i].get_y()) < eps0)
+            dirDOFs.push_back(3 * i + 1);
+        if (fabs(points[i].get_z()) < eps0)
+            dirDOFs.push_back(3 * i + 2);
+    }
+    nDirDOFs = dirDOFs.size();
+    DirichletDOFs.resize(nDirDOFs);
+
+    for (int i = 0; i < nDirDOFs; i++){
+        DirichletDOFs[i] = dirDOFs[i];
+    }
+
+#endif
 
 
     int ttt[8], _first_set[4];
