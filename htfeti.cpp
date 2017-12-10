@@ -11,7 +11,7 @@ int main(int argc, char *argv[]){
 
     options2["eps_iter"]                        = "1e-4";
     options2["max_iter"]                        = "200";
-    options2["vtkWithinIter"]                   = "true";
+    options2["vtkWithinIter"]                   = "false";
 
 
     options2["metis"]                           = "false";
@@ -30,13 +30,13 @@ int main(int argc, char *argv[]){
     options2["linear_solver"]                   =  "dissection";
 
     /* {0, 1, 2, 3 }                                            */
-    options2["print_matrices"]                  =  "1";
+    options2["print_matrices"]                  =  "0";
 
     /* ker, cor, all                                            */
     options2["typeBc"]                          =  "ker";
 
     /* true,  false                                             */
-    options2["Ac_extended_by_kerGc"]            =  "false";
+    options2["Ac_extended_by_kerGc"]            =  "true";
 
     /* true,  false                                             */
     options2["GcTGc_assembl_block_by_block"]    =  "true";
