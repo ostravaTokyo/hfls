@@ -9,9 +9,13 @@ set(MKLROOT "/opt/intel/compilers_and_libraries_2017/linux" CACHE PATH "MKL Dire
 #
 file(GLOB htfeti_SRC
     "htfeti.cpp"
-    "include/*.hpp"
     "src/*.cpp"
 )
+
+
+add_definitions(-DNOT_METIS)
+add_definitions(-DNOT_MKL)
+
 
 if(UNIX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fPIC")
