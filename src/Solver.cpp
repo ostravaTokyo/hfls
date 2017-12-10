@@ -25,7 +25,7 @@ void Solver::pcpg(map <string,string> options2, Cluster &cluster){
     xx.resize(nSubClst);
     yy.resize(nSubClst);
 
-    xx[0].label = "test";
+    xx[0].set_label("test");
     cluster.mult_Kplus_f(cluster.rhs,xx);
 
     cluster.mult_Bf(xx,d_rhs);

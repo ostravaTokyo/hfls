@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
     options2["vtkWithinIter"]                   = "false";
 
 
-    options2["metis"]                           = "false";
+    options2["metis"]                           = "true";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
     options2["preconditioner"]                  = "Dirichlet_implicit";
 
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
     options2["poissons_ratio"]                  =  "0.3";
 
     /* dissection | pardiso */
-    options2["linear_solver"]                   =  "dissection";
+    options2["linear_solver"]                   =  "pardiso";
 
     /* {0, 1, 2, 3 }                                            */
     options2["print_matrices"]                  =  "0";

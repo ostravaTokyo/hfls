@@ -31,9 +31,6 @@
 //#include "Options.hpp"
 
 
-
-
-
 //    symmetric = 0;  // 0-not, 1-lower tr., 2-upper tr.
 //    format = 1;     // 0-coo, 1-csr, 2-dense
 //    offset = 0;
@@ -57,37 +54,37 @@ public:
     Matrix(int n_row_, int n_col_, int nnz_, bool NorT);
     Matrix(string );
     ~Matrix();
+
+
+
+    int get_n_row_cmprs();
+    int get_n_row();
+    int get_n_col();
+    int get_numel();
+    int get_order_number();
+    int get_symmetric();
+    int get_format();
+    int get_nnz();
+
+    void set_n_row_cmprs(int n){n_row_cmprs = n;}
+    void set_n_row(int n){n_row = n;}
+    void set_n_col(int n){n_col = n;}
+    void set_order_number(int n){order_number = n;}
+    void set_label(string s){label = s;}
+    void set_symmetric(int i){symmetric = i;}
+    void set_format(int i){format = i;}
+    void set_nnz(int i){nnz = i;}
+
+    void update_n_col(int n){n_col += n;}
+    void update_n_row(int n){n_row += n;}
+    void update_n_row_cmprs(int n){n_row_cmprs += n;}
+    void update_nnz(int n){nnz += n;}
+
+
   //    void zero_dense(int);
     void init();
     void zero_dense(int,int);
     void zero_dense(int,int,bool);
-    vector < double >  val;
-    vector < int >     i_ptr; // new MKL_INT[crs->m+1];
-    vector < int >     j_col; // new MKL_INT[crs->nnz];
-    vector < int >     i_coo_cmpr;
-    vector < int >     j_col_cmpr;
-    vector < int >     l2g_i_coo;
-    map <int,int>      g2l_i_coo;
-    vector < double >  dense;
-    int format;               /* COO, CSR, DNS */
-    int symmetric;            /* 0-no, 1-lower triang., 2-upper triang. */
-    int nnz;
-    int n_row;
-    int n_row_cmprs;
-    int n_col;
-    int numel;
-    bool DNS_reducedZeroRows;
-    bool DNS_transposed;
-    string label;
-    string tmp_label;
-    int order_number;
-    map < string, string > options2;
-    bool printed;
-
-
-    int ij(int, int);
-
-    MKL_INT m;
 
     void mult(const Matrix &, Matrix &, bool);
     void mult(const double[], double [] , bool, int,int);
@@ -112,20 +109,8 @@ public:
     void getBasicMatrixInfo();
     void getBasicMatrixInfo(string);
 
-    MKL_INT iparm[64];
-    MKL_INT mtype;
-    MKL_INT nrhs;
-    MKL_INT n;
-    void *pt[64];
-    MKL_INT maxfct, mnum, phase, error, msglvl;
-    MKL_INT n1_p;
-
-    double  ddum;            /* Double dummy */
-    MKL_INT idum;           /* Integer dummy. */
 
     static void testSolver(string,int);
-//    void factorization(vector < int > &);
-//    void factorization();
 
     uint64_t *diss_dslv;
     int diss_num_threads;
@@ -140,9 +125,6 @@ public:
 
 
     void sym_factor();
-//    void numeric_factorization();
-//    void numeric_factorization(Matrix &);
-//    void numeric_factorization(Matrix &,bool);
 
 
     void sym_factor_pardiso();
@@ -208,6 +190,53 @@ public:
     static double dot(double *, double*, int);
 
     static double getNorm_K_R(Matrix & , Matrix &);
+    map < string, string > options2;
+
+
+
+
+    vector < int >     l2g_i_coo;
+    map <int,int>      g2l_i_coo;
+    vector < double >  dense;
+    vector < int >     j_col_cmpr;
+    vector < int >     i_coo_cmpr;
+    vector < int >     j_col; // new MKL_INT[crs->nnz];
+    vector < double >  val;
+    vector < int >     i_ptr; // new MKL_INT[crs->m+1];
+
+
+    MKL_INT iparm[64];
+
+protected:
+
+    int format;               /* COO, CSR, DNS */
+    int symmetric;            /* 0-no, 1-lower triang., 2-upper triang. */
+    int nnz;
+    int n_row;
+    int n_row_cmprs;
+    int n_col;
+    int numel;
+    bool DNS_reducedZeroRows;
+    bool DNS_transposed;
+    string label;
+    string tmp_label;
+    int order_number;
+    bool printed;
+
+
+    int ij(int, int);
+
+    MKL_INT m;
+    MKL_INT mtype;
+    MKL_INT nrhs;
+    MKL_INT n;
+    void *pt[64];
+    MKL_INT maxfct, mnum, phase, error, msglvl;
+    MKL_INT n1_p;
+
+    double  ddum;            /* Double dummy */
+    MKL_INT idum;           /* Integer dummy. */
+
 
 };
 

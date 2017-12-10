@@ -94,13 +94,13 @@ void Data::create_analytic_ker_K(Mesh *mesh, vector <Matrix> &R_){
             R.dense[3 * i + 2 + n * 5] =  y;
         }
 
-        for (int j = 0; j < R.n_col; j++){
+        for (int j = 0; j < R.get_n_col(); j++){
             double norm_2 = 0;
-            for (int i = 0; i < R.n_row; i++){
+            for (int i = 0; i < R.get_n_row(); i++){
                norm_2 += R.dense[i + n * j] *  R.dense[i + n * j];
             }
             norm_2 = sqrt(norm_2);
-            for (int i = 0; i < R.n_row; i++){
+            for (int i = 0; i < R.get_n_row(); i++){
                R.dense[i + n * j] /= norm_2;
             }
         }
@@ -195,8 +195,8 @@ void Data::feti_symbolic(Mesh *mesh, vector <Matrix> &K_)
 
         int neqSub = l2g[d].size();
         Matrix &_K = K_[d];
-        _K.label = "stiffness matrix";
-        _K.order_number = d;
+        _K.set_label("stiffness matrix");
+        _K.set_order_number(d);
 
         _K.j_col.resize(nnz_K);
         _K.val.resize(nnz_K);
@@ -212,12 +212,12 @@ void Data::feti_symbolic(Mesh *mesh, vector <Matrix> &K_)
             _K.i_ptr[i+1]=cnt_it;
           }
         }
-        _K.format = 1;
-        _K.symmetric = 2;
-        _K.nnz = nnz_K;
-        _K.n_row_cmprs = neqSub;
-        _K.n_row = neqSub;
-        _K.n_col = neqSub;
+        _K.set_format(1);
+        _K.set_symmetric(2);
+        _K.set_nnz(nnz_K);
+        _K.set_n_row_cmprs(neqSub);
+        _K.set_n_row(neqSub);
+        _K.set_n_col(neqSub);
         _K.l2g_i_coo.resize(neqSub);
         for (int i = 0 ; i < neqSub; i++){
             _K.l2g_i_coo[i] = i;
@@ -264,7 +264,7 @@ void Data::feti_numeric(Mesh *mesh, vector <Matrix> & K_,  vector <Vector>& rhs_
 {
     for (int d = 0 ; d < mesh->nSubClst; d++){
       //        rhs_[d].zero_dense(K_[d].n_row_cmprs,1);
-      rhs_[d].zero_dense(K_[d].n_row_cmprs);
+      rhs_[d].zero_dense(K_[d].get_n_row_cmprs());
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
             feti_numeric_element(K_[d],rhs_[d], i_loc_K_f);

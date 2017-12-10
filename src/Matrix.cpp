@@ -57,6 +57,15 @@ void Matrix::init()
 Matrix::~Matrix()
 {}
 
+int Matrix::get_n_row_cmprs(){return n_row_cmprs;}
+int Matrix::get_n_row(){return n_row;}
+int Matrix::get_n_col(){return n_col;}
+int Matrix::get_numel(){return numel;}
+int Matrix::get_order_number(){return order_number;}
+int Matrix::get_symmetric(){return symmetric;}
+int Matrix::get_format(){return format;}
+int Matrix::get_nnz(){return nnz;}
+
 
 bool Matrix::cmp_int_int_I(TRIPLET a,TRIPLET b)
 { return (a.I < b.I); }
