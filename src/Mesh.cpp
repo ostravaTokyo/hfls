@@ -17,6 +17,54 @@ Mesh::~Mesh()
 }
 
 
+void Point::set(double _x, double _y, double _z){
+   x = _x;
+   y = _y;
+   z = _z;
+}
+
+void Point::set_x(double x_){
+   x = x_;
+}
+
+void Point::set_y(double y_){
+   y = y_;
+}
+
+void Point::set_z(double z_){
+   z = z_;
+}
+
+
+void Element::setInd(int i,int v){
+    if (i<0 || i>7)
+        throw("index must be in in <0,7>");
+    ind[i] = v;
+}
+
+int Element::getInd(int i){
+    if (i<0 || i>7)
+        throw("index must be in in <0,7>");
+    return ind[i];
+}
+
+void Element::setPartitionId(int i){
+    PartitionId = i;
+}
+
+void Element::setMaterialId(int i){
+    MaterialId = i;
+}
+
+void Mesh::allocatePoints(int n){
+    Point P0(0,0,0);
+    points.resize(nPoints,P0);
+}
+
+void Mesh::allocateElements(int n){
+    Element E;
+    elements.resize(n,E);
+}
 
 void Mesh::createMesh(map <string, string> &options2){
     // - geometry setting ()
@@ -70,8 +118,9 @@ void Mesh::createMesh(map <string, string> &options2){
     nPoints = (nElxyz_all[0] + 1) * (nElxyz_all[1] + 1) * (nElxyz_all[2] + 1);
 
 
-    elements.resize(nElementsClst);
-    points.resize(nPoints);
+    allocateElements(nElementsClst);
+    allocatePoints(nPoints);
+    //points.resize(nPoints);
 
 
 
@@ -117,9 +166,7 @@ void Mesh::createMesh(map <string, string> &options2){
                 _x += 0.5 * length[0];
                 _y += 0.5 * length[1];
                 _z += 0.0 * length[2];
-                points[cnt].x =_x;
-                points[cnt].y =_y;
-                points[cnt].z =_z;
+                points[cnt].set(_x,_y,_z);
                 cnt++;
             }
         }
@@ -189,7 +236,7 @@ void Mesh::createMesh(map <string, string> &options2){
                     tmp_vec[ll+4]   = _first_set[ll] + (kk + 1) * nxy;
                 }
                 for (int ll = 0; ll < 8; ll ++){
-                    elements[cnt].ind[ll] = tmp_vec[ll];
+                    elements[cnt].setInd(ll,tmp_vec[ll]);
                 }
                 cnt++;
             }
@@ -210,10 +257,8 @@ void Mesh::createMesh(map <string, string> &options2){
                     for (int jj = JJ * nElSubXYZ[1]; jj <  (JJ + 1) * nElSubXYZ[1]; jj++){
                         for (int ii = II * nElSubXYZ[0]; ii <  (II + 1) * nElSubXYZ[0]; ii++){
                             cnt = ii + jj * nElxyz_all[0] + kk * (nElxyz_all[0] * nElxyz_all[1]);
-                            elements[cnt].PartitionId =  currentIdOfMat;
-                            elements[cnt].MaterialId =  remainder(currentIdOfMat,2);
-                       //     cout << elements[cnt].MaterialId  << " "
-                       //     << currentIdOfMat  << endl;
+                            elements[cnt].setPartitionId(currentIdOfMat);
+                            elements[cnt].setMaterialId(remainder(currentIdOfMat,2));
                         }
                     }
                 }
@@ -244,14 +289,14 @@ void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
   fprintf(fVTK, "DATASET UNSTRUCTURED_GRID\n");
   fprintf(fVTK, "POINTS %d float\n", nPoints);
   for (int i = 0; i < nPoints; i++) {
-    fprintf(fVTK, "%f %f %f\n", points[i].x,points[i].y, points[i].z);
+    fprintf(fVTK, "%f %f %f\n", points[i].get_x(),points[i].get_y(), points[i].get_z());
   }
   int k1 = nElementsClst * 9;
   fprintf(fVTK, "CELLS %d %d\n", nElementsClst, k1);
   for (int i = 0; i < nElementsClst; i++) {
     fprintf(fVTK, "%d ", 8);
     for (int j = 0; j < 8; j++) {
-      fprintf(fVTK, "% d", elements[i].ind[j]);
+      fprintf(fVTK, "% d", elements[i].getInd(j));
     }
     fprintf(fVTK, "\n");
   }
@@ -274,20 +319,19 @@ void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
   fprintf(fVTK, "SCALARS decomposition int 1\n");
   fprintf(fVTK, "LOOKUP_TABLE decomposition\n");
   for (int i = 0; i < nElementsClst; i++) {
-    fprintf(fVTK, "%d\n", elements[i].PartitionId);
+    fprintf(fVTK, "%d\n", elements[i].getPartitionId());
   }
   fprintf(fVTK, "SCALARS materialId int 1\n");
   fprintf(fVTK, "LOOKUP_TABLE materialId\n");
   for (int i = 0; i < nElementsClst; i++) {
-    fprintf(fVTK, "%d\n", elements[i].MaterialId);
+    fprintf(fVTK, "%d\n", elements[i].getMaterialId());
   }
   fclose(fVTK);
 
 }
 
 
-void Mesh::ddm_metis(map <string, string> &options2) {
-
+void Mesh::ddm_metis(map <string, string> &options2){
     if (options2["metis"].compare("false") == 0){
         return ;
     }
@@ -312,7 +356,7 @@ void Mesh::ddm_metis(map <string, string> &options2) {
     for (int i = 0 ; i < nCellsLocal; i++){
         nPi = 8;
         for (int j = 0; j < nPi; j++){
-            eind[cnt] = elements[i].ind[j];
+            eind[cnt] = elements[i].getInd(j);
             cnt ++;
         }
     }
@@ -377,7 +421,7 @@ void Mesh::ddm_metis(map <string, string> &options2) {
 
 
     for (int i = 0 ; i < nCellsLocal; i++){
-        elements[i].PartitionId = epart[i] ;
+        elements[i].setPartitionId(epart[i]);
     }
 
     delete [] epart;
