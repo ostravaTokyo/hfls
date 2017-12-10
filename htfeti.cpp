@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "src/Cluster.hpp"
+#include "src/Driver.hpp"
 #include <map>
 
 using namespace std;
@@ -26,7 +27,7 @@ int main(int argc, char *argv[]){
     options2["poissons_ratio"]                  =  "0.3";
 
     /* dissection | pardiso */
-    options2["linear_solver"]                   =  "pardiso";
+    options2["linear_solver"]                   =  "dissection";
 
     /* {0, 1, 2, 3 }                                            */
     options2["print_matrices"]                  =  "1";
@@ -90,7 +91,10 @@ int main(int argc, char *argv[]){
 
     cout << argv[0] << endl;
 //    Options options;
-    Cluster cluster(options2);
+    Driver driver(options2);
+
+//    Cluster cluster(options2);
+    driver.initialization();
     cout << "----------------- done -----------------\n" ;
 
 
