@@ -1450,7 +1450,6 @@ void Matrix::getEigVal_DNS(Matrix &A, Matrix &S, int print_first_n){
 }
 
 void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_last_n){
-
     map <string, string> c_options2 = A_.options2;
 
     if (A_.n_row_cmprs > 3000){
@@ -1498,8 +1497,6 @@ void Matrix::getSingularVal_DNS(Matrix &A, Matrix &S, int print_first_n){
 }
 
 void Matrix::getSingularVal_DNS(Matrix A, Matrix &S, int print_first_n, int print_last_n){
-
-
     map <string, string> c_options2 = A.options2;
 
     if (A.n_row_cmprs > 2000){
@@ -1525,7 +1522,6 @@ void Matrix::getSingularVal_DNS(Matrix A, Matrix &S, int print_first_n, int prin
         S.printToFile(A.label,c_options2["path2data"],555,true);
     }
     delete [] U ; delete [] Vt; delete [] superb;
-
 }
 
 
@@ -2336,6 +2332,7 @@ typedef int  eslocal;
 
 
 // EIGENVALUES AND EIGENVECTORS OF SCHUR COMPLEMENT
+
   char JOBZ = 'V';
   char UPLO = 'U';
   double *W = new double[S1.n_col];
@@ -2347,6 +2344,7 @@ typedef int  eslocal;
     cout <<"info = " << info << " something wrong with Schur complement in SparseSolverCPU::generalIinverse" << endl;
   }
   delete [] S2;
+
 // IDENTIFICATIONS OF ZERO EIGENVALUES
   eslocal defect_K_in;// R_s_cols;
   double ratio;
