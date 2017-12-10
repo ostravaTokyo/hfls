@@ -1,39 +1,50 @@
 #include "Data.hpp"
 
-Data::Data()
-{
+Data::Data(){}
+Data::~Data(){}
+
+void Data::resize_local_K_f_clust(int n){
+    local_K_f A;
+    local_K_f_clust.resize(n,A);
 }
 
-
-Data::~Data()
+void local_K_f::set_val_K(int i, int j,double d)
 {
+    val_K[i + j * 24] += d;
+}
+void local_K_f::set_val_f(int i,double d){val_f[i] += d;}
 
+void local_K_f::setZero_val_K(){
+    memset(val_K,0,576*sizeof(double));
+}
+void local_K_f::setZero_val_f(){
+    memset(val_f,0,24*sizeof(double));
 }
 
 
 void Data::fe_assemb_local_K_f(Mesh &mesh,map <string, string> &options2){
 
-    Point coord[8];
-    local_K_f_clust.resize(mesh.nElementsClst);
 
+    Point P(0,0,0);
+    vector <Point> coord(8,P);
+    resize_local_K_f_clust(mesh.nElementsClst);
     double mu = mesh.material.poissons_ratio;
 
     for (int i = 0; i < mesh.nElementsClst; i++){
-        Element &i_elem =  mesh.elements[i];
         double E = mesh.material.young_modulus;
         for (int j = 0; j < 8; j++){
-            int iii = i_elem.ind[j];
+            int iii = mesh.elements[i].getInd(j);
             //
-            coord[j].x = mesh.points[iii].x;
-            coord[j].y = mesh.points[iii].y;
-            coord[j].z = mesh.points[iii].z;
+            coord[j].set_x(mesh.points[iii].get_x());
+            coord[j].set_y(mesh.points[iii].get_y());
+            coord[j].set_z(mesh.points[iii].get_z());
             //
-            local_K_f_clust[i].ieq[j + 0] = 3 * iii + 0;
-            local_K_f_clust[i].ieq[j + 8] = 3 * iii + 1;
-            local_K_f_clust[i].ieq[j + 16] = 3 * iii + 2;
+            local_K_f_clust[i].setIeq(j + 0, 3 * iii + 0);
+            local_K_f_clust[i].setIeq(j + 8, 3 * iii + 1);
+            local_K_f_clust[i].setIeq(j + 16, 3 * iii + 2);
         }
 
-        if (mesh.elements[i].MaterialId == 0)
+        if (mesh.elements[i].getMaterialId() == 0)
             E *= atof(options2["ratio_mat"].c_str());
 
 
@@ -64,9 +75,9 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_){
 
             int in_glob = int ( l2g[d][3*i] / 3);
 
-            x = mesh.points[in_glob].x;
-            y = mesh.points[in_glob].y;
-            z = mesh.points[in_glob].z;
+            x = mesh.points[in_glob].get_x();
+            y = mesh.points[in_glob].get_y();
+            z = mesh.points[in_glob].get_z();
 
 
             R.dense[3 * i + 0 + n * 0] = 1;
@@ -97,17 +108,14 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_){
     }
 }
 
+void Data::buildMappingStruct(Mesh &mesh){
 
-void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
-{
-
-    //
     selectorOfElemPartitId.resize(mesh.nSubClst);
     std::vector<int> l2g_dim(mesh.nSubClst, 0);
 
     for (int i = 0 ; i < mesh.nElementsClst ; i++){
-        l2g_dim[mesh.elements[i].PartitionId] +=  local_K_f_clust[i].nDOF;
-        selectorOfElemPartitId[mesh.elements[i].PartitionId].push_back(i);
+        l2g_dim[mesh.elements[i].getPartitionId()] +=  local_K_f_clust[i].get_nDOF();
+        selectorOfElemPartitId[mesh.elements[i].getPartitionId()].push_back(i);
     }
 
    //
@@ -119,10 +127,10 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
         int cnt = 0;
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
-            for (int k = 0 ; k < i_loc_K_f.nDOF; k++){
-                l2g[d][k + cnt] = i_loc_K_f.ieq[k];
+            for (int k = 0 ; k < i_loc_K_f.get_nDOF(); k++){
+                l2g[d][k + cnt] = i_loc_K_f.getIeq(k);
             }
-            cnt += i_loc_K_f.nDOF;
+            cnt += i_loc_K_f.get_nDOF();
         }
         qsort(&(l2g[d][0]), l2g[d].size(), sizeof (int), compareInt);
         std::vector<int>::iterator itv;
@@ -132,13 +140,21 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
         for (unsigned int i = 0; i < l2g[d].size(); i++){
             g2l[d].insert ( pair<int,int>(l2g[d][i],i) );
         }
+    }
+}
 
 
-        /* renumbering stiff mat from global to local (subdom.) numbering */
+void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
+{
+
+
+
+    // renumbering stiff mat from global to local (subdom.) numbering
+    for (int d = 0 ; d < mesh.nSubClst ; d++){
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
-            for (int k = 0 ; k < local_K_f_clust[selectorOfElemPartitId[d][i]].nDOF; k++){
+            for (int k = 0 ; k < local_K_f_clust[selectorOfElemPartitId[d][i]].get_nDOF(); k++){
                 local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
-                i_loc_K_f.ieq[k] = g2l[d][i_loc_K_f.ieq[k]];
+                i_loc_K_f.setIeq(k, g2l[d][i_loc_K_f.getIeq(k)]);
             }
         }
 
@@ -151,19 +167,18 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
     vector<int>::iterator itv;
     for (int d = 0 ; d < mesh.nSubClst; d++){
         bool symMatrix=true;
-        int *indK;
+//        int *indK;
         vector < vector < int > > forCSRformat;
         //forCSRformat.resize(fem->domain->neqSub,vector<int>(0));
         forCSRformat.resize(l2g[d].size(),vector <int> (0));
     //
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
-            int elemDOFs = i_loc_K_f.nDOF;
-            indK = i_loc_K_f.ieq;
+            int elemDOFs = i_loc_K_f.get_nDOF();
             for (int j=0;j<elemDOFs;j++){
               for (int k=0;k<elemDOFs;k++){
-                if (symMatrix && (indK[k]>=indK[j]) || !symMatrix){
-                  forCSRformat[indK[j]].push_back(indK[k]);
+                if (symMatrix && (i_loc_K_f.getIeq(k)>=i_loc_K_f.getIeq(j)) || !symMatrix){
+                  forCSRformat[i_loc_K_f.getIeq(j)].push_back(i_loc_K_f.getIeq(k));
                 }
               }
             }
@@ -218,20 +233,20 @@ void Data::feti_numeric_element(Matrix &Ksub, Vector & rhs_sub, local_K_f &Kelem
 
     double K_ij;
     int i_ind, j_ind;
-    int nDOF = Kelem.nDOF;
+    int nDOF = Kelem.get_nDOF();
     for (int i = 0; i < nDOF; i++) {
 
-        rhs_sub.dense[Kelem.ieq[i]] += Kelem.val_f[i];
+        rhs_sub.dense[Kelem.getIeq(i)] += Kelem.get_val_f(i);
 
         for (int j = i; j < nDOF; j++) {
-            j_ind = Kelem.ieq[j];
-            K_ij = Kelem.val_K[i * nDOF + j];
-            if (j_ind < Kelem.ieq[i]) {
-                i_ind = Kelem.ieq[j];
-                j_ind = Kelem.ieq[i];
+            j_ind = Kelem.getIeq(j);
+            K_ij = Kelem.get_val_K(i,j);
+            if (j_ind < Kelem.getIeq(i)) {
+                i_ind = Kelem.getIeq(j);
+                j_ind = Kelem.getIeq(i);
             }
             else  {
-                i_ind = Kelem.ieq[i];
+                i_ind = Kelem.getIeq(i);
             }
             for (int k = Ksub.i_ptr[i_ind]; k < Ksub.i_ptr[i_ind + 1]; k++) {
                 if ((Ksub.j_col[k]) == j_ind)  {
@@ -279,7 +294,7 @@ double Data::inverse_matrix_3x3(double *A, double *iA) {
 }
 
 
-void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate, double E, double mu){
+void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, vector<Point> coordinate, double E, double mu){
 
 
 
@@ -296,7 +311,7 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate, double E
      * 8 nodes,3 degrees of freedom per node
      * 24x24, 576 entries
      */
-    i_local_K_f.nDOF = 24;
+    i_local_K_f.set_nDOF(24);
     double density = 2.;
 
     //double acceleration[] ={0.0,0.0, 98.10};
@@ -309,8 +324,8 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate, double E
     double CG_tmp[6 * 24];
     double dNx_j, dNy_j, dNz_j;
 
-    memset(i_local_K_f.val_f,0,24*sizeof(double));
-    memset(i_local_K_f.val_K,0,576*sizeof(double));
+    i_local_K_f.setZero_val_f();
+    i_local_K_f.setZero_val_K();
     memset(Gt,0,144*sizeof(double));
     memset(N,0,8*sizeof(double));
 
@@ -420,15 +435,15 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate, double E
         }
         //
         for (int j = 0; j < 8; j++) {
-            Jmat[0] += (dNr[j] * coordinate[j].x);
-            Jmat[1] += (dNs[j] * coordinate[j].x);
-            Jmat[2] += (dNt[j] * coordinate[j].x);
-            Jmat[3] += (dNr[j] * coordinate[j].y);
-            Jmat[4] += (dNs[j] * coordinate[j].y);
-            Jmat[5] += (dNt[j] * coordinate[j].y);
-            Jmat[6] += (dNr[j] * coordinate[j].z);
-            Jmat[7] += (dNs[j] * coordinate[j].z);
-            Jmat[8] += (dNt[j] * coordinate[j].z);
+            Jmat[0] += (dNr[j] * coordinate[j].get_x());
+            Jmat[1] += (dNs[j] * coordinate[j].get_x());
+            Jmat[2] += (dNt[j] * coordinate[j].get_x());
+            Jmat[3] += (dNr[j] * coordinate[j].get_y());
+            Jmat[4] += (dNs[j] * coordinate[j].get_y());
+            Jmat[5] += (dNt[j] * coordinate[j].get_y());
+            Jmat[6] += (dNr[j] * coordinate[j].get_z());
+            Jmat[7] += (dNs[j] * coordinate[j].get_z());
+            Jmat[8] += (dNt[j] * coordinate[j].get_z());
         }
         //
         double detJ = inverse_matrix_3x3(Jmat, iJmat);
@@ -461,16 +476,15 @@ void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, Point *coordinate, double E
         for (int I = 0; I < 24; I++) {
           for (int J = 0; J < 24; J++) {
             for (int K = 0; K < 6; K++) {
-              i_local_K_f.val_K[I + J * 24] += (Gt[I + K * 24]
-                  * CG_tmp[K * 24 + J] * detJ);
+              i_local_K_f.set_val_K(I,J, Gt[I + K * 24] * CG_tmp[K * 24 + J] * detJ);
             }
           }
         }
         //
         for (int j = 0; j < 8; j++) {
-          i_local_K_f.val_f[j] += acceleration[0] * density * N[j] * detJ;
-          i_local_K_f.val_f[j + 8] += acceleration[1] * density * N[j] * detJ;
-          i_local_K_f.val_f[j + 16] += acceleration[2] * density * N[j] * detJ;
+          i_local_K_f.set_val_f(j,acceleration[0] * density * N[j] * detJ);
+          i_local_K_f.set_val_f(j + 8,acceleration[1] * density * N[j] * detJ);
+          i_local_K_f.set_val_f(j + 16,acceleration[2] * density * N[j] * detJ);
         }
     }
 }
