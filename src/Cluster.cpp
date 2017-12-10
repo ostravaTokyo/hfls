@@ -95,14 +95,14 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
 
     neqClst = 0;
     for (int d = 0; d < K.size(); d++)
-        neqClst += K[d].n_row_cmprs;
+        neqClst += K[d].get_n_row_cmprs();
 
 //    Matrix::testSolver(folder, 1);
 
     for (int d = 0; d < K.size(); d++){
-        K[d].order_number = d;
+        K[d].set_order_number(d);
         K[d].sym_factor(options2["linear_solver"]);
-        R[d].label = "kerK";
+        R[d].set_label("kerK");
 //        Matrix Ksing = K[d];
         K[d].num_factor(R[d],checkOrthogonality);
 //        K[d].test_K_Kp_K_condition(Ksing);
@@ -124,7 +124,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
             K[d].getBasicMatrixInfo();
 
             rhs[d].printToFile("rhs",folder,d,printCooOrDense);
-            rhs[d].label = "rhs";
+            rhs[d].set_label("rhs");
             rhs[d].getBasicMatrixInfo();
             Bc[d].printToFile("Bc",folder,d,printCooOrDense);
             Bc[d].getBasicMatrixInfo();
@@ -135,7 +135,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
         Matrix Bc_tmp;
         Bc_tmp = Bc[d];
 
-        Preconditioner[d].order_number = d;
+        Preconditioner[d].set_order_number(d);
 
         if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ||
             options2.at("preconditioner").compare("Dirichlet_implicit") == 0  ){
@@ -152,9 +152,9 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
         transpose = true;
         Bc_tmp.CSRorCOO2DNS(reduceZeroRows,transpose);
 
-        BcT_dense[d].zero_dense(Bc_tmp.n_col,Bc_tmp.n_row_cmprs);
+        BcT_dense[d].zero_dense(Bc_tmp.get_n_col(),Bc_tmp.get_n_row_cmprs());
         BcT_dense[d].dense = Bc_tmp.dense;
-        BcT_dense[d].label = "BcT_dense";
+        BcT_dense[d].set_label("BcT_dense");
 
         if (printMat > 2){
             BcT_dense[d].printToFile("BcT_dense",folder,d,printCooOrDense);
@@ -162,21 +162,21 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
         }
 //
         Matrix KplusBcT_dense;
-        KplusBcT_dense.zero_dense(BcT_dense[d].n_row_cmprs, BcT_dense[d].n_col);
+        KplusBcT_dense.zero_dense(BcT_dense[d].get_n_row_cmprs(), BcT_dense[d].get_n_col());
 
         if (d == 0)
             cout << "Fc[i] (for each subdom) is being created ... \n" ;
 
         K[d].solve_system(BcT_dense[d],KplusBcT_dense);
         KplusBcT[d] = KplusBcT_dense;
-        KplusBcT[d].symmetric = 0;
+        KplusBcT[d].set_symmetric(0);
 
         if (printMat > 2){
             KplusBcT_dense.printToFile("KplusBcT",folder,d,printCooOrDense);
             KplusBcT_dense.getBasicMatrixInfo();
         }
 
-        Fc[d].zero_dense(Bc[d].n_row_cmprs,  Bc[d].n_row_cmprs);
+        Fc[d].zero_dense(Bc[d].get_n_row_cmprs(),  Bc[d].get_n_row_cmprs());
         Bc[d].mult(KplusBcT_dense,Fc[d],true);
         if (printMat > 1){
             Fc[d].printToFile("Fc",folder,d,printCooOrDense);
@@ -187,14 +187,14 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
         /* Gc - constraints matrix */
         if (d == 0)
             cout << "Gc[i] (for each subdom) is being created ... \n" ;
-        int n_rowGc = Bc[d].n_row_cmprs;
-        int n_colGc = R[d].n_col;
+        int n_rowGc = Bc[d].get_n_row_cmprs();
+        int n_colGc = R[d].get_n_col();
         Gc[d].zero_dense(n_rowGc, n_colGc );
         Bc[d].mult(R[d],Gc[d],true);
 
 
         //
-        for (int i = 0; i < Gc[d].numel; i++)
+        for (int i = 0; i < Gc[d].get_numel(); i++)
             Gc[d].dense[i] *= -1;
 
         if (printMat > 1){
@@ -246,7 +246,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
     }
     GcTGc_clust.options2 = options2;
 
-    nRBM_c = GcTGc_clust.n_row_cmprs;
+    nRBM_c = GcTGc_clust.get_n_row_cmprs();
 
     Matrix S_GcTGc;
     Matrix::getEigVal_DNS(GcTGc_clust,S_GcTGc,10,3);
@@ -258,8 +258,8 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
 
 
 //    Matrix ker_GcT;
-    kerGc.label = "kerGc";
-    GcTGc_clust.order_number = 1000;
+    kerGc.set_label("kerGc");
+    GcTGc_clust.set_order_number(1000);
     GcTGc_clust.sym_factor(options2["linear_solver"]);
     checkOrthogonality = true;
 
@@ -270,9 +270,9 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
     }
 
     GcTGc_clust.num_factor(kerGc,checkOrthogonality );
-    nRBM_f = kerGc.n_col;
+    nRBM_f = kerGc.get_n_col();
     fprintf(stderr, "%s %d : ## GcTGc_clust: kernel dimension = %d\n",
-                                                    __FILE__, __LINE__, kerGc.n_col);
+                                                    __FILE__, __LINE__, kerGc.get_n_col());
 
     GcTGc_clust.getBasicMatrixInfo();
 
@@ -295,7 +295,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
         if (printMat > 0)
             Ac_clust.printToFile("Ac_clust",folder,0,printCooOrDense);
     
-        Ac_clust.order_number = 2000;
+        Ac_clust.set_order_number(2000);
     
         Ac_clust.diss_scaling = 1;
         Ac_clust.sym_factor(options2["linear_solver"]);
@@ -312,11 +312,11 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
         }
         else{
             Matrix ker_Ac;
-            ker_Ac.label = "ker_Ac";
+            ker_Ac.set_label("ker_Ac");
             checkOrthogonality = true;
             Ac_clust.num_factor(ker_Ac,checkOrthogonality);
             fprintf(stderr, "%s %d : ## Ac_clust: kernel dimension = %d\n",
-                                                        __FILE__, __LINE__, ker_Ac.n_col);
+                                                        __FILE__, __LINE__, ker_Ac.get_n_col());
     
             if (printMat > 0)
                 ker_Ac.printToFile("ker_Ac",folder,0,printCooOrDense);
@@ -388,12 +388,12 @@ void Cluster::create_GcTGc(){
     Matrix &GcTGc = GcTGc_clust;
     vector<int> GcTGcmask;
     vector<double> GcTGcdense;
-    const int nncol = Gc_clust.n_col;
+    const int nncol = Gc_clust.get_n_col();
     GcTGcmask.resize(nncol * nncol, 0);
     GcTGcdense.resize(nncol * nncol, 0.0);
     vector<int> &i_ptr = Gc_clust.i_ptr;
     vector<int> &j_col = Gc_clust.j_col;
-    for (int k = 0; k < Gc_clust.n_row; k++) {
+    for (int k = 0; k < Gc_clust.get_n_row(); k++) {
       for (int l = i_ptr[k]; l < i_ptr[k + 1]; l++) {
     for (int m = l; m < i_ptr[k + 1]; m++) {
       int itmp = j_col[l] + j_col[m] * nncol;
@@ -410,9 +410,9 @@ void Cluster::create_GcTGc(){
     }
     fprintf(stderr, "%s %d : %d / %d = %d * %d\n", __FILE__, __LINE__,
         cnt, (nncol * nncol), nncol, nncol);
-    GcTGc.symmetric = 2;
-    GcTGc.format= 0;
-    GcTGc.nnz = cnt;
+    GcTGc.set_symmetric(2);
+    GcTGc.set_format(0);
+    GcTGc.set_nnz(cnt);
 
     vector < TRIPLET > triplet;
 
@@ -429,9 +429,9 @@ void Cluster::create_GcTGc(){
       }
     }
     GcTGc.sortAndUniqueCOO(triplet);
-    GcTGc.n_row = nncol;
-    GcTGc.n_row_cmprs = nncol;
-    GcTGc.n_col = nncol;
+    GcTGc.set_n_row(nncol);
+    GcTGc.set_n_row_cmprs(nncol);
+    GcTGc.set_n_col(nncol);
     GcTGc.COO2CSR();
 }
 
@@ -444,26 +444,26 @@ void Cluster::create_GcTGc_clust_sparse(){
     int n_interf_c_max = 0;
 
     for (int d = 0; d < get_nSubClst();d++){
-        if (Bc[d].n_row_cmprs > n_interf_c_max)
-            n_interf_c_max = Bc[d].n_row_cmprs;
+        if (Bc[d].get_n_row_cmprs() > n_interf_c_max)
+            n_interf_c_max = Bc[d].get_n_row_cmprs();
     }
 
     vector<int>::iterator it;
     vector<int> overlap(n_interf_c_max);
     int ind_neigh;
-    GcTGc_sparse_clust.label = "GcTGc_sparse";
-    GcTGc_sparse_clust.nnz = 0;
-    GcTGc_sparse_clust.symmetric = 2;
-    GcTGc_sparse_clust.format= 0;
+    GcTGc_sparse_clust.set_label("GcTGc_sparse");
+    GcTGc_sparse_clust.set_nnz(0);
+    GcTGc_sparse_clust.set_symmetric(2);
+    GcTGc_sparse_clust.set_format(0);
     vector < TRIPLET > triplet;
     vector < int > blockPointer;
     blockPointer.resize(get_nSubClst());
     blockPointer[0] = 0;
     for (int i = 1; i < get_nSubClst(); i ++)
-        blockPointer[i] = blockPointer[i-1] + Gc[i-1].n_col;
+        blockPointer[i] = blockPointer[i-1] + Gc[i-1].get_n_col();
 
     for (int i = 0 ; i < get_nSubClst() ; i++){
-        GcTGc_sparse_clust.nnz += (Gc[i].n_col + 1) * Gc[i].n_col;
+        GcTGc_sparse_clust.update_nnz((Gc[i].get_n_col() + 1) * Gc[i].get_n_col());
         Matrix Gii("Gii");
         Matrix Gc_i = Gc[i];
         Gc_i.CSRorCOO2DNS(true,false);
@@ -489,31 +489,30 @@ void Cluster::create_GcTGc_clust_sparse(){
                                             blockPointer[i],
                                             blockPointer[ind_neigh]);
             }
-            GcTGc_sparse_clust.nnz +=
-                Gc[i].n_col * Gc[ind_neigh].n_col;
+            GcTGc_sparse_clust.update_nnz(Gc[i].get_n_col() * Gc[ind_neigh].get_n_col());
         }
     }
     GcTGc_sparse_clust.sortAndUniqueCOO(triplet);
-    GcTGc_sparse_clust.n_col = GcTGc_sparse_clust.n_row;
+    GcTGc_sparse_clust.set_n_col(GcTGc_sparse_clust.get_n_row());
     GcTGc_sparse_clust.COO2CSR();
 }
 
 void Cluster::create_Fc_clust(){
 
-    Fc_clust.label = "Fc_clust";
+    Fc_clust.set_label("Fc_clust");
     Matrix & A_clust = Fc_clust;
     vector <Matrix> & A_i = Fc;
-    A_clust.symmetric = 2;
+    A_clust.set_symmetric(2);
     bool remapCols = true;
     create_clust_object(A_clust, A_i, remapCols);
 }
 
 void Cluster::create_Gc_clust(){
 
-    Gc_clust.label = "Gc_clust";
+    Gc_clust.set_label("Gc_clust");
     Matrix & A_clust = Gc_clust;
     vector <Matrix> & A_i = Gc;
-    A_clust.symmetric = 0;
+    A_clust.set_symmetric(0);
     bool remapCols = false;
     create_clust_object(A_clust, A_i, remapCols);
 }
@@ -524,15 +523,15 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
     const int nS = A_i.size();
     int init_nnz = 0;
     for (int i = 0; i < nS; i++){
-        init_nnz += A_i[i].nnz;
+        init_nnz += A_i[i].get_nnz();
     }
 
-    A_clust.format = 0;
+    A_clust.set_format(0);
 
     vector < TRIPLET > triplet;
     triplet.resize(init_nnz);
 
-    A_clust.n_col = 0;
+    A_clust.set_n_col(0);
 
 
 /* Sorting [I, J, V]  --------------------------------------------------------*/
@@ -547,22 +546,22 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
                 _j = A_i[d].l2g_i_coo[ _j ];
             }
             else{
-                _j += A_clust.n_col;
+                _j += A_clust.get_n_col();
             }
-            if (A_clust.symmetric == 0 ||
-                    (A_clust.symmetric == 1 && _j <= _i) ||
-                    (A_clust.symmetric == 2 && _i <= _j)    ){
+            if (A_clust.get_symmetric() == 0 ||
+                    (A_clust.get_symmetric() == 1 && _j <= _i) ||
+                    (A_clust.get_symmetric() == 2 && _i <= _j)    ){
                 triplet[cnt].I = _i;
                 triplet[cnt].J = _j;
                 triplet[cnt].V = A_i[d].val[i];
                 cnt++;
             }
         }
-        A_clust.n_col += A_i[d].n_col;
+        A_clust.update_n_col(A_i[d].get_n_col());
     }
     /* updated on nnz */
-    A_clust.nnz = cnt;
-    triplet.resize(A_clust.nnz);
+    A_clust.set_nnz(cnt);
+    triplet.resize(A_clust.get_nnz());
     A_clust.sortAndUniqueCOO(triplet);
     /* triplet released from the memory */
     triplet.clear();
@@ -571,11 +570,11 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
 
     /* both Fc or Gc do not have compressed rows,
      * therefore n_row = n_row_cmprs                        */
-    A_clust.n_row = A_clust.n_row_cmprs;
+    A_clust.set_n_row(A_clust.get_n_row_cmprs());
 
     /* if Fc, n_col == n_row (or n_row_cmprs)               */
-    if (A_clust.symmetric > 0)
-        A_clust.n_col = A_clust.n_row_cmprs;
+    if (A_clust.get_symmetric() > 0)
+        A_clust.set_n_col(A_clust.get_n_row_cmprs());
     /* transform to CSR format */
     A_clust.COO2CSR();
 }
@@ -597,26 +596,26 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
      *   where H = ker(GcTGc)
      */
 
-    Ac_clust.label = "Ac_clust";
-    Ac_clust.symmetric = 2;
-    Ac_clust.format = 0;
+    Ac_clust.set_label("Ac_clust");
+    Ac_clust.set_symmetric(2);
+    Ac_clust.set_format(0);
 
 //    bool Ac_singular = false;
 
 
-    Ac_clust.nnz = Fc_clust.nnz + Gc_clust.nnz + Gc_clust.n_col;
+    Ac_clust.set_nnz(Fc_clust.get_nnz() + Gc_clust.get_nnz() + Gc_clust.get_n_col());
     if (Ac_nonsingular)
-        Ac_clust.nnz += kerGc.numel + kerGc.n_col;
+        Ac_clust.update_nnz(kerGc.get_numel() + kerGc.get_n_col());
 
 
     vector < TRIPLET > triplet;
-    triplet.resize(Ac_clust.nnz);
+    triplet.resize(Ac_clust.get_nnz());
 
     int cnt = 0;
 
 
     //  Ac[0,0]
-    for (int i = 0; i < Fc_clust.n_row; i++) {
+    for (int i = 0; i < Fc_clust.get_n_row(); i++) {
         for (int j = Fc_clust.i_ptr[i]; j < Fc_clust.i_ptr[i + 1]; j++) {
             triplet[cnt].I = i;
             triplet[cnt].J = Fc_clust.j_col[j];
@@ -625,36 +624,36 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
         }
     }
     //  Ac[0,1]
-    for (int i = 0; i < Gc_clust.n_row; i++) {
+    for (int i = 0; i < Gc_clust.get_n_row(); i++) {
         for (int j = Gc_clust.i_ptr[i]; j < Gc_clust.i_ptr[i + 1]; j++) {
             triplet[cnt].I = i;
-            triplet[cnt].J = Gc_clust.j_col[j] + Fc_clust.n_col;
+            triplet[cnt].J = Gc_clust.j_col[j] + Fc_clust.get_n_col();
             triplet[cnt].V = Gc_clust.val[j];
             cnt++;
         }
     }
     //  Ac[1,1]
-    for (int i = 0; i < Gc_clust.n_col; i++){
-        triplet[cnt].I = i + Fc_clust.n_row;
-        triplet[cnt].J = i + Fc_clust.n_row;
+    for (int i = 0; i < Gc_clust.get_n_col(); i++){
+        triplet[cnt].I = i + Fc_clust.get_n_row();
+        triplet[cnt].J = i + Fc_clust.get_n_row();
         triplet[cnt].V = 0.0;
         cnt++;
     }
 
     if (Ac_nonsingular){
     //  Ac[1,2]
-        for (int i = 0; i < kerGc.n_row; i++) {
-            for (int j = 0; j < kerGc.n_col; j++) {
-                triplet[cnt].I = i + Fc_clust.n_row;
-                triplet[cnt].J = j + Fc_clust.n_col + Gc_clust.n_col;
-                triplet[cnt].V = kerGc.dense[i + j * kerGc.n_row];
+        for (int i = 0; i < kerGc.get_n_row(); i++) {
+            for (int j = 0; j < kerGc.get_n_col(); j++) {
+                triplet[cnt].I = i + Fc_clust.get_n_row();
+                triplet[cnt].J = j + Fc_clust.get_n_col() + Gc_clust.get_n_col();
+                triplet[cnt].V = kerGc.dense[i + j * kerGc.get_n_row()];
                 cnt++;
             }
         }
     //  Ac[2,2]
-        for (int i = 0; i < kerGc.n_col; i++){
-            triplet[cnt].I = i + Fc_clust.n_row + Gc_clust.n_col;
-            triplet[cnt].J = i + Fc_clust.n_row + Gc_clust.n_col;
+        for (int i = 0; i < kerGc.get_n_col(); i++){
+            triplet[cnt].I = i + Fc_clust.get_n_row() + Gc_clust.get_n_col();
+            triplet[cnt].J = i + Fc_clust.get_n_row() + Gc_clust.get_n_col();
             triplet[cnt].V = 0.0;
             cnt++;
         }
@@ -666,14 +665,14 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
 
 
     if (Ac_nonsingular){
-        Ac_clust.n_row = Fc_clust.n_row_cmprs + Gc_clust.n_col + kerGc.n_col;
+        Ac_clust.set_n_row(Fc_clust.get_n_row_cmprs() + Gc_clust.get_n_col() + kerGc.get_n_col());
     }
     else{
-        Ac_clust.n_row = Fc_clust.n_row_cmprs + Gc_clust.n_col;
+        Ac_clust.set_n_row(Fc_clust.get_n_row_cmprs() + Gc_clust.get_n_col());
     }
 
-    Ac_clust.n_row_cmprs = Ac_clust.n_row;
-    Ac_clust.n_col = Ac_clust.n_row;
+    Ac_clust.set_n_row_cmprs(Ac_clust.get_n_row());
+    Ac_clust.set_n_col(Ac_clust.get_n_row());
 
     Ac_clust.COO2CSR();
 }
@@ -764,8 +763,8 @@ void Cluster::create_cluster_constraints(const map< string, string> &options2){
                 Bf[d].j_col_cmpr.resize( distance(Bf[d].j_col_cmpr.begin(),it));
             }
     }
-    nLam_c = Bc[0].n_row;
-    nLam_f = Bf[0].n_row;
+    nLam_c = Bc[0].get_n_row();
+    nLam_f = Bf[0].get_n_row();
 
 }
 
@@ -782,14 +781,14 @@ void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fu
             int IdNeighSub = data.interfaces[i][j].IdNeighSub;
             int n_com_dof = data.interfaces[i][j].dofs.size();
             Matrix Bc_from_Rt;
-            Bc_from_Rt.zero_dense(R[i].n_col,n_com_dof);
+            Bc_from_Rt.zero_dense(R[i].get_n_col(),n_com_dof);
 
             for (int k = 0 ; k < n_com_dof; k++){
                 int dofs_k = data.interfaces[i][j].dofs[k];
-                for (int l = 0; l < R[i].n_col;l++){
+                for (int l = 0; l < R[i].get_n_col();l++){
                     int g2ldof = data.g2l[i][dofs_k];
-                    Bc_from_Rt.dense[l + k * Bc_from_Rt.n_row_cmprs] =
-                            R[i].dense[g2ldof + l * R[i].n_row_cmprs];
+                    Bc_from_Rt.dense[l + k * Bc_from_Rt.get_n_row_cmprs()] =
+                            R[i].dense[g2ldof + l * R[i].get_n_row_cmprs()];
                 }
             }
 
@@ -797,10 +796,10 @@ void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fu
                     Matrix::test_of_Bc_constraints(Bc_from_Rt);
 
             if (!Bc_fullRank || is_local_Bc_full_column_rank){
-                for (int k = 0; k < Bc_from_Rt.n_row_cmprs;k++){
-                    for (int l = 0; l < Bc_from_Rt.n_col;l++){
+                for (int k = 0; k < Bc_from_Rt.get_n_row_cmprs();k++){
+                    for (int l = 0; l < Bc_from_Rt.get_n_col();l++){
                         int dofs_l = data.interfaces[i][j].dofs[l];
-                        double Bc_from_Rt_lk = Bc_from_Rt.dense[k + l * Bc_from_Rt.n_row_cmprs];
+                        double Bc_from_Rt_lk = Bc_from_Rt.dense[k + l * Bc_from_Rt.get_n_row_cmprs()];
                         // @! i_coo_cmpr is firstly filled by cluster global numbering
                         //    and later remaped to local subdomain numbering
                         j_col_Bc_curr = data.g2l[i][dofs_l];
@@ -933,18 +932,18 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
     int _nnz;
     for (int d = 0 ; d < Bc_.size(); d++){
         _nnz = Bc_[d].val.size();
-        Bc_[d].nnz = _nnz;
-        Bc_[d].n_row = cntLam;
-        Bc_[d].n_col = data.l2g[d].size();
-        Bc_[d].symmetric = 0;
-        Bc_[d].format = 0;
+        Bc_[d].set_nnz(_nnz);
+        Bc_[d].set_n_row(cntLam);
+        Bc_[d].set_n_col(data.l2g[d].size());
+        Bc_[d].set_symmetric(0);
+        Bc_[d].set_format(0);
 
         vector<int>::iterator it;
         vector < int > l2g_(Bc_[d].i_coo_cmpr);
         sort(l2g_.begin(), l2g_.end());
         it = unique (l2g_.begin(), l2g_.end());
         l2g_.resize( distance(l2g_.begin(),it));
-        Bc_[d].n_row_cmprs = l2g_.size();
+        Bc_[d].set_n_row_cmprs(l2g_.size());
 
         for (int i = 0; i < l2g_.size(); i++){
             Bc_[d].g2l_i_coo.insert ( pair < int, int > ( l2g_[i] , i ));
@@ -981,7 +980,7 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out,in
     for (int d = 0; d < nSubClst; d++){
         Vector BcKplusfc;
         BcKplusfc.mat_mult_dense(KplusBcT[d],"T",rhs_in[d],"N");
-        for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
+        for(int i = 0; i < BcKplusfc.get_n_row_cmprs(); i++){
             gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
         }
     }
@@ -990,10 +989,10 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out,in
     for (int d = 0; d < nSubClst; d++){
         Vector Rtfc;
         Rtfc.mat_mult_dense(R[d],"T",rhs_in[d],"N");
-        for (int i = 0 ; i < R[d].n_col; i++){
+        for (int i = 0 ; i < R[d].get_n_col(); i++){
             gc.dense[nLam_c + cntR + i] = -Rtfc.dense[i];
         }
-        cntR += R[d].n_col;
+        cntR += R[d].get_n_col();
     }
 
 
@@ -1008,8 +1007,8 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out,in
     cntR = 0;
     for (int d = 0; d < nSubClst ; d++){
         Vector lamc;
-        lamc.zero_dense(Bc[d].n_row_cmprs);
-        for (int i = 0; i < Bc[d].n_row_cmprs;i++){
+        lamc.zero_dense(Bc[d].get_n_row_cmprs());
+        for (int i = 0; i < Bc[d].get_n_row_cmprs();i++){
            lamc.dense[i] = lam_alpha.dense[Bc[d].l2g_i_coo[i]];
         }
         Vector KplusBcTlamc;
@@ -1021,33 +1020,33 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out,in
 
 
         Vector Ralphac;
-        Vector alphac_d; alphac_d.zero_dense(R[d].n_col);
-        for (int i = 0; i < R[d].n_col; i++){
+        Vector alphac_d; alphac_d.zero_dense(R[d].get_n_col());
+        for (int i = 0; i < R[d].get_n_col(); i++){
             alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
         }
 
         Ralphac.mat_mult_dense(R[d],"N",alphac_d,"N");
-        cntR += R[d].n_col;
+        cntR += R[d].get_n_col();
 
 
-        if (x_out[d].numel == 0)
-            x_out[d].zero_dense(K[d].n_row_cmprs);
+        if (x_out[d].get_numel() == 0)
+            x_out[d].zero_dense(K[d].get_n_row_cmprs());
 
 
-        for (int i = 0; i < x_out[d].n_row_cmprs; i++){
+        for (int i = 0; i < x_out[d].get_n_row_cmprs(); i++){
             x_out[d].dense[i] =  Kplusfc.dense[i] - KplusBcTlamc.dense[i] + Ralphac.dense[i];
         }
     }
 }
 
 
-void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
+void Cluster::Preconditioning(Vector & w_in , Vector & w_out){
 
     int nSubClst = get_nSubClst();
     // gc will be allocated onece at the beginning of Cluster.cpp //
 
-    if (w_out.numel < 0)
-        w_out.zero_dense(w_in.n_row_cmprs);
+    if (w_out.get_numel() < 0)
+        w_out.zero_dense(w_in.get_n_row_cmprs());
 
     w_out = w_in;
 
@@ -1063,7 +1062,7 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
             options2.at("preconditioner").compare("Dirichlet_implicit") == 0    ){
 
             int nBf = Bf[d].j_col_cmpr.size();
-            int nK = K[d].n_row_cmprs;
+            int nK = K[d].get_n_row_cmprs();
             Vector  x_cmpr;
             x_cmpr.zero_dense(nBf);
 
@@ -1075,7 +1074,7 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
 
                 Vector y_cmpr;
                 y_cmpr.mat_mult_dense(Preconditioner[d],"N",x_cmpr,"N");
-                yy[d].zero_dense(xx[d].n_row_cmprs);
+                yy[d].zero_dense(xx[d].get_n_row_cmprs());
                 for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
                    yy[d].dense[Bf[d].j_col_cmpr[i]] = y_cmpr.dense[i];
                 }
@@ -1085,12 +1084,12 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
                 y.zero_dense(nBf);
 
                 Kss[d].mult(x_cmpr,y,true);
-                yy[d].zero_dense(xx[d].n_row_cmprs);
+                yy[d].zero_dense(xx[d].get_n_row_cmprs());
                 for (int i = 0; i < nBf; i++){
                    yy[d].dense[Bf[d].j_col_cmpr[i]] = y.dense[i];
                 }
 
-                xx[d].zero_dense(xx[d].n_row_cmprs);
+                xx[d].zero_dense(xx[d].get_n_row_cmprs());
                 Krs[d].mult(x_cmpr,xx[d],true);
                 x_cmpr.zero_dense(nBf);
                 Vector Y;
@@ -1138,7 +1137,7 @@ void Cluster::mult_Ff(Vector const & w , Vector & Fw){
     for (int d = 0; d < nSubClst; d++){
         Vector BcKplusfc;
         BcKplusfc.mat_mult_dense(KplusBcT[d],"T",xx[d],"N");
-        for(int i = 0; i < BcKplusfc.n_row_cmprs; i++){
+        for(int i = 0; i < BcKplusfc.get_n_row_cmprs(); i++){
             gc.dense[Bc[d].l2g_i_coo[i]] += BcKplusfc.dense[i];
         }
     }
@@ -1147,10 +1146,10 @@ void Cluster::mult_Ff(Vector const & w , Vector & Fw){
     for (int d = 0; d < nSubClst; d++){
         Vector Rtfc;
         Rtfc.mat_mult_dense(R[d],"T",xx[d],"N");
-        for (int i = 0 ; i < R[d].n_col; i++){
+        for (int i = 0 ; i < R[d].get_n_col(); i++){
             gc.dense[nLam_c + cntR + i] = -Rtfc.dense[i];
         }
-        cntR += R[d].n_col;
+        cntR += R[d].get_n_col();
     }
 
     Vector lam_alpha;
@@ -1163,22 +1162,22 @@ void Cluster::mult_Ff(Vector const & w , Vector & Fw){
     cntR = 0;
     for (int d = 0; d < nSubClst ; d++){
         Vector lamc;
-        lamc.zero_dense(Bc[d].n_row_cmprs);
-        for (int i = 0; i < Bc[d].n_row_cmprs;i++){
+        lamc.zero_dense(Bc[d].get_n_row_cmprs());
+        for (int i = 0; i < Bc[d].get_n_row_cmprs();i++){
            lamc.dense[i] = lam_alpha.dense[Bc[d].l2g_i_coo[i]];
         }
         Vector KplusBcTlamc;
         KplusBcTlamc.mat_mult_dense(KplusBcT[d],"N",lamc,"N");
 
-        Vector alphac_d; alphac_d.zero_dense(R[d].n_col);
-        for (int i = 0; i < R[d].n_col; i++){
+        Vector alphac_d; alphac_d.zero_dense(R[d].get_n_col());
+        for (int i = 0; i < R[d].get_n_col(); i++){
             alphac_d.dense[i] = lam_alpha.dense[nLam_c + cntR + i];
         }
         xx[d].mat_mult_dense(R[d],"N",alphac_d,"N");
-        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+        for (int i = 0; i < xx[d].get_n_row_cmprs(); i++){
             xx[d].dense[i] -= KplusBcTlamc.dense[i];
         }
-        cntR += R[d].n_col;
+        cntR += R[d].get_n_col();
     }
 
 
@@ -1194,7 +1193,7 @@ void Cluster::mult_Ff(Vector const & w , Vector & Fw){
 void Cluster::mult_Bf(vector < Vector > const &x_in, Vector &lambda ){
 
 
-    if (lambda.numel == 0)
+    if (lambda.get_numel()== 0)
         lambda.zero_dense(nLam_f);
     else
         lambda.setZero();
@@ -1202,7 +1201,7 @@ void Cluster::mult_Bf(vector < Vector > const &x_in, Vector &lambda ){
     for (int d = 0; d < get_nSubClst(); d++ ){
         Vector Bf_x_d;
         Bf[d].mult(x_in[d],Bf_x_d, true);
-        for (int i = 0; i < Bf_x_d.n_row_cmprs; i++){
+        for (int i = 0; i < Bf_x_d.get_n_row_cmprs(); i++){
             lambda.dense[Bf[d].l2g_i_coo[i]] +=  Bf_x_d.dense[i];
         }
     }
@@ -1211,13 +1210,13 @@ void Cluster::mult_Bf(vector < Vector > const &x_in, Vector &lambda ){
 void Cluster::mult_BfT(Vector const &lambda, vector < Vector > &x_out){
 
     for (int d = 0; d < get_nSubClst(); d++){
-        if (x_out[d].numel == 0)
-            x_out[d].zero_dense(K[d].n_row_cmprs);
+        if (x_out[d].get_numel() == 0)
+            x_out[d].zero_dense(K[d].get_n_row_cmprs());
         else
             x_out[d].setZero();
         Vector lam_;
-        lam_.zero_dense(Bf[d].n_row_cmprs);
-        for (int i = 0; i < Bf[d].n_row_cmprs;i++){
+        lam_.zero_dense(Bf[d].get_n_row_cmprs());
+        for (int i = 0; i < Bf[d].get_n_row_cmprs();i++){
             lam_.dense[i] = lambda.dense[Bf[d].l2g_i_coo[i]];
         }
         Bf[d].mult(lam_,x_out[d],false);
@@ -1227,16 +1226,16 @@ void Cluster::mult_BfT(Vector const &lambda, vector < Vector > &x_out){
 
 void Cluster::create_GfTGf(){
 
-    GfTGf.zero_dense(Gf[0].n_col, Gf[0].n_col);
-    GfTGf.label = "GfTGf";
+    GfTGf.zero_dense(Gf[0].get_n_col(), Gf[0].get_n_col());
+    GfTGf.set_label("GfTGf");
 
-    Gf_clust.zero_dense(nLam_f,Rf[0].n_col);
+    Gf_clust.zero_dense(nLam_f,Rf[0].get_n_col());
 
     for (int d = 0; d < get_nSubClst(); d++){
-        for (int j = 0 ; j < Gf[d].n_col; j++){
-            for (int i = 0 ; i < Gf[d].n_row_cmprs; i++){
-                Gf_clust.dense[Bf[d].l2g_i_coo[i] + j * Gf_clust.n_row_cmprs] +=
-                    Gf[d].dense[i + j * Gf[d].n_row_cmprs];
+        for (int j = 0 ; j < Gf[d].get_n_col(); j++){
+            for (int i = 0 ; i < Gf[d].get_n_row_cmprs(); i++){
+                Gf_clust.dense[Bf[d].l2g_i_coo[i] + j * Gf_clust.get_n_row_cmprs()] +=
+                    Gf[d].dense[i + j * Gf[d].get_n_row_cmprs()];
             }
         }
     }
@@ -1247,8 +1246,8 @@ void Cluster::create_GfTGf(){
 void Cluster::compute_invGfTGf(){
 
     char uplo = 'L';
-    int n = GfTGf.n_row_cmprs;
-    int lda = GfTGf.n_row_cmprs;
+    int n = GfTGf.get_n_row_cmprs();
+    int lda = GfTGf.get_n_row_cmprs();
     int info;
 
     invGfTGf = GfTGf;
@@ -1264,10 +1263,10 @@ void Cluster::compute_invGfTGf(){
         fprintf(stderr, "inverse of GfTGf failed. \n");
 
 
-    for (int j = 0 ; j < invGfTGf.n_col - 1; j++) {
-        for (int i = j ; i < invGfTGf.n_row_cmprs; i++) {
-            invGfTGf.dense[j + i * invGfTGf.n_row_cmprs] =
-                     invGfTGf.dense[i + j * invGfTGf.n_row_cmprs];
+    for (int j = 0 ; j < invGfTGf.get_n_col() - 1; j++) {
+        for (int i = j ; i < invGfTGf.get_n_row_cmprs(); i++) {
+            invGfTGf.dense[j + i * invGfTGf.get_n_row_cmprs()] =
+                     invGfTGf.dense[i + j * invGfTGf.get_n_row_cmprs()];
         }
     }
 
@@ -1275,7 +1274,7 @@ void Cluster::compute_invGfTGf(){
 
 void Cluster::mult_Gf(Vector const & alpha, Vector & lambda){
 
-    if (lambda.numel == 0){
+    if (lambda.get_numel() == 0){
         lambda.zero_dense(nRBM_f);
     }
     else{
@@ -1285,7 +1284,7 @@ void Cluster::mult_Gf(Vector const & alpha, Vector & lambda){
 }
 
 void Cluster::mult_GfT(Vector const & lambda, Vector & alpha){
-    if (alpha.numel == 0){
+    if (alpha.get_numel() == 0){
         alpha.zero_dense(nRBM_f);
     }
     else{
@@ -1296,7 +1295,7 @@ void Cluster::mult_GfT(Vector const & lambda, Vector & alpha){
 
 void Cluster::mult_RfT(vector <Vector> const &x_in, Vector & alpha){
 
-    if (alpha.numel == 0){
+    if (alpha.get_numel() == 0){
         alpha.zero_dense(nRBM_f);
     }
     else{
@@ -1306,13 +1305,13 @@ void Cluster::mult_RfT(vector <Vector> const &x_in, Vector & alpha){
     for (int d = 0 ; d < get_nSubClst(); d++){
         Matrix alpha_d;
         alpha_d.mat_mult_dense(Rf[d],"T",x_in[d],"N");
-        for (int i = 0; i < alpha_d.n_row_cmprs; i++){
+        for (int i = 0; i < alpha_d.get_n_row_cmprs(); i++){
             alpha.dense[i] += alpha_d.dense[i];
         }
     }
 }
 
-void Cluster::Projection(Vector const & x, Vector & Px, Vector & alpha){
+void Cluster::Projection(Vector & x, Vector & Px, Vector & alpha){
 
     Px = x;
     Vector GfTx;
@@ -1320,10 +1319,10 @@ void Cluster::Projection(Vector const & x, Vector & Px, Vector & alpha){
     alpha.mat_mult_dense(invGfTGf,"N",GfTx,"N");
     mult_Gf(alpha,Px);
 
-    for (int i = 0; i < x.n_row_cmprs; i++)
+    for (int i = 0; i < x.get_n_row_cmprs(); i++)
         Px.dense[i] = x.dense[i] - Px.dense[i];
 
-    for (int i = 0 ; i < alpha.n_row_cmprs;i++)
+    for (int i = 0 ; i < alpha.get_n_row_cmprs();i++)
         alpha.dense[i] *= -1;
 
 
@@ -1335,16 +1334,16 @@ void Cluster::create_Rf_and_Gf(){
     int cntR = 0;
     for (int d = 0; d < get_nSubClst(); d++){
         Matrix Hd;
-        Hd.zero_dense(R[d].n_col,kerGc.n_col);
-        for (int j = 0; j < kerGc.n_col;j++){
-            for (int i = 0; i < R[d].n_col;i++){
-                Hd.dense[i + j * R[d].n_col] = kerGc.dense[cntR + i + j * kerGc.n_row_cmprs];
+        Hd.zero_dense(R[d].get_n_col(),kerGc.get_n_col());
+        for (int j = 0; j < kerGc.get_n_col();j++){
+            for (int i = 0; i < R[d].get_n_col();i++){
+                Hd.dense[i + j * R[d].get_n_col()] = kerGc.dense[cntR + i + j * kerGc.get_n_row_cmprs()];
             }
         }
-        cntR += R[d].n_col;
+        cntR += R[d].get_n_col();
         Rf[d].mat_mult_dense(R[d],"N",Hd,"N");
-        int n_rowGf = Bf[d].n_row_cmprs;
-        int n_colGf = Rf[d].n_col;
+        int n_rowGf = Bf[d].get_n_row_cmprs();
+        int n_colGf = Rf[d].get_n_col();
         //TODO Gf (as vector) is no need to keep in the memory
         // later replace by Gf_clust (is already in create GfTGf)
         Gf[d].zero_dense(n_rowGf, n_colGf );
@@ -1356,7 +1355,7 @@ void Cluster::create_Rf_and_Gf(){
 
 void Cluster::scale(Vector & x){
 
-    for (int i = 0 ; i < x.n_row_cmprs; i++)
+    for (int i = 0 ; i < x.get_n_row_cmprs(); i++)
         x.dense[i] *= weigth[i];
 }
 
@@ -1382,7 +1381,7 @@ void Cluster::pcpg(){
     xx.resize(nSubClst);
     yy.resize(nSubClst);
 
-    xx[0].label = "test";
+    xx[0].set_label("test");
     mult_Kplus_f(rhs,xx);
 
     mult_Bf(xx,d_rhs);
@@ -1475,7 +1474,7 @@ void Cluster::pcpg_old(){
     xx.resize(nSubClst); yy.resize(nSubClst);
 
     // d_rhs = B * Kplus * f
-    xx[0].label = "test";
+    xx[0].set_label("test");
     mult_Kplus_f(rhs,xx);
     mult_Bf(xx,d_rhs);
 
@@ -1595,11 +1594,11 @@ void Cluster::pcpg_old(){
     lambda.printToFile("lambda_",folder,0,true);
 
     Vector uDecomp;
-    uDecomp.zero_dense(rhs[0].n_row_cmprs * nSubClst);
+    uDecomp.zero_dense(rhs[0].get_n_row_cmprs() * nSubClst);
 
     int cnt = 0;
     for (int d = 0 ; d < nSubClst; d++){
-        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+        for (int i = 0; i < xx[d].get_n_row_cmprs(); i++){
             uDecomp.dense[cnt] = xx[d].dense[i];
             cnt++;
         }
@@ -1611,7 +1610,7 @@ void Cluster::pcpg_old(){
     if (1){
     mult_BfT(lambda,yy);
     for (int d = 0; d < nSubClst;d++){
-        for (int i = 0; i < yy[d].n_row_cmprs; i++){
+        for (int i = 0; i < yy[d].get_n_row_cmprs(); i++){
             yy[d].dense[i] = rhs[d].dense[i] - yy[d].dense[i];
         }
     }
@@ -1619,7 +1618,7 @@ void Cluster::pcpg_old(){
     for (int d = 0; d < nSubClst;d++){
         Vector Rf_alpha;
         Rf_alpha.mat_mult_dense(Rf[d],"N",alpha,"N");
-        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+        for (int i = 0; i < xx[d].get_n_row_cmprs(); i++){
             xx[d].dense[i] -= Rf_alpha.dense[i];
         }
     }
@@ -1628,7 +1627,7 @@ void Cluster::pcpg_old(){
     solution.resize(mesh->nPoints * 3, 0 );
 
     for (int d = 0 ; d < nSubClst; d++){
-        for (int i = 0; i < xx[d].n_row_cmprs; i++){
+        for (int i = 0; i < xx[d].get_n_row_cmprs(); i++){
             solution[data.l2g[d][i]] = xx[d].dense[i];
         }
     }
@@ -1652,7 +1651,7 @@ void Cluster::printVTK(vector < Vector > & yy, vector <Vector > & xx, Vector &la
 
         mult_BfT(lambda,yy);
         for (int d = 0; d < nSubClst;d++){
-            for (int i = 0; i < yy[d].n_row_cmprs; i++){
+            for (int i = 0; i < yy[d].get_n_row_cmprs(); i++){
                 yy[d].dense[i] = rhs[d].dense[i] - yy[d].dense[i];
             }
         }
@@ -1660,7 +1659,7 @@ void Cluster::printVTK(vector < Vector > & yy, vector <Vector > & xx, Vector &la
         for (int d = 0; d < nSubClst;d++){
             Vector Rf_alpha;
             Rf_alpha.mat_mult_dense(Rf[d],"N",alpha,"N");
-            for (int i = 0; i < xx[d].n_row_cmprs; i++){
+            for (int i = 0; i < xx[d].get_n_row_cmprs(); i++){
                 xx[d].dense[i] -= Rf_alpha.dense[i];
             }
         }
@@ -1671,7 +1670,7 @@ void Cluster::printVTK(vector < Vector > & yy, vector <Vector > & xx, Vector &la
         solution.resize(mesh->nPoints * 3, 0 );
 
         for (int d = 0 ; d < nSubClst; d++){
-            for (int i = 0; i < xx[d].n_row_cmprs; i++){
+            for (int i = 0; i < xx[d].get_n_row_cmprs(); i++){
                 solution[data.l2g[d][i]] = xx[d].dense[i];
             }
         }

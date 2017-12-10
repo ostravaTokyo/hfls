@@ -110,10 +110,10 @@ public:
     void mult_Gf(Vector const &, Vector &);
     void mult_GfT(Vector const &, Vector &);
     void mult_RfT(vector < Vector > const &, Vector&);
-    void Projection(Vector const & , Vector &, Vector &);
+    void Projection(Vector & , Vector &, Vector &);
 
     void mult_Ff(Vector const &, Vector &);
-    void Preconditioning(Vector const &, Vector &);
+    void Preconditioning(Vector &, Vector &);
     void scale(Vector &);
 
     void pcpg_old();
