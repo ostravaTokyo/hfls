@@ -22,29 +22,29 @@ void local_K_f::setZero_val_f(){
 }
 
 
-void Data::fe_assemb_local_K_f(Mesh &mesh,map <string, string> &options2){
+void Data::fe_assemb_local_K_f(Mesh *mesh,map <string, string> &options2){
 
 
     Point P(0,0,0);
     vector <Point> coord(8,P);
-    resize_local_K_f_clust(mesh.nElementsClst);
-    double mu = mesh.material.poissons_ratio;
+    resize_local_K_f_clust(mesh->nElementsClst);
+    double mu = mesh->material.poissons_ratio;
 
-    for (int i = 0; i < mesh.nElementsClst; i++){
-        double E = mesh.material.young_modulus;
+    for (int i = 0; i < mesh->nElementsClst; i++){
+        double E = mesh->material.young_modulus;
         for (int j = 0; j < 8; j++){
-            int iii = mesh.elements[i].getInd(j);
+            int iii = mesh->elements[i].getInd(j);
             //
-            coord[j].set_x(mesh.points[iii].get_x());
-            coord[j].set_y(mesh.points[iii].get_y());
-            coord[j].set_z(mesh.points[iii].get_z());
+            coord[j].set_x(mesh->points[iii].get_x());
+            coord[j].set_y(mesh->points[iii].get_y());
+            coord[j].set_z(mesh->points[iii].get_z());
             //
             local_K_f_clust[i].setIeq(j + 0, 3 * iii + 0);
             local_K_f_clust[i].setIeq(j + 8, 3 * iii + 1);
             local_K_f_clust[i].setIeq(j + 16, 3 * iii + 2);
         }
 
-        if (mesh.elements[i].getMaterialId() == 0)
+        if (mesh->elements[i].getMaterialId() == 0)
             E *= atof(options2["ratio_mat"].c_str());
 
 
@@ -58,9 +58,9 @@ int compareInt(const void * a, const void * b) {
     return ( *(int*)a - *(int*)b );
 }
 
-void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_){
+void Data::create_analytic_ker_K(Mesh *mesh, vector <Matrix> &R_){
 
-    int nSubClst = mesh.nSubClst;
+    int nSubClst = mesh->nSubClst;
 
 
     for (int d = 0; d < nSubClst; d++){
@@ -75,9 +75,9 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_){
 
             int in_glob = int ( l2g[d][3*i] / 3);
 
-            x = mesh.points[in_glob].get_x();
-            y = mesh.points[in_glob].get_y();
-            z = mesh.points[in_glob].get_z();
+            x = mesh->points[in_glob].get_x();
+            y = mesh->points[in_glob].get_y();
+            z = mesh->points[in_glob].get_z();
 
 
             R.dense[3 * i + 0 + n * 0] = 1;
@@ -108,21 +108,21 @@ void Data::create_analytic_ker_K(Mesh &mesh, vector <Matrix> &R_){
     }
 }
 
-void Data::buildMappingStruct(Mesh &mesh){
+void Data::buildMappingStruct(Mesh *mesh){
 
-    selectorOfElemPartitId.resize(mesh.nSubClst);
-    std::vector<int> l2g_dim(mesh.nSubClst, 0);
+    selectorOfElemPartitId.resize(mesh->nSubClst);
+    std::vector<int> l2g_dim(mesh->nSubClst, 0);
 
-    for (int i = 0 ; i < mesh.nElementsClst ; i++){
-        l2g_dim[mesh.elements[i].getPartitionId()] +=  local_K_f_clust[i].get_nDOF();
-        selectorOfElemPartitId[mesh.elements[i].getPartitionId()].push_back(i);
+    for (int i = 0 ; i < mesh->nElementsClst ; i++){
+        l2g_dim[mesh->elements[i].getPartitionId()] +=  local_K_f_clust[i].get_nDOF();
+        selectorOfElemPartitId[mesh->elements[i].getPartitionId()].push_back(i);
     }
 
    //
-    l2g.resize(mesh.nSubClst);
-    g2l.resize(mesh.nSubClst);
+    l2g.resize(mesh->nSubClst);
+    g2l.resize(mesh->nSubClst);
     //
-    for (int d = 0 ; d < mesh.nSubClst ; d++){
+    for (int d = 0 ; d < mesh->nSubClst ; d++){
         l2g[d].resize(l2g_dim[d]);
         int cnt = 0;
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
@@ -144,13 +144,13 @@ void Data::buildMappingStruct(Mesh &mesh){
 }
 
 
-void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
+void Data::feti_symbolic(Mesh *mesh, vector <Matrix> &K_)
 {
 
 
 
     // renumbering stiff mat from global to local (subdom.) numbering
-    for (int d = 0 ; d < mesh.nSubClst ; d++){
+    for (int d = 0 ; d < mesh->nSubClst ; d++){
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
             for (int k = 0 ; k < local_K_f_clust[selectorOfElemPartitId[d][i]].get_nDOF(); k++){
                 local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
@@ -165,7 +165,7 @@ void Data::feti_symbolic(Mesh &mesh, vector <Matrix> &K_)
     // variable 'bool symMatrix' prepared for nonsymm. cases
 
     vector<int>::iterator itv;
-    for (int d = 0 ; d < mesh.nSubClst; d++){
+    for (int d = 0 ; d < mesh->nSubClst; d++){
         bool symMatrix=true;
 //        int *indK;
         vector < vector < int > > forCSRformat;
@@ -260,9 +260,9 @@ void Data::feti_numeric_element(Matrix &Ksub, Vector & rhs_sub, local_K_f &Kelem
 
 
 
-void Data::feti_numeric(Mesh &mesh, vector <Matrix> & K_,  vector <Vector>& rhs_)
+void Data::feti_numeric(Mesh *mesh, vector <Matrix> & K_,  vector <Vector>& rhs_)
 {
-    for (int d = 0 ; d < mesh.nSubClst; d++){
+    for (int d = 0 ; d < mesh->nSubClst; d++){
       //        rhs_[d].zero_dense(K_[d].n_row_cmprs,1);
       rhs_[d].zero_dense(K_[d].n_row_cmprs);
         for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
@@ -294,7 +294,7 @@ double Data::inverse_matrix_3x3(double *A, double *iA) {
 }
 
 
-void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, vector<Point> coordinate, double E, double mu){
+void Data::stf_mtrx_solid45(local_K_f & i_local_K_f, vector<Point> &coordinate, double E, double mu){
 
 
 

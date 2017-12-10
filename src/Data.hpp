@@ -41,20 +41,20 @@ public:
     ~Data();
 
 
-    void fe_assemb_local_K_f(Mesh &, map <string, string> &);
+    void fe_assemb_local_K_f(Mesh *, map <string, string> &);
 
-    void feti_symbolic(Mesh &, vector <Matrix> &);
-    void feti_numeric(Mesh &, vector <Matrix> &, vector <Vector> &);
+    void feti_symbolic(Mesh *, vector <Matrix> &);
+    void feti_numeric(Mesh *, vector <Matrix> &, vector <Vector> &);
     void feti_numeric_element(Matrix &, Vector &, local_K_f &);
-    void stf_mtrx_solid45(local_K_f &, vector<Point> , double ,double);
-    void create_analytic_ker_K(Mesh &, vector <Matrix> &);
+    void stf_mtrx_solid45(local_K_f &, vector<Point> & , double ,double);
+    void create_analytic_ker_K(Mesh *, vector <Matrix> &);
     static double inverse_matrix_3x3(double *, double *);
     void resize_local_K_f_clust(int);
 
     vector < map<int,int> > g2l;
     vector < map < int,vector < int > > > interface;
     vector < vector < Interfaces > > interfaces;
-    void buildMappingStruct(Mesh&);
+    void buildMappingStruct(Mesh*);
     vector < vector <int> > l2g;
 
 
