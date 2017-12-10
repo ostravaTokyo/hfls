@@ -16,14 +16,26 @@ class Cluster
 {
 
 public:
-    Cluster(map <string, string>);
+    Cluster(){}
+    void initialization(map <string, string>, Mesh&);
     /* 'new' data created inside the app */
-    int nSubClst;
-    int neqClst;
-    int nLam_c;
-    int nLam_f;
-    int nRBM_f;
-    int nRBM_c;
+
+    int get_nSubClst(){return nSubClst;}
+    int get_neqClst(){return neqClst;}
+    int get_nLam_c(){return nLam_c;}
+    int get_nLam_f(){return nLam_f;}
+    int get_nRBM_f(){return nRBM_f;}
+    int get_nRBM_c(){return nRBM_c;}
+
+    void set_nSubClst(int);
+    void set_neqClst(int);
+    void set_nLam_c(int);
+    void set_nLam_f(int);
+    void set_nRBM_f(int);
+    void set_nRBM_c(int);
+
+
+
     string folder;
     std::vector< Matrix> K;
     std::vector< Vector > rhs;
@@ -107,12 +119,20 @@ public:
     void pcpg();
     void printVTK(vector < Vector > &, vector < Vector > &, Vector &, Vector &, int);
 
-    double time_solver;
-    double time_total;
 
 //    static double dot(Matrix &, Matrix &);
 //    static double apb(Matrix &, Matrix &, double, double);
+private:
 
+    int nSubClst;
+    int neqClst;
+    int nLam_c;
+    int nLam_f;
+    int nRBM_f;
+    int nRBM_c;
+
+    double time_solver;
+    double time_total;
 
 };
 
