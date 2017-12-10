@@ -11,32 +11,38 @@
 
 using namespace std;
 
+void Cluster::set_nSubClst(int n) { nSubClst = n; }
+void Cluster::set_neqClst(int n) { neqClst = n; }
+void Cluster::set_nLam_c(int n) { nLam_c = n; }
+void Cluster::set_nLam_f(int n) { nLam_f = n; }
+void Cluster::set_nRBM_f(int n) { nRBM_f = n; }
+void Cluster::set_nRBM_c(int n) { nRBM_c = n; }
 
 //Cluster::Cluster(Options options_, map <string,string> options2_)
-Cluster::Cluster(map <string,string> options2_)
+void Cluster::initialization(map <string,string> options2_,Mesh &mesh)
 {
 
     clock_t begin = clock();
     //options = options_;
     options2 = options2_;
-
+//
     bool reduceZeroRows, transpose, printCooOrDense, checkOrthogonality;
-
-
+//
+//
     int printMat = atoi(options2["print_matrices"].c_str());
     folder = options2["path2data"];
+//
+//
+//
+//    printf("+++++++++++++++++++++++++++++++++++ cluster     %s\n", options2["path2data"].c_str());
+//
+//
+//    /* mesh belonging to i-th cluster (currently, i=0 only)*/
+//    mesh.createMesh(options2);
+//    mesh.ddm_metis(options2);
+    set_nSubClst(mesh.nSubClst);
 
-
-
-    printf("+++++++++++++++++++++++++++++++++++ cluster     %s\n", options2["path2data"].c_str());
-
-
-    /* mesh belonging to i-th cluster (currently, i=0 only)*/
-    mesh.createMesh(options2);
-
-    mesh.ddm_metis(options2);
-
-    nSubClst = mesh.nSubClst;
+    nSubClst = get_nSubClst();
 
     Bc.resize(nSubClst);
     KplusBcT.resize(nSubClst);
@@ -62,6 +68,7 @@ Cluster::Cluster(map <string,string> options2_)
     cout << "assembling of K, f ... \n" ;
     data.fe_assemb_local_K_f(mesh,options2);
     cout << "symbolic factorization etc. ... \n" ;
+    data.buildMappingStruct(mesh);
     data.feti_symbolic(mesh,K);
     data.feti_numeric(mesh,K,rhs);
     cout << "ker(K) is being created ... \n" ;
@@ -202,8 +209,6 @@ Cluster::Cluster(map <string,string> options2_)
             R[d].printToFile("R",folder,d,printCooOrDense);
             R[d].getBasicMatrixInfo();
         }
-
-
     }
     cout << endl;
 
@@ -219,9 +224,6 @@ Cluster::Cluster(map <string,string> options2_)
 
     Matrix S_Fc_clust;
     Matrix::getEigVal_DNS(Fc_clust,S_Fc_clust,15,3);
-
-
-
 
 
     cout << "Gc_clust is being created ... \n" ;
@@ -376,10 +378,11 @@ Cluster::Cluster(map <string,string> options2_)
     printf("Solver time:  %3.1f s.\n",time_solver);
     printf("Total time:   %3.1f s.\n",time_total);
 
+#if 0
 
 
+#endif
 }
-
 
 void Cluster::create_GcTGc(){
     Matrix &GcTGc = GcTGc_clust;
@@ -440,7 +443,7 @@ void Cluster::create_GcTGc_clust_sparse(){
     // max number of 'c-type' constraints on one subdomain
     int n_interf_c_max = 0;
 
-    for (int d = 0; d < nSubClst;d++){
+    for (int d = 0; d < get_nSubClst();d++){
         if (Bc[d].n_row_cmprs > n_interf_c_max)
             n_interf_c_max = Bc[d].n_row_cmprs;
     }
@@ -454,12 +457,12 @@ void Cluster::create_GcTGc_clust_sparse(){
     GcTGc_sparse_clust.format= 0;
     vector < TRIPLET > triplet;
     vector < int > blockPointer;
-    blockPointer.resize(nSubClst);
+    blockPointer.resize(get_nSubClst());
     blockPointer[0] = 0;
-    for (int i = 1; i < nSubClst; i ++)
+    for (int i = 1; i < get_nSubClst(); i ++)
         blockPointer[i] = blockPointer[i-1] + Gc[i-1].n_col;
 
-    for (int i = 0 ; i < nSubClst ; i++){
+    for (int i = 0 ; i < get_nSubClst() ; i++){
         GcTGc_sparse_clust.nnz += (Gc[i].n_col + 1) * Gc[i].n_col;
         Matrix Gii("Gii");
         Matrix Gc_i = Gc[i];
@@ -679,6 +682,7 @@ void Cluster::create_Ac_clust(bool Ac_nonsingular){
 
 void Cluster::create_cluster_constraints(const map< string, string> &options2){
 
+    int nSubClst = get_nSubClst();
     vector < vector < int > > subDOFset;
     vector<int>::iterator it;
     subDOFset.resize(nSubClst);
@@ -956,6 +960,7 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
 
 void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
 
+    int nSubClst = get_nSubClst();
     // gc will be allocated onece at the beginning of Cluster.cpp //
     Vector gc;
     int ngc = nLam_c + nRBM_c;
@@ -1031,6 +1036,7 @@ void Cluster::mult_Kplus_f(vector <Vector> & rhs_in , vector <Vector> & x_out){
 
 void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
 
+    int nSubClst = get_nSubClst();
     // gc will be allocated onece at the beginning of Cluster.cpp //
 
     if (w_out.numel < 0)
@@ -1091,10 +1097,8 @@ void Cluster::Preconditioning(Vector const & w_in , Vector & w_out){
                 }
             }
         }
-        else{
-//               cout <<  "__LINE__" << __LINE__ << endl;
+        else
             K[d].mult(xx[d],yy[d],true);
-        }
     }
 
     mult_Bf(yy,w_out);
@@ -1105,6 +1109,7 @@ void Cluster::mult_Ff(Vector const & w , Vector & Fw){
 
     // gc will be allocated onece at the beginning of Cluster.cpp //
 
+    int nSubClst = get_nSubClst();
 
     vector < Vector > xx, yy;
     xx.resize(nSubClst); yy.resize(nSubClst);
@@ -1187,7 +1192,7 @@ void Cluster::mult_Bf(vector < Vector > const &x_in, Vector &lambda ){
     else
         lambda.setZero();
 
-    for (int d = 0; d < nSubClst; d++ ){
+    for (int d = 0; d < get_nSubClst(); d++ ){
         Vector Bf_x_d;
         Bf[d].mult(x_in[d],Bf_x_d, true);
         for (int i = 0; i < Bf_x_d.n_row_cmprs; i++){
@@ -1198,7 +1203,7 @@ void Cluster::mult_Bf(vector < Vector > const &x_in, Vector &lambda ){
 
 void Cluster::mult_BfT(Vector const &lambda, vector < Vector > &x_out){
 
-    for (int d = 0; d < nSubClst; d++){
+    for (int d = 0; d < get_nSubClst(); d++){
         if (x_out[d].numel == 0)
             x_out[d].zero_dense(K[d].n_row_cmprs);
         else
@@ -1220,7 +1225,7 @@ void Cluster::create_GfTGf(){
 
     Gf_clust.zero_dense(nLam_f,Rf[0].n_col);
 
-    for (int d = 0; d < nSubClst; d++){
+    for (int d = 0; d < get_nSubClst(); d++){
         for (int j = 0 ; j < Gf[d].n_col; j++){
             for (int i = 0 ; i < Gf[d].n_row_cmprs; i++){
                 Gf_clust.dense[Bf[d].l2g_i_coo[i] + j * Gf_clust.n_row_cmprs] +=
@@ -1244,7 +1249,6 @@ void Cluster::compute_invGfTGf(){
 
     if (info != 0)
         fprintf(stderr, "factorized matrix GfTGf failed. \n");
-
 
 
     info = LAPACKE_dpotri (LAPACK_COL_MAJOR, uplo , n , &(invGfTGf.dense[0]) , lda );
@@ -1292,7 +1296,7 @@ void Cluster::mult_RfT(vector <Vector> const &x_in, Vector & alpha){
         alpha.setZero();
     }
 
-    for (int d = 0 ; d < nSubClst; d++){
+    for (int d = 0 ; d < get_nSubClst(); d++){
         Matrix alpha_d;
         alpha_d.mat_mult_dense(Rf[d],"T",x_in[d],"N");
         for (int i = 0; i < alpha_d.n_row_cmprs; i++){
@@ -1322,7 +1326,7 @@ void Cluster::Projection(Vector const & x, Vector & Px, Vector & alpha){
 void Cluster::create_Rf_and_Gf(){
 
     int cntR = 0;
-    for (int d = 0; d < nSubClst; d++){
+    for (int d = 0; d < get_nSubClst(); d++){
         Matrix Hd;
         Hd.zero_dense(R[d].n_col,kerGc.n_col);
         for (int j = 0; j < kerGc.n_col;j++){
@@ -1350,13 +1354,15 @@ void Cluster::scale(Vector & x){
 }
 
 
-
-
 void Cluster::pcpg(){
       clock_t begin = clock();
 
     double eps_iter     = atof(options2["eps_iter"].c_str());
     double max_iter     = atoi(options2["max_iter"].c_str());
+
+
+    cout <<  "eps_iter = " << eps_iter << endl;
+    cout <<  "max_iter = " << max_iter << endl;
 
     double gPz, gPz_prev, wFw, rho, gamma, norm_gPz0;
     Vector g0, d_rhs, e, iGTG_e, lambda, z, Pz;
@@ -1364,6 +1370,8 @@ void Cluster::pcpg(){
     Vector beta, alpha;
 
     vector < Vector > xx, yy;
+
+    int nSubClst = get_nSubClst();
     xx.resize(nSubClst);
     yy.resize(nSubClst);
 
@@ -1445,8 +1453,11 @@ void Cluster::pcpg(){
 
 
 
+
+
 void Cluster::pcpg_old(){
 
+    int nSubClst = get_nSubClst();
     double eps_iter     = atof(options2["eps_iter"].c_str());
 
     double gPg, wFw, rho, gamma, wFPg, norm_gPg0;
@@ -1630,6 +1641,7 @@ void Cluster::pcpg_old(){
 
 void Cluster::printVTK(vector < Vector > & yy, vector <Vector > & xx, Vector &lambda, Vector & alpha , int it){
 
+    int nSubClst = get_nSubClst();
 
         mult_BfT(lambda,yy);
         for (int d = 0; d < nSubClst;d++){
@@ -1658,3 +1670,4 @@ void Cluster::printVTK(vector < Vector > & yy, vector <Vector > & xx, Vector &la
         }
         mesh.SaveVTK(solution, folder,it);
 }
+
