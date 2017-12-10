@@ -807,15 +807,15 @@ void Matrix::getBasicMatrixInfo(){
     printf("j_col.size():       %lu \n", j_col.size());
     printf("val.size():         %lu \n", val.size());
     printf("dense.size():       %lu \n", dense.size());
+    printf("solver:             %d (-1: None, 0: pardiso, 1: dissection)\n", solver);
     if (solver > -1)
-        printf("solver:             %d (-1: None, 0: pardiso, 1: dissection)\n", solver);
-    else
         printf("            :       %s \n", options2["linear_solver"].c_str());
 
 
     double density = 100 * nnz / (double)( n_row_cmprs * n_col );
 
     printf("density:            %1.2f %% \n", density);
+    printf("............................................................................\n");
 }
 
 int Matrix::ij(int i_, int j_){
