@@ -57,7 +57,7 @@ public:
     std::vector< Matrix > Gf;
 
 
-    Mesh mesh;
+    Mesh *mesh;
     Data data;
 
     Matrix Fc_clust;
@@ -104,6 +104,7 @@ public:
     void matrix_Bx_COO2CSR(vector <Matrix> &, int);
 
     void mult_Kplus_f(vector < Vector > & , vector < Vector > &);
+    void mult_Kplus_f(vector < Vector > & , vector < Vector > &, int);
     void mult_Bf(vector < Vector > const &, Vector &);
     void mult_BfT(Vector  const &, vector < Vector > &);
     void mult_Gf(Vector const &, Vector &);
