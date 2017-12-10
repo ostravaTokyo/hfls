@@ -5,7 +5,9 @@ SOURCESCPP = Array1d_double64.cpp \
              Matrix.cpp \
              Mesh.cpp \
              Data.cpp \
-             Options.cpp
+             Driver.cpp \
+             Options.cpp \
+			 Solver.cpp
 
 include ../Make.inc
 
