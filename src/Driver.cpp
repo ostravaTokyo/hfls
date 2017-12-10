@@ -26,17 +26,11 @@ void Driver::initialization(){
 //    folder = options2["path2data"];
     printf("+++++++++++++++++++++++++++++++++++ cluster     %s\n", options2["path2data"].c_str());
 //
-//
     /* mesh belonging to i-th cluster (currently, i=0 only)*/
     mesh.createMesh(options2);
     mesh.ddm_metis(options2);
     cluster.initialization(options2,mesh);
-
-//    solver.pcpg(options2,cluster);
-
-
-
-
+//    solver.pcpg(cluster);
 //    int nSubClst = cluster.get_nSubClst();
 
 
