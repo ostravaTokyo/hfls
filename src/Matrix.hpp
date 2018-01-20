@@ -15,7 +15,11 @@
 #include <cstdlib>
 #include <cstring>
 #include "map"
+#ifndef WIN32 
 #include <unistd.h>
+#else
+#include "stdint.h"
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "omp.h"

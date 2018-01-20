@@ -153,7 +153,7 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
     int I,J;
     int cnt = 0;
     double V;
-    double _nnz = nnz; /* new nnz */
+    int _nnz = nnz; /* new nnz */
     for (int i = 0; i < nnz; i++) {
         input >> I;
         input >> J;
@@ -224,7 +224,7 @@ void Matrix::sortAndUniqueCOO(vector <TRIPLET> &triplet){
     sort(triplet.begin(),triplet.end(),Matrix::cmp_int_int_I);
 /* partial sorting according to index J (per sets with same I)----------------*/
 
-  nnz = triplet.size();
+	nnz = static_cast<int>(triplet.size());
 
     int startInd = 0, endInd = 1;
     int tripletIprev = triplet[0].I;
@@ -494,7 +494,7 @@ void Matrix::DNS2COO(){
     }
 
     if (symmetric){
-        nnz = (nnz - n_row_cmprs) * 0.5 + n_row_cmprs;
+        nnz = (int)((nnz - n_row_cmprs) * 0.5) + n_row_cmprs;
     }
 
     i_coo_cmpr.resize(nnz);
@@ -649,7 +649,7 @@ void Matrix::submatrix_row_selector(Matrix &A_, vector <int> &v){
     Matrix A;
     A = A_;
     A.CSRorCOO2DNS(true,false);
-    zero_dense(v.size(), A.n_col);
+	zero_dense(static_cast<int>(v.size()), A.n_col);
 
 
     for (int j = 0 ; j < n_col; j++){
@@ -738,7 +738,7 @@ void Matrix::mult(const Matrix& X_in,  Matrix& X_out, bool NorT){
 
 
 
-    if (X_out.nnz == 0) {
+    if (X_out.get_numel() == 0) {
        X_out.zero_dense(_n_rws,_n_col_rhs);
     }
 
@@ -780,12 +780,12 @@ double Matrix::norm2()
 {
     double _norm2 = 0;
     if (format == 2){
-        for (unsigned int i = 0 ; i < dense.size(); i++){
+        for (int i = 0 ; i < dense.size(); i++){
             _norm2 += dense[i] * dense[i];
         }
     }
     else{
-        for (unsigned int i = 0 ; i < nnz; i++){
+        for (int i = 0 ; i < nnz; i++){
             _norm2 += val[i] * val[i];
         }
     }
@@ -850,7 +850,7 @@ void Matrix::getNullPivots(vector < int > & null_pivots_){
   }
   for (int j=0;j<n_col_;j++){
     it = max_element(N.begin(),N.end()-j*n_row_, compareDouble);
-    I = it - N.begin();
+	I = it - N.begin();
     colInd = I/n_row_;
     rowInd = I-colInd*n_row_;
     for (int k=0;k<n_col_-j;k++){
@@ -888,8 +888,8 @@ void Matrix::sym_factor_dissection(){
 #ifdef DISSECTION
       //diss_dslv = new uint64_t;
       diss_num_threads = 1;
-      diss_dslv = new uint64_t;
-      diss_init(*diss_dslv, order_number, 1, 0, diss_num_threads, 1);
+	  diss_dslv = new uint64_t;
+	  diss_init(*diss_dslv, order_number, 1, diss_num_threads, 1);
       int diss_sym = 1; // isSym = 1 + upper_flag = 0
       int diss_decomposer = 0;
 
@@ -1441,13 +1441,13 @@ void Matrix::print_int_vector(vector <double> &dS, int print_first_n, int print_
     cout << endl;
 
 
-
-    int nPrint = print_first_n > dS.size() ? dS.size(): print_first_n;
+	int dS_size = static_cast<int>(dS.size());
+	int nPrint = print_first_n > dS_size ? dS_size : print_first_n;
     for (int i = 0; i < nPrint;i++){
         cout << "d("<< i << ")=  " << dS[i] << endl;
     }
-    nPrint = print_last_n > dS.size() ? dS.size() : print_last_n;
-    for (int i = dS.size() - nPrint; i < dS.size() ;i++){
+	nPrint = print_last_n > dS_size ? dS_size : print_last_n;
+	for (int i = dS_size - nPrint; i < dS_size; i++){
         cout << "d("<< i << ")=  " << dS[i] << endl;
     }
     cout << "-- end --" << endl;
@@ -1487,7 +1487,8 @@ void Matrix::getEigVal_DNS(Matrix A_, Matrix &S, int print_first_n, int print_la
     MKL_INT ldzA = A_.n_row_cmprs;
     info = LAPACKE_dspev (LAPACK_COL_MAJOR, JOBZ_, UPLO_,
             A_.n_row_cmprs, &(A.dense[0]), &(S.dense[0]), ZK_modif, ldzA);
-    S.printToFile(A_.label,c_options2["path2data"],444,true);
+
+    //S.printToFile(A_.label,c_options2["path2data"],444,true);
     delete [] ZK_modif;
 
     for (int i = 0; i < S.n_row_cmprs; i++){
@@ -1801,7 +1802,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
     K_modif.COO2CSR();
 
 
-    int sc_size = perm_vec.size();
+	int sc_size = static_cast<int>(perm_vec.size());
 
 
     Matrix K_rr("K_rr");
@@ -2084,7 +2085,7 @@ typedef int  eslocal;
 //  double rho = K.val[0];
   if (fixing_nodes_or_dof>0){
     sc_size = fixing_nodes_or_dof*dofPerNode;
-    n_nodsSub = round(K.n_row_cmprs/dofPerNode);
+	n_nodsSub = static_cast<int>(round(K.n_row_cmprs / dofPerNode));
   }
   //
   //##########################################################################################
@@ -2195,7 +2196,7 @@ typedef int  eslocal;
       it=tmp_vec_s.begin();
       std::sort(tmp_vec_s.begin(), tmp_vec_s.end());
       it = std::unique(tmp_vec_s.begin(), tmp_vec_s.end());
-      n_mv = distance(tmp_vec_s.begin(),it);
+      n_mv = static_cast<eslocal>(distance(tmp_vec_s.begin(),it));
       cnt_permut_vec++;
    } while (n_mv != sc_size && cnt_permut_vec < 100);
     //
@@ -2327,7 +2328,7 @@ typedef int  eslocal;
         }
     }
 
-  int n_S2 = (S1.n_row_cmprs + 1) * S1.n_row_cmprs * 0.5;
+  int n_S2 = (S1.n_row_cmprs + 1) * (int)(S1.n_row_cmprs * 0.5);
   double *S2 = new double[n_S2];
 
   int cnt = 0;
@@ -2348,7 +2349,7 @@ typedef int  eslocal;
   double *Z = new double[S1.n_col*S1.n_col];
   MKL_INT info;
   MKL_INT ldz = S1.n_col;
-  info = LAPACKE_dspev (LAPACK_COL_MAJOR, JOBZ, UPLO, S1.n_col, &(S2[0]), W, Z, ldz);
+  info = LAPACKE_dspev(LAPACK_COL_MAJOR, JOBZ, UPLO, S1.n_col, &(S2[0]), W, Z, ldz);
   if (info){
     cout <<"info = " << info << " something wrong with Schur complement in SparseSolverCPU::generalIinverse" << endl;
   }
