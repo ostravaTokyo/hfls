@@ -85,7 +85,7 @@ void Mesh::createMesh(map <string, string> &options2){
 
 
     for (int i = 0; i < 3 ; i ++)
-        cout << ":::::::::::::::::::" << nSubXYZ[i] << " " ;
+        cout << "::::::::::::::::::: " << nSubXYZ[i] << " " ;
     cout << endl;
 
     const char *tmp_char0 = options2["young_modulus"].c_str();
@@ -221,7 +221,7 @@ void Mesh::createMesh(map <string, string> &options2){
 #else
 
     double eps0 = 1e-8;
-    int np =  points.size();
+    int np =  static_cast<int>(points.size());
 
     vector <int> dirDOFs;
     for (int i = 0; i < np; i++){
@@ -232,7 +232,7 @@ void Mesh::createMesh(map <string, string> &options2){
         if (fabs(points[i].get_z()) < eps0)
             dirDOFs.push_back(3 * i + 2);
     }
-    nDirDOFs = dirDOFs.size();
+    nDirDOFs = static_cast<int>(dirDOFs.size());
     DirichletDOFs.resize(nDirDOFs);
 
     for (int i = 0; i < nDirDOFs; i++){
@@ -294,17 +294,36 @@ void Mesh::createMesh(map <string, string> &options2){
 void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
 
 
-//  string filename = str0 + "/box" + atoi(iter) + ".vtk";
-  char char01[128];
-  if (iter == -1){
-    sprintf(char01,"%s/box.vtk",str0.c_str());
-  }
-  else{
-    sprintf(char01,"%s/box%d.vtk",str0.c_str(),iter  );
-  }
-  string filename = char01;
-  FILE *fVTK = NULL;
-  fVTK = fopen(filename.c_str(), "w");
+	//  string filename = str0 + "/box" + atoi(iter) + ".vtk";
+	char char01[128];
+	if (iter == -1){
+		sprintf(char01, "%s\\box.vtk", str0.c_str());
+	}
+	else{
+		sprintf(char01, "%s\\box%d.vtk", str0.c_str(), iter);
+	}
+
+
+
+
+	cout << "vtk is stored in:";
+	cout << char01 << endl;
+	string filename = char01;
+	FILE *fVTK = NULL;
+	fVTK = fopen(filename.c_str(), "w");
+
+	if (fVTK == NULL){
+#if defined(_WIN32)
+		system("mkdir data");
+		fVTK = fopen(filename.c_str(), "w");
+#else 
+		mkdir(options2["path2data"].c_str(), 0777); // notice that 777 is different than 0777
+#endif
+	}
+
+
+	  
+  
   fprintf(fVTK, "# vtk DataFile Version 3.0\n");
   fprintf(fVTK, "vtk output\n");
   fprintf(fVTK, "ASCII\n\n");
@@ -362,8 +381,8 @@ void Mesh::ddm_metis(map <string, string> &options2){
     int _nparts = atoi(options2["nparts"].c_str());
     nSubClst = _nparts;
 
-    int nPointsLocal = points.size();
-    int nCellsLocal = elements.size();
+    int nPointsLocal = static_cast<int>(points.size());
+    int nCellsLocal = static_cast<int>(elements.size());
 
     int nPi;
     int * eptr = new int[nCellsLocal + 1];
