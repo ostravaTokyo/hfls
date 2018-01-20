@@ -21,6 +21,9 @@ void local_K_f::setZero_val_f(){
     memset(val_f,0,24*sizeof(double));
 }
 
+void local_K_f::set_nDOF(int n){ nDOF = n; }
+
+void local_K_f::setIeq(int i, int j){ ieq[i] = j; }
 
 void Data::fe_assemb_local_K_f(Mesh *mesh,map <string, string> &options2){
 
@@ -65,7 +68,7 @@ void Data::create_analytic_ker_K(Mesh *mesh, vector <Matrix> &R_){
 
     for (int d = 0; d < nSubClst; d++){
         Matrix &R = R_[d];
-        int n = l2g[d].size();
+		int n = static_cast<int>(l2g[d].size());
         R.zero_dense(n,6);
         double x,y,z;
         int n_nods = int(n / 3);
@@ -188,12 +191,12 @@ void Data::feti_symbolic(Mesh *mesh, vector <Matrix> &K_)
           sort(forCSRformat[i].begin(),forCSRformat[i].end());
           itv = std::unique (forCSRformat[i].begin(), forCSRformat[i].end());
           forCSRformat[i].resize( std::distance(forCSRformat[i].begin(),itv) );
-          nnz_K+=forCSRformat[i].size();
+		  nnz_K += static_cast<int>(forCSRformat[i].size());
         }
 
 
 
-        int neqSub = l2g[d].size();
+		int neqSub = static_cast<int>(l2g[d].size());
         Matrix &_K = K_[d];
         _K.set_label("stiffness matrix");
         _K.set_order_number(d);

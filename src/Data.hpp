@@ -8,14 +8,15 @@
 class local_K_f
 {
 public:
+	int getIeq(int i){ return ieq[i]; }
+	int get_nDOF(){ return nDOF; }
+	double get_val_K(int i, int j){ return val_K[i + j * 24]; }
+	double get_val_f(int i){ return val_f[i]; }
+
     void set_val_K(int, int,double);
     void set_val_f(int,double);
-    double get_val_K(int i,int j){return val_K[i + j * 24];}
-    double get_val_f(int i){return val_f[i];}
-    void setIeq(int i,int j){ieq[i] = j;}
-    int getIeq(int i){return ieq[i];}
-    int get_nDOF(){return nDOF;}
-    int set_nDOF(int n){nDOF = n;}
+	void setIeq(int i, int j);
+	void set_nDOF(int n);
     void setZero_val_K();
     void setZero_val_f();
 private:
