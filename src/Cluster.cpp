@@ -1,5 +1,9 @@
 #include "Cluster.hpp"
+#ifndef WIN32 
 #include <unistd.h>
+#else
+#include "stdint.h"
+#endif
 #include <cstdlib>
 #include <stdio.h>
 
@@ -219,7 +223,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
     Fc_clust.getBasicMatrixInfo();
     if (printMat > 0){
         Fc_clust.printToFile("Fc_clust",folder,0,printCooOrDense);
-        Matrix::print1dArray(weigth.data(),weigth.size(),"weigth",folder);
+        Matrix::print1dArray(weigth.data(),static_cast<int>(weigth.size()),"weigth",folder);
     }
 
     Matrix S_Fc_clust;
@@ -478,7 +482,7 @@ void Cluster::create_GcTGc_clust_sparse(){
                                  Gc[ind_neigh].l2g_i_coo.begin(), Gc[ind_neigh].l2g_i_coo.end(),
                                  overlap.begin());
             overlap.resize(it-overlap.begin());
-            int n_overlap = overlap.size();
+            int n_overlap = static_cast<int>(overlap.size());
             if (n_overlap > 0){
                 Matrix G_i, G_j, GiTGj;
                 G_i.submatrix_row_selector(Gc[i],overlap);
@@ -520,7 +524,7 @@ void Cluster::create_Gc_clust(){
 
 void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool remapCols){
 
-    const int nS = A_i.size();
+    const int nS = static_cast<int>(A_i.size());
     int init_nnz = 0;
     for (int i = 0; i < nS; i++){
         init_nnz += A_i[i].get_nnz();
@@ -698,7 +702,7 @@ void Cluster::create_cluster_constraints(const map< string, string> &options2){
         it = unique (subDOFset[i].begin(), subDOFset[i].end());
         subDOFset[i].resize( distance(subDOFset[i].begin(),it));
         if (subDOFset[i].size() > maxSize)
-            maxSize = subDOFset[i].size();
+            maxSize = static_cast<int>(subDOFset[i].size());
     }
 
     vector<int> v(2 * maxSize);
@@ -779,9 +783,10 @@ void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fu
     for (int i = 0; i < data.interfaces.size(); i++){
         for (int j = 0;j < data.interfaces[i].size();j++){
             int IdNeighSub = data.interfaces[i][j].IdNeighSub;
-            int n_com_dof = data.interfaces[i][j].dofs.size();
+            int n_com_dof = static_cast<int>(data.interfaces[i][j].dofs.size());
             Matrix Bc_from_Rt;
-            Bc_from_Rt.zero_dense(R[i].get_n_col(),n_com_dof);
+			int n_col_R = R[i].get_n_col();
+			Bc_from_Rt.zero_dense(n_col_R, n_com_dof);
 
             for (int k = 0 ; k < n_com_dof; k++){
                 int dofs_k = data.interfaces[i][j].dofs[k];
@@ -931,10 +936,10 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
 void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
     int _nnz;
     for (int d = 0 ; d < Bc_.size(); d++){
-        _nnz = Bc_[d].val.size();
+        _nnz = static_cast<int>(Bc_[d].val.size());
         Bc_[d].set_nnz(_nnz);
         Bc_[d].set_n_row(cntLam);
-        Bc_[d].set_n_col(data.l2g[d].size());
+		Bc_[d].set_n_col(static_cast<int>(data.l2g[d].size()));
         Bc_[d].set_symmetric(0);
         Bc_[d].set_format(0);
 
@@ -943,7 +948,7 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
         sort(l2g_.begin(), l2g_.end());
         it = unique (l2g_.begin(), l2g_.end());
         l2g_.resize( distance(l2g_.begin(),it));
-        Bc_[d].set_n_row_cmprs(l2g_.size());
+		Bc_[d].set_n_row_cmprs(static_cast<int>(l2g_.size()));
 
         for (int i = 0; i < l2g_.size(); i++){
             Bc_[d].g2l_i_coo.insert ( pair < int, int > ( l2g_[i] , i ));
@@ -1061,7 +1066,7 @@ void Cluster::Preconditioning(Vector & w_in , Vector & w_out){
         if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ||
             options2.at("preconditioner").compare("Dirichlet_implicit") == 0    ){
 
-            int nBf = Bf[d].j_col_cmpr.size();
+			int nBf = static_cast<int>(Bf[d].j_col_cmpr.size());
             int nK = K[d].get_n_row_cmprs();
             Vector  x_cmpr;
             x_cmpr.zero_dense(nBf);
