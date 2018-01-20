@@ -54,3 +54,5 @@ main
 dissection*.log
 singularindex*data
 *.png
+
+ConsoleApplication1/*
