@@ -314,7 +314,10 @@ void Mesh::SaveVTK(vector <double > solution, string str0, int iter) {
 
 	if (fVTK == NULL){
 #if defined(_WIN32)
-		system("mkdir data");
+		string str_tmp = "";
+		str_tmp = "mkdir " + str0;
+		cout << str_tmp << endl;
+		system(str_tmp.c_str());
 		fVTK = fopen(filename.c_str(), "w");
 #else 
 		mkdir(options2["path2data"].c_str(), 0777); // notice that 777 is different than 0777
