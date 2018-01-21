@@ -1,8 +1,16 @@
 #include <iostream>
 #include <string>
+#include <sstream>
 #include "src/Cluster.hpp"
 #include "src/Driver.hpp"
 #include <map>
+#include <iostream>
+#include <fstream> 
+#include <stdio.h>
+
+
+
+void parseParam(map <string, string> &);
 
 using namespace std;
 int main(int argc, char *argv[]){
@@ -14,14 +22,14 @@ int main(int argc, char *argv[]){
     options2["vtkWithinIter"]                   = "false";
 
 
-    options2["metis"]                           = "true";
+    options2["metis"]                           = "false";
     /* Dirichlet_explicit, Dirichlet_implicit, lumped */
     options2["preconditioner"]                  = "Dirichlet_implicit";
 
     options2["Ac_clust_explicit"]               = "true";
 
 
-    options2["path2data"]                       =  "data/";
+    options2["path2data"]                       =  "data";
     options2["young_modulus"]                   =  "1000";
     options2["ratio_mat"]                       =  "1";
     options2["poissons_ratio"]                  =  "0.3";
@@ -36,7 +44,7 @@ int main(int argc, char *argv[]){
     options2["typeBc"]                          =  "ker";
 
     /* true,  false                                             */
-    options2["Ac_extended_by_kerGc"]            =  "true";
+    options2["Ac_extended_by_kerGc"]            =  "false";
 
     /* true,  false                                             */
     options2["GcTGc_assembl_block_by_block"]    =  "true";
@@ -65,6 +73,9 @@ int main(int argc, char *argv[]){
 //        cout <<"###########################################################" << endl;
 //        options2["create_analytic_ker_K"] = "true";
 //    }
+
+
+	parseParam(options2);
 
 
     if (argc > 1) {
@@ -109,3 +120,34 @@ int main(int argc, char *argv[]){
     return 0;
 }
 
+
+
+void parseParam(map <string, string> &options2_){
+string filename = "setup.opt";
+ifstream infile(filename.c_str());
+
+ 
+string line;
+while (getline(infile, line))
+{
+	 
+	
+	istringstream iss(line);
+	vector<string> results((istream_iterator<string>(iss)),istream_iterator<string>());
+
+	for (int i = 0; i < results.size(); i++)
+		cout <<"(" << results[i] << ")" << endl;
+
+	if (results.size() == 2 && results[0].c_str() != "#"){
+		cout << "--" << endl;
+		map<string, string>::const_iterator it = options2_.find(results[0].c_str());
+		if (it != options2_.end()){
+			options2_[results[0].c_str()] = results[1].c_str();
+		}
+	}
+	// process pair (a,b)
+}
+
+
+
+}
