@@ -135,11 +135,12 @@ while (getline(infile, line))
 	istringstream iss(line);
 	vector<string> results((istream_iterator<string>(iss)),istream_iterator<string>());
 
-	for (int i = 0; i < results.size(); i++)
-		cout <<"(" << results[i] << ")" << endl;
+
+	//for (int i = 0; i < results.size(); i++)
+	//	cout <<"(" << results[i] << ")" << endl;
 
 	if (results.size() == 2 && results[0].c_str() != "#"){
-		cout << "--" << endl;
+		//cout << "--" << endl;
 		map<string, string>::const_iterator it = options2_.find(results[0].c_str());
 		if (it != options2_.end()){
 			options2_[results[0].c_str()] = results[1].c_str();
