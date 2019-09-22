@@ -17,7 +17,7 @@ if ( WIN32 )
     set(MKLROOT "C:/Program Files (x86)/Intel/Composer XE" CACHE PATH "Where the MKL are stored")
   endif(NOT DEFINED ENV{MKLROOT}) 
 else ( WIN32 )
-    set(MKLROOT "/opt/intel/compilers_and_libraries_2017/linux" CACHE PATH "Where the MKL are stored")
+    set(MKLROOT "/home/mar440/intel/" CACHE PATH "Where the MKL are stored")
 endif ( WIN32 )
 
 

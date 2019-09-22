@@ -9,9 +9,9 @@ int main(int argc, char *argv[]){
 
     map<string,string > options2;
 
-    options2["eps_iter"]                        = "1e-4";
+    options2["eps_iter"]                        = "1e-6";
     options2["max_iter"]                        = "200";
-    options2["vtkWithinIter"]                   = "false";
+    options2["vtkWithinIter"]                   = "true";
 
 
     options2["metis"]                           = "true";
@@ -23,20 +23,20 @@ int main(int argc, char *argv[]){
 
     options2["path2data"]                       =  "data/";
     options2["young_modulus"]                   =  "1000";
-    options2["ratio_mat"]                       =  "1";
+    options2["ratio_mat"]                       =  "1e4";
     options2["poissons_ratio"]                  =  "0.3";
 
     /* dissection | pardiso */
     options2["linear_solver"]                   =  "pardiso";
 
     /* {0, 1, 2, 3 }                                            */
-    options2["print_matrices"]                  =  "0";
+    options2["print_matrices"]                  =  "1";
 
     /* ker, cor, all                                            */
     options2["typeBc"]                          =  "ker";
 
     /* true,  false                                             */
-    options2["Ac_extended_by_kerGc"]            =  "true";
+    options2["Ac_extended_by_kerGc"]            =  "false";
 
     /* true,  false                                             */
     options2["GcTGc_assembl_block_by_block"]    =  "true";
@@ -49,22 +49,22 @@ int main(int argc, char *argv[]){
 
 
     options2["Nx"]                              =  "2";
-    options2["Ny"]                              =  "2";
-    options2["Nz"]                              =  "2";
+    options2["Ny"]                              =  "1";
+    options2["Nz"]                              =  "1";
     options2["nx"]                              =  "5";
     options2["ny"]                              =  "5";
     options2["nz"]                              =  "5";
-    options2["nparts"]                          =  "5";
+    options2["nparts"]                          =  "1";
 
     printf("+++++++++++++++++++++++++++++++++++      %s\n", options2["path2data"].c_str());
 
-//    if (options2["linear_solver"] ==  "pardiso" &&
-//            options2["create_analytic_ker_K"] == "false"){
-//        cout <<"###########################################################" << endl;
-//        cout << "if pardiso, kernel must be provided by analytical formula" << endl;
-//        cout <<"###########################################################" << endl;
-//        options2["create_analytic_ker_K"] = "true";
-//    }
+    if (options2["linear_solver"] ==  "pardiso" &&
+            options2["create_analytic_ker_K"] == "false"){
+        cout <<"###########################################################" << endl;
+        cout << "if pardiso, kernel must be provided by analytical formula" << endl;
+        cout <<"###########################################################" << endl;
+        options2["create_analytic_ker_K"] = "true";
+    }
 
 
     if (argc > 1) {

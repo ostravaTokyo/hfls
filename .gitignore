@@ -36,7 +36,7 @@ python/__pycache__/
 *.pyc
 
 build*/*
-bin*/*
+bin/*
 
 #CMake
 advices.txt

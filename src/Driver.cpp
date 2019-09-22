@@ -7,7 +7,7 @@ using namespace std;
 
 Driver::Driver()
 {
-   cout << "constructor of Diver" <<endl;
+   cout << "constructor of Driver" <<endl;
 }
 
 

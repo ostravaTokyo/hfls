@@ -1327,12 +1327,12 @@ void Matrix::FinalizeSolve(int i_)
 }
 
 void Matrix::testSolver(string folder, int pardiso_0_dissection_1){
-#if 0
+#if 1
 /*------------------------------ TEST ------------------------------*/
     Matrix A, B, U;
-    int n = 11;
+    int n = 5;
     int cnt = 0;
-    int nrhs = 5;
+    int nrhs = 3;
     A.nnz = 2 * n - 1;
     A.n_row = n;
     A.n_row_cmprs = n;
@@ -1363,7 +1363,8 @@ void Matrix::testSolver(string folder, int pardiso_0_dissection_1){
     A.format = 0;
     A.symmetric = 2;
 
-//    A.printToFile("A",folder,1000,true);
+    A.printToFile("A",folder,1000,true);
+    B.printToFile("B",folder,1000,true);
     A.COO2CSR();
 
     cout << "A_III  " << A.i_ptr.size() << endl;
@@ -1795,7 +1796,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
 //
     K_modif.sortAndUniqueCOO(triplet);
 
-//     K_modif.printToFile("K_modif_v3",c_options2["path2data"],order_number,printCooOrDense_);
+//    K_modif.printToFile("K_modif_v3",c_options2["path2data"],order_number,printCooOrDense_);
 
 
     K_modif.COO2CSR();
