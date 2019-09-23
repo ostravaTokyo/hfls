@@ -15,7 +15,7 @@ public:
     void setIeq(int i,int j){ieq[i] = j;}
     int getIeq(int i){return ieq[i];}
     int get_nDOF(){return nDOF;}
-    int set_nDOF(int n){nDOF = n;}
+    void set_nDOF(int n){nDOF = n;}
     void setZero_val_K();
     void setZero_val_f();
 private:

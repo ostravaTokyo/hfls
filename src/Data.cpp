@@ -65,7 +65,7 @@ void Data::create_analytic_ker_K(Mesh *mesh, vector <Matrix> &R_){
 
     for (int d = 0; d < nSubClst; d++){
         Matrix &R = R_[d];
-        int n = l2g[d].size();
+        int n = (int)l2g[d].size();
         R.zero_dense(n,6);
         double x,y,z;
         int n_nods = int(n / 3);
@@ -125,7 +125,7 @@ void Data::buildMappingStruct(Mesh *mesh){
     for (int d = 0 ; d < mesh->nSubClst ; d++){
         l2g[d].resize(l2g_dim[d]);
         int cnt = 0;
-        for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
+        for (int i = 0 ; i < (int)selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
             for (int k = 0 ; k < i_loc_K_f.get_nDOF(); k++){
                 l2g[d][k + cnt] = i_loc_K_f.getIeq(k);
@@ -137,7 +137,7 @@ void Data::buildMappingStruct(Mesh *mesh){
         itv = std::unique (l2g[d].begin(), l2g[d].end());
         l2g[d].resize( std::distance(l2g[d].begin(),itv) );
 
-        for (unsigned int i = 0; i < l2g[d].size(); i++){
+        for (int i = 0; i < (int)l2g[d].size(); i++){
             g2l[d].insert ( pair<int,int>(l2g[d][i],i) );
         }
     }
@@ -151,7 +151,7 @@ void Data::feti_symbolic(Mesh *mesh, vector <Matrix> &K_)
 
     // renumbering stiff mat from global to local (subdom.) numbering
     for (int d = 0 ; d < mesh->nSubClst ; d++){
-        for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
+        for (int i = 0 ; i < (int)selectorOfElemPartitId[d].size() ; i++){
             for (int k = 0 ; k < local_K_f_clust[selectorOfElemPartitId[d][i]].get_nDOF(); k++){
                 local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
                 i_loc_K_f.setIeq(k, g2l[d][i_loc_K_f.getIeq(k)]);
@@ -172,19 +172,19 @@ void Data::feti_symbolic(Mesh *mesh, vector <Matrix> &K_)
         //forCSRformat.resize(fem->domain->neqSub,vector<int>(0));
         forCSRformat.resize(l2g[d].size(),vector <int> (0));
     //
-        for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
+        for (int i = 0 ; i < (int)selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
             int elemDOFs = i_loc_K_f.get_nDOF();
             for (int j=0;j<elemDOFs;j++){
               for (int k=0;k<elemDOFs;k++){
-                if (symMatrix && (i_loc_K_f.getIeq(k)>=i_loc_K_f.getIeq(j)) || !symMatrix){
+                if ((symMatrix && (i_loc_K_f.getIeq(k)>=i_loc_K_f.getIeq(j))) || !symMatrix){
                   forCSRformat[i_loc_K_f.getIeq(j)].push_back(i_loc_K_f.getIeq(k));
                 }
               }
             }
         }
         int nnz_K = 0;
-        for (int i = 0;i<forCSRformat.size();i++){
+        for (int i = 0;i< (int) forCSRformat.size();i++){
           sort(forCSRformat[i].begin(),forCSRformat[i].end());
           itv = std::unique (forCSRformat[i].begin(), forCSRformat[i].end());
           forCSRformat[i].resize( std::distance(forCSRformat[i].begin(),itv) );
@@ -205,7 +205,7 @@ void Data::feti_symbolic(Mesh *mesh, vector <Matrix> &K_)
         _K.i_ptr.resize(neqSub + 1);
         int cnt_it  = 0;
         _K.i_ptr[0]  = 0;
-        for (int i=0;i<forCSRformat.size();i++){
+        for (int i=0;i< (int)forCSRformat.size();i++){
           for (vector<int>::iterator it1 = forCSRformat[i].begin();it1!=forCSRformat[i].end();it1++){
             _K.j_col[cnt_it]	= *it1;
             cnt_it++;
@@ -265,7 +265,7 @@ void Data::feti_numeric(Mesh *mesh, vector <Matrix> & K_,  vector <Vector>& rhs_
     for (int d = 0 ; d < mesh->nSubClst; d++){
       //        rhs_[d].zero_dense(K_[d].n_row_cmprs,1);
       rhs_[d].zero_dense(K_[d].get_n_row_cmprs());
-        for (int i = 0 ; i < selectorOfElemPartitId[d].size() ; i++){
+        for (int i = 0 ; i < (int)selectorOfElemPartitId[d].size() ; i++){
             local_K_f &i_loc_K_f = local_K_f_clust[selectorOfElemPartitId[d][i]];
             feti_numeric_element(K_[d],rhs_[d], i_loc_K_f);
         }

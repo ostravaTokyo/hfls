@@ -73,8 +73,6 @@ void Mesh::createMesh(map <string, string> &options2){
     double radius = 1050.0;
 
     // - decomposition
-    nElSubXYZ[3];
-    nSubXYZ[3];
 
     nSubXYZ[0]      = atoi(options2["Nx"].c_str());
     nSubXYZ[1]      = atoi(options2["Ny"].c_str());

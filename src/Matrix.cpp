@@ -189,7 +189,7 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
 /*                                                                            */
     format = format_;
     if (format_ != 2){
-        if (i_coo_cmpr.size() > nnz){
+        if ((int)i_coo_cmpr.size() > nnz){
             i_coo_cmpr.resize(nnz);
 //            i_coo_cmpr.shrink_to_fit();
 
@@ -202,7 +202,7 @@ void Matrix::readCooFromFile(string path2matrix, int symmetric_, int format_,
 /* Sorting [I, J, V]  --------------------------------------------------------*/
         vector < TRIPLET > triplet;
         triplet.resize(i_coo_cmpr.size());
-        for (int i = 0; i < i_coo_cmpr.size();i++){
+        for (int i = 0; i < (int)i_coo_cmpr.size();i++){
             triplet[i].I = i_coo_cmpr[i];
             triplet[i].J = j_col[i];
             triplet[i].V = val[i];
@@ -780,12 +780,12 @@ double Matrix::norm2()
 {
     double _norm2 = 0;
     if (format == 2){
-        for (unsigned int i = 0 ; i < dense.size(); i++){
+        for (int i = 0 ; i < (int)dense.size(); i++){
             _norm2 += dense[i] * dense[i];
         }
     }
     else{
-        for (unsigned int i = 0 ; i < nnz; i++){
+        for (int i = 0 ; i < nnz; i++){
             _norm2 += val[i] * val[i];
         }
     }
@@ -1053,7 +1053,7 @@ void Matrix::num_factor(Matrix &R, bool checkOrthogonality_){
             printed = true;
         }
 
-        for (int i = 0 ; i < tmp.size();i++)
+        for (int i = 0 ; i < (int)tmp.size();i++)
             val[tmp[i]] *= 0.5;
 
 
@@ -1443,12 +1443,12 @@ void Matrix::print_int_vector(vector <double> &dS, int print_first_n, int print_
 
 
 
-    int nPrint = print_first_n > dS.size() ? dS.size(): print_first_n;
+    int nPrint = print_first_n > (int)dS.size() ? dS.size(): print_first_n;
     for (int i = 0; i < nPrint;i++){
         cout << "d("<< i << ")=  " << dS[i] << endl;
     }
-    nPrint = print_last_n > dS.size() ? dS.size() : print_last_n;
-    for (int i = dS.size() - nPrint; i < dS.size() ;i++){
+    nPrint = print_last_n > (int)dS.size() ? dS.size() : print_last_n;
+    for (int i = dS.size() - nPrint; i < (int)dS.size() ;i++){
         cout << "d("<< i << ")=  " << dS[i] << endl;
     }
     cout << "-- end --" << endl;
@@ -1735,7 +1735,7 @@ void Matrix::createDirichletPreconditioner(const Matrix &Bf,
 
 
 
-    for (int i = 0; i < perm_vec_full.size(); i++) {
+    for (int i = 0; i < (int)perm_vec_full.size(); i++) {
         perm_vec_full[i] = i;
     }
 
@@ -2201,7 +2201,7 @@ typedef int  eslocal;
    } while (n_mv != sc_size && cnt_permut_vec < 100);
     //
     eslocal ik=0,cnt_i=0;
-    for (eslocal i = 0;i<permVec.size();i++){
+    for (eslocal i = 0;i<(int)permVec.size();i++){
       if (i==tmp_vec_s[ik]){
         permVec[ik+nonsing_size]=tmp_vec_s[ik];
         ik++;

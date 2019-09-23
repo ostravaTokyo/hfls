@@ -74,7 +74,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
     cout << "ker(K) is being created ... \n" ;
 
 
-    for (int d = 0; d < K.size(); d++)
+    for (int d = 0; d < (int) K.size(); d++)
         K[d].options2 = options2;
 
 
@@ -83,7 +83,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
             data.create_analytic_ker_K(mesh,R);
         }
         else {
-            for (int d = 0; d < K.size(); d++){
+            for (int d = 0; d < (int) K.size(); d++){
                 Matrix::get_kernel_from_K(K[d],R[d]);
             }
         }
@@ -94,12 +94,12 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
     checkOrthogonality = true;
 
     neqClst = 0;
-    for (int d = 0; d < K.size(); d++)
+    for (int d = 0; d < (int)K.size(); d++)
         neqClst += K[d].get_n_row_cmprs();
 
 //    Matrix::testSolver(folder, 1);
 
-    for (int d = 0; d < K.size(); d++){
+    for (int d = 0; d < (int)K.size(); d++){
         K[d].set_order_number(d);
         K[d].sym_factor(options2["linear_solver"]);
         R[d].set_label("kerK");
@@ -117,7 +117,7 @@ void Cluster::initialization(map <string,string> options2_,Mesh &m_mesh)
     create_cluster_constraints(options2);
 
     cout << "subdomain:  ";
-    for (int d = 0; d < K.size(); d++){
+    for (int d = 0; d < (int)K.size(); d++){
         cout << d <<" ";
         if (printMat > 1){
             K[d].printToFile("K",folder,d,printCooOrDense);
@@ -471,14 +471,14 @@ void Cluster::create_GcTGc_clust_sparse(){
 	//        Gii.label = "Gii";
         Matrix::updateCOOstructure( triplet,
                                 Gii,blockPointer[i],blockPointer[i]);
-        for (int j = 0 ; j < neighbours[i].size(); j++){
+        for (int j = 0 ; j < (int)neighbours[i].size(); j++){
             ind_neigh = neighbours[i][j];
             overlap.resize( n_interf_c_max );
             it=set_intersection (Gc[i].l2g_i_coo.begin(), Gc[i].l2g_i_coo.end(),
                                  Gc[ind_neigh].l2g_i_coo.begin(), Gc[ind_neigh].l2g_i_coo.end(),
                                  overlap.begin());
             overlap.resize(it-overlap.begin());
-            int n_overlap = overlap.size();
+            int n_overlap = (int)overlap.size();
             if (n_overlap > 0){
                 Matrix G_i, G_j, GiTGj;
                 G_i.submatrix_row_selector(Gc[i],overlap);
@@ -520,7 +520,7 @@ void Cluster::create_Gc_clust(){
 
 void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool remapCols){
 
-    const int nS = A_i.size();
+    const int nS = (int)A_i.size();
     int init_nnz = 0;
     for (int i = 0; i < nS; i++){
         init_nnz += A_i[i].get_nnz();
@@ -539,7 +539,7 @@ void Cluster::create_clust_object(Matrix &A_clust, vector <Matrix> & A_i, bool r
     int _i, _j;
     for (int d = 0; d < nS ; d++){
         A_i[d].DNS2COO();
-        for (int i = 0; i < A_i[d].i_coo_cmpr.size();i++){
+        for (int i = 0; i < (int)A_i[d].i_coo_cmpr.size();i++){
             _i = A_i[d].l2g_i_coo[ A_i[d].i_coo_cmpr[i] ];
             _j = A_i[d].j_col[i];
             if (remapCols){
@@ -697,8 +697,8 @@ void Cluster::create_cluster_constraints(const map< string, string> &options2){
         sort(subDOFset[i].begin(), subDOFset[i].end());
         it = unique (subDOFset[i].begin(), subDOFset[i].end());
         subDOFset[i].resize( distance(subDOFset[i].begin(),it));
-        if (subDOFset[i].size() > maxSize)
-            maxSize = subDOFset[i].size();
+        if ((int)subDOFset[i].size() > maxSize)
+            maxSize = (int)subDOFset[i].size();
     }
 
     vector<int> v(2 * maxSize);
@@ -711,13 +711,13 @@ void Cluster::create_cluster_constraints(const map< string, string> &options2){
                                  subDOFset[j].begin(), subDOFset[j].end(), v.begin());
             v.resize(it-v.begin());
 
-            if (v.size() > 0){
+            if ((int)v.size() > 0){
                 Interfaces interfaces_;
                 data.interfaces[i].push_back(interfaces_);
                 data.interfaces[i].back().IdNeighSub = j;
                 data.interfaces[i].back().dofs.resize(v.size());
                 neighbours[i].push_back(j);
-                for (int k = 0 ; k < v.size(); k++){
+                for (int k = 0 ; k < (int)v.size(); k++){
                     data.interface[i][v[k]].push_back(j);
                     data.interface[j][v[k]].push_back(i);
                     data.interfaces[i].back().dofs[k] = v[k];
@@ -776,10 +776,10 @@ void Cluster::create_Bc_weightedAverages_in_COO(vector <Matrix> &Bc_, bool Bc_fu
     int j_col_Bc_curr;
     int j_col_Bc_neigh;
 
-    for (int i = 0; i < data.interfaces.size(); i++){
-        for (int j = 0;j < data.interfaces[i].size();j++){
+    for (int i = 0; i < (int)data.interfaces.size(); i++){
+        for (int j = 0;j < (int)data.interfaces[i].size();j++){
             int IdNeighSub = data.interfaces[i][j].IdNeighSub;
-            int n_com_dof = data.interfaces[i][j].dofs.size();
+            int n_com_dof = (int)data.interfaces[i][j].dofs.size();
             Matrix Bc_from_Rt;
             Bc_from_Rt.zero_dense(R[i].get_n_col(),n_com_dof);
 
@@ -843,7 +843,7 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
 
     vector<int>::iterator it;
 
-    for (int d = 0; d < Bc_.size(); d++){
+    for (int d = 0; d < (int)Bc_.size(); d++){
 //        for ( auto it1 = data.interface[d].begin(); it1 != data.interface[d].end(); ++it1  ){
         typedef std::map<int,vector < int > >::iterator it_type;
         for(it_type it1 = data.interface[d].begin(); it1 != data.interface[d].end(); it1++) {
@@ -875,7 +875,7 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
             //TODO: if 'global_DOF' is found in vector 'cornerDOFs', the entry
             //                                                      should be deleted.
 
-            for (int k = 0; k < it1->second.size(); k++){
+            for (int k = 0; k < (int)it1->second.size(); k++){
                 ind_neigh_sub = it1->second[k];
                 if (ind_neigh_sub > d){
                     j_col_Bc_curr = data.g2l[d][global_DOF];
@@ -904,8 +904,8 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
 
 
     if (addDirConstr){
-        for (int d = 0; d < Bc_.size(); d++){
-            for (int i = 0; i < mesh->DirichletDOFs.size();i++){
+        for (int d = 0; d < (int)Bc_.size(); d++){
+            for (int i = 0; i < (int)mesh->DirichletDOFs.size();i++){
                 int dirDof = mesh->DirichletDOFs[i];
                 if (dirDof >= 0){
                     it = find (data.l2g[d].begin(), data.l2g[d].end(), dirDof);
@@ -930,8 +930,8 @@ void Cluster::create_Bc_or_Bf_in_CSR(vector < Matrix > &Bc_,
 
 void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
     int _nnz;
-    for (int d = 0 ; d < Bc_.size(); d++){
-        _nnz = Bc_[d].val.size();
+    for (int d = 0 ; d < (int)Bc_.size(); d++){
+        _nnz = (int)Bc_[d].val.size();
         Bc_[d].set_nnz(_nnz);
         Bc_[d].set_n_row(cntLam);
         Bc_[d].set_n_col(data.l2g[d].size());
@@ -945,11 +945,11 @@ void Cluster::matrix_Bx_COO2CSR(vector <Matrix> &Bc_, int cntLam){
         l2g_.resize( distance(l2g_.begin(),it));
         Bc_[d].set_n_row_cmprs(l2g_.size());
 
-        for (int i = 0; i < l2g_.size(); i++){
+        for (int i = 0; i < (int)l2g_.size(); i++){
             Bc_[d].g2l_i_coo.insert ( pair < int, int > ( l2g_[i] , i ));
         }
 
-        for (int i = 0; i < Bc_[d].i_coo_cmpr.size(); i++){
+        for (int i = 0; i <(int) Bc_[d].i_coo_cmpr.size(); i++){
             Bc_[d].i_coo_cmpr[i] =
                     Bc_[d].g2l_i_coo[ Bc_[d].i_coo_cmpr[i] ];
         }
@@ -1061,7 +1061,7 @@ void Cluster::Preconditioning(Vector & w_in , Vector & w_out){
         if (options2.at("preconditioner").compare("Dirichlet_explicit") == 0 ||
             options2.at("preconditioner").compare("Dirichlet_implicit") == 0    ){
 
-            int nBf = Bf[d].j_col_cmpr.size();
+            int nBf = (int)Bf[d].j_col_cmpr.size();
             int nK = K[d].get_n_row_cmprs();
             Vector  x_cmpr;
             x_cmpr.zero_dense(nBf);
@@ -1075,7 +1075,7 @@ void Cluster::Preconditioning(Vector & w_in , Vector & w_out){
                 Vector y_cmpr;
                 y_cmpr.mat_mult_dense(Preconditioner[d],"N",x_cmpr,"N");
                 yy[d].zero_dense(xx[d].get_n_row_cmprs());
-                for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
+                for (int i = 0; i < (int)Bf[d].j_col_cmpr.size(); i++){
                    yy[d].dense[Bf[d].j_col_cmpr[i]] = y_cmpr.dense[i];
                 }
             }
@@ -1098,7 +1098,7 @@ void Cluster::Preconditioning(Vector & w_in , Vector & w_out){
                 x_cmpr.zero_dense(nBf);
                 Krs[d].mult(Y,x_cmpr,false);
 //
-                for (int i = 0; i < Bf[d].j_col_cmpr.size(); i++){
+                for (int i = 0; i < (int)Bf[d].j_col_cmpr.size(); i++){
                    yy[d].dense[Bf[d].j_col_cmpr[i]] -= x_cmpr.dense[i];
                 }
             }
